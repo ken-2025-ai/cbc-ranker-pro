@@ -18,7 +18,7 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-smooth",
         ghost: "hover:bg-accent hover:text-accent-foreground transition-smooth",
         link: "text-primary underline-offset-4 hover:underline transition-smooth",
-        academic: "bg-gradient-primary text-primary-foreground hover:shadow-glow transition-bounce shadow-card",
+        academic: "bg-gradient-to-r from-primary to-primary-light text-primary-foreground hover:shadow-glow transition-bounce shadow-card",
         success: "bg-success text-success-foreground hover:bg-success/90 transition-smooth",
         warning: "bg-warning text-warning-foreground hover:bg-warning/90 transition-smooth",
       },
