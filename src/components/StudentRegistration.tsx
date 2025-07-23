@@ -62,6 +62,11 @@ const StudentRegistration = () => {
   const currentYear = new Date().getFullYear();
   const years = [currentYear.toString(), (currentYear + 1).toString()];
 
+  // Debug: Log arrays to check for empty values
+  console.log('Classes array:', classes);
+  console.log('Streams array:', streams);
+  console.log('Years array:', years);
+
   const fetchRegistrationStats = async () => {
     try {
       const { data: studentsData, error } = await supabase
@@ -379,7 +384,7 @@ const StudentRegistration = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="stream">Stream</Label>
-                      <Select value={student.stream} onValueChange={(value) => handleInputChange("stream", value)}>
+                      <Select value={student.stream || undefined} onValueChange={(value) => handleInputChange("stream", value || "")}>
                         <SelectTrigger className="transition-smooth focus:shadow-glow">
                           <SelectValue placeholder="Select stream (optional)" />
                         </SelectTrigger>
