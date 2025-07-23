@@ -200,12 +200,30 @@ const StudentRegistration = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Debug: Log all field values
+    console.log('Form submission debug:', {
+      fullName: `"${student.fullName}"`,
+      admissionNumber: `"${student.admissionNumber}"`,
+      class: `"${student.class}"`,
+      stream: `"${student.stream}"`,
+      year: `"${student.year}"`,
+      institutionId: institutionId
+    });
+    
     // Trim and validate all required fields
     const trimmedFullName = student.fullName.trim();
     const trimmedAdmissionNumber = student.admissionNumber.trim();
     const trimmedClass = student.class.trim();
     
+    console.log('After trimming:', {
+      trimmedFullName: `"${trimmedFullName}"`,
+      trimmedAdmissionNumber: `"${trimmedAdmissionNumber}"`,
+      trimmedClass: `"${trimmedClass}"`,
+      institutionId: institutionId
+    });
+    
     if (!trimmedFullName || !trimmedAdmissionNumber || !trimmedClass || !institutionId) {
+      console.log('Validation failed - empty fields detected');
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
