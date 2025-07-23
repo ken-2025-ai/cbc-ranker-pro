@@ -225,6 +225,47 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_periods: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          institution_id: string
+          name: string
+          start_date: string | null
+          term: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          institution_id: string
+          name: string
+          start_date?: string | null
+          term: number
+          year?: number
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          institution_id?: string
+          name?: string
+          start_date?: string | null
+          term?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_periods_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expert_questions: {
         Row: {
           answer: string | null
@@ -311,6 +352,71 @@ export type Database = {
           },
         ]
       }
+      institution_users: {
+        Row: {
+          created_at: string
+          id: string
+          institution_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          institution_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          institution_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_users_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutions: {
+        Row: {
+          address: string | null
+          code: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       livestock: {
         Row: {
           age_months: number | null
@@ -350,6 +456,64 @@ export type Database = {
         }
         Relationships: []
       }
+      marks: {
+        Row: {
+          exam_period_id: string
+          grade: string | null
+          id: string
+          remarks: string | null
+          score: number
+          student_id: string
+          subject_id: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          exam_period_id: string
+          grade?: string | null
+          id?: string
+          remarks?: string | null
+          score: number
+          student_id: string
+          subject_id: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          exam_period_id?: string
+          grade?: string | null
+          id?: string
+          remarks?: string | null
+          score?: number
+          student_id?: string
+          subject_id?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marks_exam_period_id_fkey"
+            columns: ["exam_period_id"]
+            isOneToOne: false
+            referencedRelation: "exam_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -374,6 +538,74 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          admission_number: string
+          created_at: string
+          full_name: string
+          grade: string
+          id: string
+          institution_id: string
+          stream: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          admission_number: string
+          created_at?: string
+          full_name: string
+          grade: string
+          id?: string
+          institution_id: string
+          stream?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Update: {
+          admission_number?: string
+          created_at?: string
+          full_name?: string
+          grade?: string
+          id?: string
+          institution_id?: string
+          stream?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          level: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          level: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          level?: string
+          name?: string
         }
         Relationships: []
       }
