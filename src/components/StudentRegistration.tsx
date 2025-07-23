@@ -200,7 +200,12 @@ const StudentRegistration = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!student.fullName || !student.admissionNumber || !student.class || !institutionId) {
+    // Trim and validate all required fields
+    const trimmedFullName = student.fullName.trim();
+    const trimmedAdmissionNumber = student.admissionNumber.trim();
+    const trimmedClass = student.class.trim();
+    
+    if (!trimmedFullName || !trimmedAdmissionNumber || !trimmedClass || !institutionId) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
