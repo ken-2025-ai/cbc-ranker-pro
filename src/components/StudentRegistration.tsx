@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Users, GraduationCap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Student {
   fullName: string;
@@ -13,37 +15,75 @@ interface Student {
   class: string;
   stream: string;
   year: string;
-  term: string;
 }
 
 const StudentRegistration = () => {
   const { toast } = useToast();
+  const { institutionId } = useAuth();
   const [student, setStudent] = useState<Student>({
     fullName: "",
     admissionNumber: "",
     class: "",
     stream: "",
-    year: "2024",
-    term: "3"
+    year: new Date().getFullYear().toString()
   });
+  const [registrationStats, setRegistrationStats] = useState<any>({
+    totalRegistered: 0,
+    gradeBreakdown: []
+  });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (institutionId) {
+      fetchRegistrationStats();
+    }
+  }, [institutionId]);
 
   const classes = [
-    { value: "grade-4", label: "Grade 4" },
-    { value: "grade-5", label: "Grade 5" },
-    { value: "grade-6", label: "Grade 6" },
-    { value: "grade-7", label: "Grade 7" },
-    { value: "grade-8", label: "Grade 8" },
-    { value: "grade-9", label: "Grade 9" }
+    { value: "4", label: "Grade 4" },
+    { value: "5", label: "Grade 5" },
+    { value: "6", label: "Grade 6" },
+    { value: "7", label: "Grade 7" },
+    { value: "8", label: "Grade 8" },
+    { value: "9", label: "Grade 9" }
   ];
 
   const streams = ["A", "B", "C", "D"];
-  const terms = ["1", "2", "3"];
-  const years = ["2024", "2025"];
+  const currentYear = new Date().getFullYear();
+  const years = [currentYear.toString(), (currentYear + 1).toString()];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchRegistrationStats = async () => {
+    try {
+      const { data: studentsData, error } = await supabase
+        .from('students')
+        .select('grade')
+        .eq('institution_id', institutionId)
+        .eq('year', parseInt(student.year));
+
+      if (error) throw error;
+
+      const gradeBreakdown = studentsData?.reduce((acc: any, student: any) => {
+        const grade = `Grade ${student.grade}`;
+        acc[grade] = (acc[grade] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      setRegistrationStats({
+        totalRegistered: studentsData?.length || 0,
+        gradeBreakdown: Object.entries(gradeBreakdown).map(([grade, count]) => ({
+          grade,
+          count
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching registration stats:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!student.fullName || !student.admissionNumber || !student.class) {
+    if (!student.fullName || !student.admissionNumber || !student.class || !institutionId) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -52,22 +92,68 @@ const StudentRegistration = () => {
       return;
     }
 
-    // Here you would typically save to your backend
-    toast({
-      title: "Student Registered Successfully",
-      description: `${student.fullName} has been added to ${student.class}${student.stream}`,
-      variant: "default"
-    });
+    setLoading(true);
+    try {
+      // Check if admission number already exists
+      const { data: existingStudent, error: checkError } = await supabase
+        .from('students')
+        .select('admission_number')
+        .eq('institution_id', institutionId)
+        .eq('admission_number', student.admissionNumber)
+        .single();
 
-    // Reset form
-    setStudent({
-      fullName: "",
-      admissionNumber: "",
-      class: "",
-      stream: "",
-      year: "2024",
-      term: "3"
-    });
+      if (existingStudent) {
+        toast({
+          title: "Error",
+          description: "A student with this admission number already exists",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Insert new student
+      const { error: insertError } = await supabase
+        .from('students')
+        .insert([{
+          full_name: student.fullName,
+          admission_number: student.admissionNumber,
+          grade: student.class,
+          stream: student.stream || null,
+          year: parseInt(student.year),
+          institution_id: institutionId
+        }]);
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: "Student Registered Successfully",
+        description: `${student.fullName} has been added to Grade ${student.class}${student.stream ? ` Stream ${student.stream}` : ''}`,
+        variant: "default"
+      });
+
+      // Reset form
+      setStudent({
+        fullName: "",
+        admissionNumber: "",
+        class: "",
+        stream: "",
+        year: currentYear.toString()
+      });
+
+      // Refresh stats
+      fetchRegistrationStats();
+
+    } catch (error: any) {
+      console.error('Error registering student:', error);
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Failed to register student",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (field: keyof Student, value: string) => {
@@ -158,7 +244,7 @@ const StudentRegistration = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="year">Academic Year</Label>
                       <Select value={student.year} onValueChange={(value) => handleInputChange("year", value)}>
@@ -174,32 +260,25 @@ const StudentRegistration = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="term">Term</Label>
-                      <Select value={student.term} onValueChange={(value) => handleInputChange("term", value)}>
-                        <SelectTrigger className="transition-smooth focus:shadow-glow">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {terms.map((term) => (
-                            <SelectItem key={term} value={term}>
-                              Term {term}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <Button type="submit" variant="academic" className="flex-1">
+                    <Button type="submit" variant="academic" className="flex-1" disabled={loading}>
                       <UserPlus className="h-4 w-4 mr-2" />
-                      Register Student
+                      {loading ? 'Registering...' : 'Register Student'}
                     </Button>
-                    <Button type="button" variant="outline" onClick={() => setStudent({
-                      fullName: "", admissionNumber: "", class: "", stream: "", year: "2024", term: "3"
-                    })}>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      disabled={loading}
+                      onClick={() => setStudent({
+                        fullName: "", 
+                        admissionNumber: "", 
+                        class: "", 
+                        stream: "", 
+                        year: currentYear.toString()
+                      })}
+                    >
                       Clear Form
                     </Button>
                   </div>
@@ -219,35 +298,21 @@ const StudentRegistration = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">247</div>
-                  <p className="text-sm text-muted-foreground">Students registered this term</p>
+                  <div className="text-3xl font-bold text-primary">{registrationStats.totalRegistered}</div>
+                  <p className="text-sm text-muted-foreground">Students registered this year</p>
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">Grade 4</span>
-                    <span className="text-sm font-medium">42</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Grade 5</span>
-                    <span className="text-sm font-medium">51</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Grade 6</span>
-                    <span className="text-sm font-medium">48</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Grade 7</span>
-                    <span className="text-sm font-medium">53</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Grade 8</span>
-                    <span className="text-sm font-medium">39</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Grade 9</span>
-                    <span className="text-sm font-medium">14</span>
-                  </div>
+                  {registrationStats.gradeBreakdown.length > 0 ? (
+                    registrationStats.gradeBreakdown.map((grade: any, index: number) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="text-sm">{grade.grade}</span>
+                        <span className="text-sm font-medium">{grade.count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center">No students registered yet</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

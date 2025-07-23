@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { BookOpen, Save, Users, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StudentMark {
   id: string;
@@ -15,41 +17,153 @@ interface StudentMark {
   marks: { [subject: string]: number };
 }
 
+interface Student {
+  id: string;
+  full_name: string;
+  admission_number: string;
+  grade: string;
+  stream: string;
+}
+
+interface Subject {
+  id: string;
+  name: string;
+  code: string;
+  level: string;
+}
+
+interface ExamPeriod {
+  id: string;
+  name: string;
+  term: number;
+}
+
 const MarksEntry = () => {
   const { toast } = useToast();
+  const { institutionId } = useAuth();
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedStream, setSelectedStream] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
-  
-  // Mock data - in real app this would come from your backend
-  const [students, setStudents] = useState<StudentMark[]>([
-    { id: "1", name: "John Doe", admissionNumber: "2024001", marks: {} },
-    { id: "2", name: "Jane Smith", admissionNumber: "2024002", marks: {} },
-    { id: "3", name: "Bob Johnson", admissionNumber: "2024003", marks: {} },
-    { id: "4", name: "Alice Brown", admissionNumber: "2024004", marks: {} },
-  ]);
+  const [selectedExamPeriod, setSelectedExamPeriod] = useState("");
+  const [students, setStudents] = useState<StudentMark[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [examPeriods, setExamPeriods] = useState<ExamPeriod[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const classes = [
-    { value: "grade-6", label: "Grade 6" },
-    { value: "grade-7", label: "Grade 7" },
-    { value: "grade-8", label: "Grade 8" },
+    { value: "4", label: "Grade 4" },
+    { value: "5", label: "Grade 5" },
+    { value: "6", label: "Grade 6" },
+    { value: "7", label: "Grade 7" },
+    { value: "8", label: "Grade 8" },
+    { value: "9", label: "Grade 9" },
   ];
 
-  const streams = ["A", "B", "C"];
+  const streams = ["A", "B", "C", "D"];
 
-  const subjects = [
-    "Mathematics",
-    "English",
-    "Kiswahili", 
-    "Science & Technology",
-    "Social Studies",
-    "Religious Education",
-    "Creative Arts",
-    "Physical Education"
-  ];
+  useEffect(() => {
+    if (institutionId) {
+      fetchSubjects();
+      fetchExamPeriods();
+    }
+  }, [institutionId]);
+
+  useEffect(() => {
+    if (selectedClass && institutionId) {
+      fetchStudents();
+    }
+  }, [selectedClass, selectedStream, institutionId]);
+
+  const fetchSubjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      setSubjects(data || []);
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+    }
+  };
+
+  const fetchExamPeriods = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('exam_periods')
+        .select('*')
+        .eq('institution_id', institutionId)
+        .order('name');
+      
+      if (error) throw error;
+      setExamPeriods(data || []);
+    } catch (error) {
+      console.error('Error fetching exam periods:', error);
+    }
+  };
+
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('students')
+        .select('*')
+        .eq('institution_id', institutionId)
+        .eq('grade', selectedClass)
+        .order('full_name');
+
+      if (selectedStream) {
+        query = query.eq('stream', selectedStream);
+      }
+
+      const { data: studentsData, error } = await query;
+      if (error) throw error;
+
+      // Fetch existing marks for these students
+      const studentIds = studentsData?.map(s => s.id) || [];
+      let marksData: any[] = [];
+      
+      if (studentIds.length > 0 && selectedSubject && selectedExamPeriod) {
+        const { data: marks, error: marksError } = await supabase
+          .from('marks')
+          .select('student_id, score')
+          .in('student_id', studentIds)
+          .eq('subject_id', selectedSubject)
+          .eq('exam_period_id', selectedExamPeriod);
+        
+        if (!marksError) {
+          marksData = marks || [];
+        }
+      }
+
+      // Transform data for the component
+      const transformedStudents = studentsData?.map(student => {
+        const existingMark = marksData.find(mark => mark.student_id === student.id);
+        return {
+          id: student.id,
+          name: student.full_name,
+          admissionNumber: student.admission_number,
+          marks: selectedSubject && existingMark ? { [selectedSubject]: existingMark.score } : {}
+        };
+      }) || [];
+
+      setStudents(transformedStudents);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load students",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getCBCGrade = (score: number, level: 'upper_primary' | 'junior_secondary' = 'upper_primary') => {
-    if (score < 0 || score > 100) return "Invalid";
+    if (score < 0 || score > 100) return { label: "Invalid", color: "destructive" };
     
     const gradeBands = {
       upper_primary: [
@@ -57,6 +171,16 @@ const MarksEntry = () => {
         { min: 30, max: 45, label: "Approaching Expectation", color: "warning" },
         { min: 46, max: 69, label: "Meeting Expectations", color: "secondary" },
         { min: 70, max: 100, label: "Exceeding Expectations", color: "success" }
+      ],
+      junior_secondary: [
+        { min: 0, max: 14, label: "Below Expectation 2", color: "destructive" },
+        { min: 15, max: 29, label: "Below Expectation 1", color: "destructive" },
+        { min: 30, max: 37, label: "Approaching Expectation 2", color: "warning" },
+        { min: 38, max: 45, label: "Approaching Expectation 1", color: "warning" },
+        { min: 46, max: 57, label: "Meeting Expectations 2", color: "secondary" },
+        { min: 58, max: 69, label: "Meeting Expectations 1", color: "secondary" },
+        { min: 70, max: 79, label: "Exceeding Expectations 2", color: "success" },
+        { min: 80, max: 100, label: "Exceeding Expectations", color: "success" }
       ]
     };
     
@@ -77,23 +201,62 @@ const MarksEntry = () => {
     );
   };
 
-  const handleSaveMarks = () => {
-    if (!selectedClass || !selectedSubject) {
+  const handleSaveMarks = async () => {
+    if (!selectedClass || !selectedSubject || !selectedExamPeriod) {
       toast({
         title: "Validation Error",
-        description: "Please select class and subject first",
+        description: "Please select class, subject, and exam period first",
         variant: "destructive"
       });
       return;
     }
 
-    const studentsWithMarks = students.filter(s => selectedSubject in s.marks);
+    const studentsWithMarks = students.filter(s => selectedSubject in s.marks && s.marks[selectedSubject] !== undefined);
     
-    toast({
-      title: "Marks Saved Successfully",
-      description: `${selectedSubject} marks saved for ${studentsWithMarks.length} students`,
-      variant: "default"
-    });
+    if (studentsWithMarks.length === 0) {
+      toast({
+        title: "No Marks to Save",
+        description: "Please enter marks for at least one student",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Prepare marks data for upsert
+      const marksToSave = studentsWithMarks.map(student => ({
+        student_id: student.id,
+        subject_id: selectedSubject,
+        exam_period_id: selectedExamPeriod,
+        score: student.marks[selectedSubject],
+        grade: null, // Will be calculated by the system if needed
+        remarks: null
+      }));
+
+      const { error } = await supabase
+        .from('marks')
+        .upsert(marksToSave, { 
+          onConflict: 'student_id,subject_id,exam_period_id'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Marks Saved Successfully",
+        description: `Marks saved for ${studentsWithMarks.length} students`,
+        variant: "default"
+      });
+    } catch (error: any) {
+      console.error('Error saving marks:', error);
+      toast({
+        title: "Error Saving Marks",
+        description: error.message || "Failed to save marks",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getClassAverage = () => {
@@ -103,6 +266,11 @@ const MarksEntry = () => {
     
     if (marksArray.length === 0) return 0;
     return marksArray.reduce((sum, mark) => sum + mark, 0) / marksArray.length;
+  };
+
+  const getSubjectLevel = (subjectId: string): 'upper_primary' | 'junior_secondary' => {
+    const subject = subjects.find(s => s.id === subjectId);
+    return subject?.level === 'junior_secondary' ? 'junior_secondary' : 'upper_primary';
   };
 
   return (
@@ -120,10 +288,10 @@ const MarksEntry = () => {
         <Card className="shadow-card mb-6 animate-slide-up">
           <CardHeader>
             <CardTitle>Selection Panel</CardTitle>
-            <CardDescription>Choose the class, stream, and subject for marks entry</CardDescription>
+            <CardDescription>Choose the class, stream, subject, and exam period for marks entry</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="space-y-2">
                 <Label>Class</Label>
                 <Select value={selectedClass} onValueChange={setSelectedClass}>
@@ -147,6 +315,7 @@ const MarksEntry = () => {
                     <SelectValue placeholder="Select stream" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">All Streams</SelectItem>
                     {streams.map((stream) => (
                       <SelectItem key={stream} value={stream}>
                         Stream {stream}
@@ -164,8 +333,24 @@ const MarksEntry = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {subjects.map((subject) => (
-                      <SelectItem key={subject} value={subject}>
-                        {subject}
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Exam Period</Label>
+                <Select value={selectedExamPeriod} onValueChange={setSelectedExamPeriod}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select exam" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {examPeriods.map((period) => (
+                      <SelectItem key={period.id} value={period.id}>
+                        {period.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -178,10 +363,10 @@ const MarksEntry = () => {
                   variant="academic" 
                   className="w-full" 
                   onClick={handleSaveMarks}
-                  disabled={!selectedClass || !selectedSubject}
+                  disabled={!selectedClass || !selectedSubject || !selectedExamPeriod || saving}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Save Marks
+                  {saving ? 'Saving...' : 'Save Marks'}
                 </Button>
               </div>
             </div>
@@ -220,16 +405,16 @@ const MarksEntry = () => {
         )}
 
         {/* Marks Entry Table */}
-        {selectedClass && selectedSubject && (
+        {selectedClass && selectedSubject && selectedExamPeriod && (
           <Card className="shadow-card animate-slide-up" style={{ animationDelay: "0.4s" }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                {selectedSubject} - {selectedClass.replace('-', ' ')}
+                {subjects.find(s => s.id === selectedSubject)?.name} - Grade {selectedClass}
                 {selectedStream && ` Stream ${selectedStream}`}
               </CardTitle>
               <CardDescription>
-                Enter marks for each student (0-100 scale)
+                Enter marks for each student (0-100 scale) {loading && '- Loading students...'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -260,10 +445,10 @@ const MarksEntry = () => {
                       
                       {student.marks[selectedSubject] !== undefined && (
                         <Badge 
-                          variant={getCBCGrade(student.marks[selectedSubject]).color as any}
+                          variant={getCBCGrade(student.marks[selectedSubject], getSubjectLevel(selectedSubject)).color as any}
                           className="min-w-[140px] text-center"
                         >
-                          {getCBCGrade(student.marks[selectedSubject]).label}
+                          {getCBCGrade(student.marks[selectedSubject], getSubjectLevel(selectedSubject)).label}
                         </Badge>
                       )}
                     </div>
@@ -283,9 +468,10 @@ const MarksEntry = () => {
             <CardContent className="space-y-3 text-muted-foreground">
               <p>1. Select the class and stream you want to enter marks for</p>
               <p>2. Choose the subject from the dropdown menu</p>
-              <p>3. Enter marks for each student (0-100 scale)</p>
-              <p>4. CBC grades will be automatically calculated and displayed</p>
-              <p>5. Click "Save Marks" to store the entered data</p>
+              <p>3. Select the exam period (term and assessment type)</p>
+              <p>4. Enter marks for each student (0-100 scale)</p>
+              <p>5. CBC grades will be automatically calculated and displayed</p>
+              <p>6. Click "Save Marks" to store the entered data in the database</p>
             </CardContent>
           </Card>
         )}
