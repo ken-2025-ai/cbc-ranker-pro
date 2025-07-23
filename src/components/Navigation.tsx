@@ -10,8 +10,10 @@ import {
   Settings,
   Menu,
   X,
-  GraduationCap
+  GraduationCap,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavigationProps {
   currentView: string;
@@ -20,6 +22,7 @@ interface NavigationProps {
 
 const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { signOut, user } = useAuth();
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
@@ -64,6 +67,21 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
             </Button>
           ))}
         </nav>
+        
+        {/* User Section */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-card">
+          <div className="px-2 py-1 text-sm text-muted-foreground truncate">
+            {user?.email}
+          </div>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground hover:text-primary mt-1"
+            onClick={signOut}
+          >
+            <LogOut className="mr-3 h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
       </div>
 
       {/* Mobile Navigation */}
@@ -107,6 +125,21 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
                 {item.label}
               </Button>
             ))}
+            
+            {/* Mobile User Section */}
+            <div className="pt-2 border-t border-primary/10 mt-2">
+              <div className="px-2 py-1 text-sm text-muted-foreground truncate">
+                {user?.email}
+              </div>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-muted-foreground mt-1"
+                onClick={signOut}
+              >
+                <LogOut className="mr-3 h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>
