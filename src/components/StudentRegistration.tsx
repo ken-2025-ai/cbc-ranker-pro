@@ -62,10 +62,6 @@ const StudentRegistration = () => {
   const currentYear = new Date().getFullYear();
   const years = [currentYear.toString(), (currentYear + 1).toString()];
 
-  // Debug: Log arrays to check for empty values
-  console.log('Classes array:', classes);
-  console.log('Streams array:', streams);
-  console.log('Years array:', years);
 
   const fetchRegistrationStats = async () => {
     try {
@@ -124,7 +120,7 @@ const StudentRegistration = () => {
         .from('students')
         .select('admission_number')
         .eq('institution_id', institutionId)
-        .eq('admission_number', student.admissionNumber)
+        .eq('admission_number', student.admissionNumber.trim())
         .maybeSingle();
 
       if (existingStudent) {
@@ -142,10 +138,10 @@ const StudentRegistration = () => {
       const { error } = await supabase
         .from('students')
         .insert([{
-          full_name: student.fullName,
-          admission_number: student.admissionNumber,
-          grade: student.class,
-          stream: student.stream || null,
+          full_name: student.fullName.trim(),
+          admission_number: student.admissionNumber.trim(),
+          grade: student.class.trim(),
+          stream: student.stream.trim() || null,
           year: parseInt(student.year),
           institution_id: institutionId
         }]);
@@ -205,30 +201,12 @@ const StudentRegistration = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Debug: Log all field values
-    console.log('Form submission debug:', {
-      fullName: `"${student.fullName}"`,
-      admissionNumber: `"${student.admissionNumber}"`,
-      class: `"${student.class}"`,
-      stream: `"${student.stream}"`,
-      year: `"${student.year}"`,
-      institutionId: institutionId
-    });
-    
     // Trim and validate all required fields
     const trimmedFullName = student.fullName.trim();
     const trimmedAdmissionNumber = student.admissionNumber.trim();
     const trimmedClass = student.class.trim();
     
-    console.log('After trimming:', {
-      trimmedFullName: `"${trimmedFullName}"`,
-      trimmedAdmissionNumber: `"${trimmedAdmissionNumber}"`,
-      trimmedClass: `"${trimmedClass}"`,
-      institutionId: institutionId
-    });
-    
     if (!trimmedFullName || !trimmedAdmissionNumber || !trimmedClass || !institutionId) {
-      console.log('Validation failed - empty fields detected');
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -244,8 +222,8 @@ const StudentRegistration = () => {
         .from('students')
         .select('admission_number')
         .eq('institution_id', institutionId)
-        .eq('admission_number', student.admissionNumber)
-        .single();
+        .eq('admission_number', trimmedAdmissionNumber)
+        .maybeSingle();
 
       if (existingStudent) {
         toast({
@@ -261,10 +239,10 @@ const StudentRegistration = () => {
       const { error: insertError } = await supabase
         .from('students')
         .insert([{
-          full_name: student.fullName,
-          admission_number: student.admissionNumber,
-          grade: student.class,
-          stream: student.stream || null,
+          full_name: trimmedFullName,
+          admission_number: trimmedAdmissionNumber,
+          grade: trimmedClass,
+          stream: student.stream.trim() || null,
           year: parseInt(student.year),
           institution_id: institutionId
         }]);
@@ -273,7 +251,7 @@ const StudentRegistration = () => {
 
       toast({
         title: "Student Registered Successfully",
-        description: `${student.fullName} has been added to Grade ${student.class}${student.stream ? ` Stream ${student.stream}` : ''}`,
+        description: `${trimmedFullName} has been added to Grade ${trimmedClass}${student.stream ? ` Stream ${student.stream}` : ''}`,
         variant: "default"
       });
 
