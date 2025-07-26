@@ -5,10 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Save, Users, TrendingUp } from "lucide-react";
+import { BookOpen, Save, Users, TrendingUp, CalendarIcon, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface StudentMark {
   id: string;
@@ -36,6 +40,8 @@ interface ExamPeriod {
   id: string;
   name: string;
   term: number;
+  start_date?: string;
+  end_date?: string;
 }
 
 const MarksEntry = () => {
@@ -50,6 +56,13 @@ const MarksEntry = () => {
   const [examPeriods, setExamPeriods] = useState<ExamPeriod[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showNewExamForm, setShowNewExamForm] = useState(false);
+  const [newExamPeriod, setNewExamPeriod] = useState({
+    name: "",
+    term: 1,
+    start_date: undefined as Date | undefined,
+    end_date: undefined as Date | undefined
+  });
 
   const classes = [
     { value: "4", label: "Grade 4" },
@@ -101,6 +114,60 @@ const MarksEntry = () => {
       setExamPeriods(data || []);
     } catch (error) {
       console.error('Error fetching exam periods:', error);
+    }
+  };
+
+  const handleCreateExamPeriod = async () => {
+    if (!newExamPeriod.name || !newExamPeriod.start_date || !newExamPeriod.end_date) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all exam period details",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('exam_periods')
+        .insert({
+          name: newExamPeriod.name,
+          term: newExamPeriod.term,
+          start_date: format(newExamPeriod.start_date, 'yyyy-MM-dd'),
+          end_date: format(newExamPeriod.end_date, 'yyyy-MM-dd'),
+          institution_id: institutionId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Exam period created successfully",
+      });
+
+      // Reset form and refresh list
+      setNewExamPeriod({
+        name: "",
+        term: 1,
+        start_date: undefined,
+        end_date: undefined
+      });
+      setShowNewExamForm(false);
+      fetchExamPeriods();
+      
+      // Auto-select the new exam period
+      if (data) {
+        setSelectedExamPeriod(data.id);
+      }
+    } catch (error: any) {
+      console.error('Error creating exam period:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create exam period",
+        variant: "destructive"
+      });
     }
   };
 
@@ -343,18 +410,33 @@ const MarksEntry = () => {
 
               <div className="space-y-2">
                 <Label>Exam Period</Label>
-                <Select value={selectedExamPeriod} onValueChange={setSelectedExamPeriod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select exam" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {examPeriods.map((period) => (
-                      <SelectItem key={period.id} value={period.id}>
-                        {period.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={selectedExamPeriod} onValueChange={setSelectedExamPeriod}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select exam" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {examPeriods.map((period) => (
+                        <SelectItem key={period.id} value={period.id}>
+                          {period.name}
+                          {period.start_date && period.end_date && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({format(new Date(period.start_date), 'MMM d')} - {format(new Date(period.end_date), 'MMM d')})
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowNewExamForm(!showNewExamForm)}
+                    className="px-3"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -372,6 +454,109 @@ const MarksEntry = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* New Exam Period Form */}
+        {showNewExamForm && (
+          <Card className="shadow-card mb-6 animate-slide-up">
+            <CardHeader>
+              <CardTitle>Create New Exam Period</CardTitle>
+              <CardDescription>Add a new exam period with start and end dates</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Exam Name</Label>
+                  <Input
+                    placeholder="e.g., End Term 1"
+                    value={newExamPeriod.name}
+                    onChange={(e) => setNewExamPeriod(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Term</Label>
+                  <Select 
+                    value={newExamPeriod.term.toString()} 
+                    onValueChange={(value) => setNewExamPeriod(prev => ({ ...prev, term: parseInt(value) }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Term 1</SelectItem>
+                      <SelectItem value="2">Term 2</SelectItem>
+                      <SelectItem value="3">Term 3</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !newExamPeriod.start_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newExamPeriod.start_date ? format(newExamPeriod.start_date, "PPP") : "Pick start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newExamPeriod.start_date}
+                        onSelect={(date) => setNewExamPeriod(prev => ({ ...prev, start_date: date }))}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !newExamPeriod.end_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newExamPeriod.end_date ? format(newExamPeriod.end_date, "PPP") : "Pick end date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newExamPeriod.end_date}
+                        onSelect={(date) => setNewExamPeriod(prev => ({ ...prev, end_date: date }))}
+                        disabled={(date) => newExamPeriod.start_date ? date < newExamPeriod.start_date : false}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <Button onClick={handleCreateExamPeriod} className="flex-1">
+                  Create Exam Period
+                </Button>
+                <Button variant="outline" onClick={() => setShowNewExamForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Statistics Panel */}
         {selectedSubject && (
