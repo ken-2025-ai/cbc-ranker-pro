@@ -5,6 +5,7 @@ import Dashboard from "@/components/Dashboard";
 import StudentRegistration from "@/components/StudentRegistration";
 import MarksEntry from "@/components/MarksEntry";
 import StudentReports from "@/components/StudentReports";
+import Rankings from "@/components/Rankings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
@@ -40,14 +41,7 @@ const Index = () => {
       case "reports":
         return <StudentReports />;
       case "rankings":
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 p-6 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-primary mb-4">Rankings & Analytics</h2>
-              <p className="text-muted-foreground">Coming soon - View class and stream rankings</p>
-            </div>
-          </div>
-        );
+        return <Rankings />;
       case "settings":
         return (
           <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 p-6 flex items-center justify-center">

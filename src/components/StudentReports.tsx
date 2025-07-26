@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,6 +8,9 @@ import { Download, FileText, TrendingUp, Award } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import ReportCard from "./ReportCard";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 interface Student {
   id: string;
@@ -18,16 +21,22 @@ interface Student {
 }
 
 interface Mark {
+  id: string;
   score: number;
-  grade: string;
+  grade?: string;
+  remarks?: string;
   subject: {
+    id: string;
     name: string;
     code: string;
     level: string;
   };
   exam_period: {
+    id: string;
     name: string;
     term: number;
+    start_date?: string;
+    end_date?: string;
   };
 }
 
@@ -39,6 +48,8 @@ interface StudentReportData {
   overallAverage: number;
   classRank: number;
   streamRank: number;
+  totalStudents: number;
+  recommendations: string;
 }
 
 const getCBCGrade = (level: string, score: number): string => {
@@ -81,6 +92,8 @@ const StudentReports = () => {
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [reportData, setReportData] = useState<StudentReportData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPrintView, setShowPrintView] = useState(false);
+  const reportCardRef = useRef<HTMLDivElement>(null);
   const { institutionId } = useAuth();
   const { toast } = useToast();
 
@@ -126,10 +139,12 @@ const StudentReports = () => {
       const { data: marks, error: marksError } = await supabase
         .from('marks')
         .select(`
+          id,
           score,
           grade,
-          subject:subjects(name, code, level),
-          exam_period:exam_periods(name, term)
+          remarks,
+          subject:subjects(id, name, code, level),
+          exam_period:exam_periods(id, name, term, start_date, end_date)
         `)
         .eq('student_id', studentId);
 
@@ -148,6 +163,8 @@ const StudentReports = () => {
         overallAverage,
         classRank: 1, // TODO: Calculate actual ranking
         streamRank: 1, // TODO: Calculate actual ranking
+        totalStudents: 100, // TODO: Calculate actual count
+        recommendations: generateAdvice(marks || [])
       });
     } catch (error) {
       console.error('Error fetching report:', error);
@@ -201,16 +218,74 @@ const StudentReports = () => {
     return total / marks.length;
   };
 
-  const handleDownloadReport = () => {
-    // TODO: Implement PDF generation
-    toast({
-      title: "Download Report",
-      description: "PDF generation feature coming soon!",
-    });
+  const handleDownloadReport = async () => {
+    if (!reportData || !reportCardRef.current) return;
+
+    try {
+      setLoading(true);
+      
+      // Show the print view temporarily
+      setShowPrintView(true);
+      
+      // Wait for the component to render
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const canvas = await html2canvas(reportCardRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save(`${reportData.student.full_name}_Report_Card.pdf`);
+      
+      toast({
+        title: "Download Successful",
+        description: "Report card PDF has been downloaded",
+      });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+      setShowPrintView(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 p-6">
+    <>
+      {/* Print View - Hidden by default */}
+      {showPrintView && reportData && (
+        <div className="fixed top-0 left-0 w-full h-full bg-white z-50 overflow-auto">
+          <ReportCard ref={reportCardRef} data={reportData} />
+        </div>
+      )}
+      
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -376,7 +451,8 @@ const StudentReports = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
