@@ -548,7 +548,7 @@ export type Database = {
           full_name: string
           grade: string
           id: string
-          institution_id: string
+          institution_id: string | null
           stream: string | null
           updated_at: string
           year: number
@@ -559,7 +559,7 @@ export type Database = {
           full_name: string
           grade: string
           id?: string
-          institution_id: string
+          institution_id?: string | null
           stream?: string | null
           updated_at?: string
           year?: number
@@ -570,7 +570,7 @@ export type Database = {
           full_name?: string
           grade?: string
           id?: string
-          institution_id?: string
+          institution_id?: string | null
           stream?: string | null
           updated_at?: string
           year?: number
