@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Users, GraduationCap, Eye, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+// import { useAuth } from "@/contexts/AuthContext"; // Removed authentication dependency
 
 interface Student {
   fullName: string;
@@ -26,7 +26,6 @@ interface FormEvent {
 
 const StudentRegistration = () => {
   const { toast } = useToast();
-  const { institutionId } = useAuth();
   const [student, setStudent] = useState<Student>({
     fullName: "",
     admissionNumber: "",
@@ -44,10 +43,8 @@ const StudentRegistration = () => {
   const [autoSaveTriggered, setAutoSaveTriggered] = useState(false);
 
   useEffect(() => {
-    if (institutionId) {
-      fetchRegistrationStats();
-    }
-  }, [institutionId]);
+    fetchRegistrationStats();
+  }, []);
 
   const classes = [
     { value: "4", label: "Grade 4" },
@@ -68,7 +65,6 @@ const StudentRegistration = () => {
       const { data: studentsData, error } = await supabase
         .from('students')
         .select('grade')
-        .eq('institution_id', institutionId)
         .eq('year', parseInt(student.year));
 
       if (error) throw error;
@@ -109,7 +105,7 @@ const StudentRegistration = () => {
   }, [student]);
 
   const autoSaveStudent = useCallback(async () => {
-    if (!isFormComplete || !institutionId || autoSaveTriggered) return;
+    if (!isFormComplete || autoSaveTriggered) return;
     
     setAutoSaveTriggered(true);
     setLoading(true);
@@ -119,7 +115,6 @@ const StudentRegistration = () => {
       const { data: existingStudent } = await supabase
         .from('students')
         .select('admission_number')
-        .eq('institution_id', institutionId)
         .eq('admission_number', student.admissionNumber.trim())
         .maybeSingle();
 
@@ -143,7 +138,7 @@ const StudentRegistration = () => {
           grade: student.class.trim(),
           stream: student.stream.trim() || null,
           year: parseInt(student.year),
-          institution_id: institutionId
+          institution_id: null // No institution requirement
         }]);
 
       if (error) throw error;
@@ -182,7 +177,7 @@ const StudentRegistration = () => {
     } finally {
       setLoading(false);
     }
-  }, [isFormComplete, institutionId, autoSaveTriggered, student, toast, logFormEvent, fetchRegistrationStats]);
+  }, [isFormComplete, autoSaveTriggered, student, toast, logFormEvent, fetchRegistrationStats]);
 
   useEffect(() => {
     checkFormCompleteness();
@@ -206,7 +201,7 @@ const StudentRegistration = () => {
     const trimmedAdmissionNumber = student.admissionNumber.trim();
     const trimmedClass = student.class.trim();
     
-    if (!trimmedFullName || !trimmedAdmissionNumber || !trimmedClass || !institutionId) {
+    if (!trimmedFullName || !trimmedAdmissionNumber || !trimmedClass) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -221,7 +216,6 @@ const StudentRegistration = () => {
       const { data: existingStudent, error: checkError } = await supabase
         .from('students')
         .select('admission_number')
-        .eq('institution_id', institutionId)
         .eq('admission_number', trimmedAdmissionNumber)
         .maybeSingle();
 
@@ -244,7 +238,7 @@ const StudentRegistration = () => {
           grade: trimmedClass,
           stream: student.stream.trim() || null,
           year: parseInt(student.year),
-          institution_id: institutionId
+          institution_id: null // No institution requirement
         }]);
 
       if (insertError) throw insertError;
