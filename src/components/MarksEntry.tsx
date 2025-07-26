@@ -114,7 +114,7 @@ const MarksEntry = () => {
         .eq('grade', selectedClass)
         .order('full_name');
 
-      if (selectedStream) {
+      if (selectedStream && selectedStream !== "all") {
         query = query.eq('stream', selectedStream);
       }
 
@@ -315,7 +315,7 @@ const MarksEntry = () => {
                     <SelectValue placeholder="Select stream" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Streams</SelectItem>
+                    <SelectItem value="all">All Streams</SelectItem>
                     {streams.map((stream) => (
                       <SelectItem key={stream} value={stream}>
                         Stream {stream}
