@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Save, Users, TrendingUp, CalendarIcon, Plus } from "lucide-react";
+import { BookOpen, Save, Users, TrendingUp, CalendarIcon, Plus, ChevronDown, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -57,12 +57,15 @@ const MarksEntry = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showNewExamForm, setShowNewExamForm] = useState(false);
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   const [newExamPeriod, setNewExamPeriod] = useState({
     name: "",
     term: 1,
     start_date: undefined as Date | undefined,
     end_date: undefined as Date | undefined
   });
+  
+  const subjectDropdownRef = useRef<HTMLDivElement>(null);
 
   const classes = [
     { value: "4", label: "Grade 4" },
@@ -87,6 +90,20 @@ const MarksEntry = () => {
       fetchStudents();
     }
   }, [selectedClass, selectedStream, institutionId]);
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (subjectDropdownRef.current && !subjectDropdownRef.current.contains(event.target as Node)) {
+        setIsSubjectDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchSubjects = async () => {
     try {
@@ -394,18 +411,55 @@ const MarksEntry = () => {
 
               <div className="space-y-2">
                 <Label>Subject</Label>
-                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative" ref={subjectDropdownRef}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsSubjectDropdownOpen(!isSubjectDropdownOpen)}
+                    className={cn(
+                      "w-full justify-between text-left font-normal",
+                      !selectedSubject && "text-muted-foreground"
+                    )}
+                  >
+                    {selectedSubject 
+                      ? subjects.find(s => s.id === selectedSubject)?.name || "Select subject"
+                      : "Select subject"
+                    }
+                    <ChevronDown 
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        isSubjectDropdownOpen && "rotate-180"
+                      )} 
+                    />
+                  </Button>
+                  
+                  {isSubjectDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-200">
+                      <ul className="py-1 max-h-60 overflow-auto">
+                        {subjects.map((subject) => (
+                          <li key={subject.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedSubject(subject.id);
+                                setIsSubjectDropdownOpen(false);
+                              }}
+                              className={cn(
+                                "w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors duration-150 flex items-center justify-between",
+                                selectedSubject === subject.id && "bg-accent text-accent-foreground"
+                              )}
+                            >
+                              <span>{subject.name}</span>
+                              {selectedSubject === subject.id && (
+                                <Check className="h-4 w-4 text-primary" />
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
