@@ -514,6 +514,69 @@ export type Database = {
           },
         ]
       }
+      patients: {
+        Row: {
+          address: string | null
+          admission_date: string
+          assigned_doctor: string
+          created_at: string
+          created_by: string | null
+          current_conditions: string | null
+          date_of_birth: string | null
+          department: string
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          medical_history: string | null
+          phone_number: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          admission_date?: string
+          assigned_doctor: string
+          created_at?: string
+          created_by?: string | null
+          current_conditions?: string | null
+          date_of_birth?: string | null
+          department: string
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          medical_history?: string | null
+          phone_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          admission_date?: string
+          assigned_doctor?: string
+          created_at?: string
+          created_by?: string | null
+          current_conditions?: string | null
+          date_of_birth?: string | null
+          department?: string
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          medical_history?: string | null
+          phone_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
