@@ -44,6 +44,36 @@ interface ExamPeriod {
   end_date?: string;
 }
 
+// CBC Subjects - Standard across all schools
+const CBC_SUBJECTS = {
+  'upper_primary': [
+    { id: 'eng_up', name: 'English', code: 'ENG' },
+    { id: 'kis_up', name: 'Kiswahili', code: 'KIS' },
+    { id: 'mat_up', name: 'Mathematics', code: 'MAT' },
+    { id: 'sci_up', name: 'Science and Technology', code: 'SCI' },
+    { id: 'sst_up', name: 'Social Studies', code: 'SST' },
+    { id: 'cre_up', name: 'Christian Religious Education', code: 'CRE' },
+    { id: 'hms_up', name: 'Home Science', code: 'HMS' },
+    { id: 'agr_up', name: 'Agriculture', code: 'AGR' },
+    { id: 'cra_up', name: 'Creative Arts', code: 'CRA' },
+    { id: 'phe_up', name: 'Physical and Health Education', code: 'PHE' },
+  ],
+  'junior_secondary': [
+    { id: 'eng_js', name: 'English', code: 'ENG' },
+    { id: 'kis_js', name: 'Kiswahili', code: 'KIS' },
+    { id: 'mat_js', name: 'Mathematics', code: 'MAT' },
+    { id: 'isc_js', name: 'Integrated Science', code: 'ISC' },
+    { id: 'sst_js', name: 'Social Studies', code: 'SST' },
+    { id: 'cre_js', name: 'Christian Religious Education', code: 'CRE' },
+    { id: 'hms_js', name: 'Home Science', code: 'HMS' },
+    { id: 'agr_js', name: 'Agriculture', code: 'AGR' },
+    { id: 'cas_js', name: 'Creative Arts & Sports', code: 'CAS' },
+    { id: 'bst_js', name: 'Business Studies', code: 'BST' },
+    { id: 'csc_js', name: 'Computer Science', code: 'CSC' },
+    { id: 'phe_js', name: 'Physical and Health Education', code: 'PHE' },
+  ]
+};
+
 const MarksEntry = () => {
   const { toast } = useToast();
   const { institutionId } = useAuth();
@@ -352,9 +382,22 @@ const MarksEntry = () => {
     return marksArray.reduce((sum, mark) => sum + mark, 0) / marksArray.length;
   };
 
+  // Get available subjects based on selected class
+  const getAvailableSubjects = () => {
+    if (!selectedClass) return [];
+    
+    const classNum = parseInt(selectedClass);
+    if (classNum >= 4 && classNum <= 6) {
+      return CBC_SUBJECTS.upper_primary;
+    } else if (classNum >= 7 && classNum <= 9) {
+      return CBC_SUBJECTS.junior_secondary;
+    }
+    return [];
+  };
+
   const getSubjectLevel = (subjectId: string): 'upper_primary' | 'junior_secondary' => {
-    const subject = subjects.find(s => s.id === subjectId);
-    return subject?.level === 'junior_secondary' ? 'junior_secondary' : 'upper_primary';
+    const classNum = parseInt(selectedClass);
+    return (classNum >= 7 && classNum <= 9) ? 'junior_secondary' : 'upper_primary';
   };
 
   return (
@@ -422,7 +465,7 @@ const MarksEntry = () => {
                     )}
                   >
                     {selectedSubject 
-                      ? subjects.find(s => s.id === selectedSubject)?.name || "Select subject"
+                      ? getAvailableSubjects().find(s => s.id === selectedSubject)?.name || "Select subject"
                       : "Select subject"
                     }
                     <ChevronDown 
@@ -436,26 +479,26 @@ const MarksEntry = () => {
                   {isSubjectDropdownOpen && (
                     <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-200">
                       <ul className="py-1 max-h-60 overflow-auto">
-                        {subjects.map((subject) => (
-                          <li key={subject.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedSubject(subject.id);
-                                setIsSubjectDropdownOpen(false);
-                              }}
-                              className={cn(
-                                "w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors duration-150 flex items-center justify-between",
-                                selectedSubject === subject.id && "bg-accent text-accent-foreground"
-                              )}
-                            >
-                              <span>{subject.name}</span>
-                              {selectedSubject === subject.id && (
-                                <Check className="h-4 w-4 text-primary" />
-                              )}
-                            </button>
-                          </li>
-                        ))}
+                         {getAvailableSubjects().map((subject) => (
+                           <li key={subject.id}>
+                             <button
+                               type="button"
+                               onClick={() => {
+                                 setSelectedSubject(subject.id);
+                                 setIsSubjectDropdownOpen(false);
+                               }}
+                               className={cn(
+                                 "w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors duration-150 flex items-center justify-between",
+                                 selectedSubject === subject.id && "bg-accent text-accent-foreground"
+                               )}
+                             >
+                               <span>{subject.name}</span>
+                               {selectedSubject === subject.id && (
+                                 <Check className="h-4 w-4 text-primary" />
+                               )}
+                             </button>
+                           </li>
+                         ))}
                       </ul>
                     </div>
                   )}
