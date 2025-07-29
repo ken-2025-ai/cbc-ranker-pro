@@ -165,10 +165,10 @@ const MarksEntry = () => {
   };
 
   const handleCreateExamPeriod = async () => {
-    if (!newExamPeriod.name || !newExamPeriod.start_date || !newExamPeriod.end_date) {
+    if (!newExamPeriod.name || !newExamPeriod.start_date) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all exam period details",
+        description: "Please fill in exam name and date",
         variant: "destructive"
       });
       return;
@@ -179,9 +179,9 @@ const MarksEntry = () => {
         .from('exam_periods')
         .insert({
           name: newExamPeriod.name,
-          term: newExamPeriod.term,
+          term: 1, // Default term
           start_date: format(newExamPeriod.start_date, 'yyyy-MM-dd'),
-          end_date: format(newExamPeriod.end_date, 'yyyy-MM-dd'),
+          end_date: format(newExamPeriod.start_date, 'yyyy-MM-dd'), // Same as start date
           institution_id: institutionId
         })
         .select()
@@ -560,7 +560,7 @@ const MarksEntry = () => {
               <CardDescription>Add a new exam period with start and end dates</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Exam Name</Label>
                   <Input
@@ -571,24 +571,7 @@ const MarksEntry = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Term</Label>
-                  <Select 
-                    value={newExamPeriod.term.toString()} 
-                    onValueChange={(value) => setNewExamPeriod(prev => ({ ...prev, term: parseInt(value) }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Term 1</SelectItem>
-                      <SelectItem value="2">Term 2</SelectItem>
-                      <SelectItem value="3">Term 3</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Start Date</Label>
+                  <Label>Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -599,7 +582,7 @@ const MarksEntry = () => {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {newExamPeriod.start_date ? format(newExamPeriod.start_date, "PPP") : "Pick start date"}
+                        {newExamPeriod.start_date ? format(newExamPeriod.start_date, "PPP") : "Pick date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -607,34 +590,6 @@ const MarksEntry = () => {
                         mode="single"
                         selected={newExamPeriod.start_date}
                         onSelect={(date) => setNewExamPeriod(prev => ({ ...prev, start_date: date }))}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !newExamPeriod.end_date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {newExamPeriod.end_date ? format(newExamPeriod.end_date, "PPP") : "Pick end date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={newExamPeriod.end_date}
-                        onSelect={(date) => setNewExamPeriod(prev => ({ ...prev, end_date: date }))}
-                        disabled={(date) => newExamPeriod.start_date ? date < newExamPeriod.start_date : false}
                         initialFocus
                         className={cn("p-3 pointer-events-auto")}
                       />
