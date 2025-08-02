@@ -174,6 +174,15 @@ const MarksEntry = () => {
       return;
     }
 
+    if (!institutionId) {
+      toast({
+        title: "Error",
+        description: "Institution not found. Please ensure you're associated with an institution.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('exam_periods')
