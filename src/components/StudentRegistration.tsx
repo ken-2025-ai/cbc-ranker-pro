@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Users, GraduationCap, Eye, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-// import { useAuth } from "@/contexts/AuthContext"; // Removed authentication dependency
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Student {
   fullName: string;
@@ -26,6 +26,7 @@ interface FormEvent {
 
 const StudentRegistration = () => {
   const { toast } = useToast();
+  const { institutionId } = useAuth();
   const [student, setStudent] = useState<Student>({
     fullName: "",
     admissionNumber: "",
@@ -105,7 +106,7 @@ const StudentRegistration = () => {
   }, [student]);
 
   const autoSaveStudent = useCallback(async () => {
-    if (!isFormComplete || autoSaveTriggered) return;
+    if (!isFormComplete || autoSaveTriggered || !institutionId) return;
     
     setAutoSaveTriggered(true);
     setLoading(true);
@@ -138,7 +139,7 @@ const StudentRegistration = () => {
           grade: student.class.trim(),
           stream: student.stream.trim() || null,
           year: parseInt(student.year),
-          institution_id: null // No institution requirement
+          institution_id: institutionId
         }]);
 
       if (error) throw error;
@@ -177,7 +178,7 @@ const StudentRegistration = () => {
     } finally {
       setLoading(false);
     }
-  }, [isFormComplete, autoSaveTriggered, student, toast, logFormEvent, fetchRegistrationStats]);
+  }, [isFormComplete, autoSaveTriggered, student, toast, logFormEvent, fetchRegistrationStats, institutionId]);
 
   useEffect(() => {
     checkFormCompleteness();
@@ -195,6 +196,15 @@ const StudentRegistration = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!institutionId) {
+      toast({
+        title: "Institution Error",
+        description: "Please ensure you are associated with an institution",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Trim and validate all required fields
     const trimmedFullName = student.fullName.trim();
@@ -238,7 +248,7 @@ const StudentRegistration = () => {
           grade: trimmedClass,
           stream: student.stream.trim() || null,
           year: parseInt(student.year),
-          institution_id: null // No institution requirement
+          institution_id: institutionId
         }]);
 
       if (insertError) throw insertError;
@@ -296,6 +306,11 @@ const StudentRegistration = () => {
           </div>
           <h1 className="text-3xl font-bold text-primary mb-2">Student Registration</h1>
           <p className="text-muted-foreground">Add new students to your institution's academic record system</p>
+          {!institutionId && (
+            <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-destructive text-sm">⚠️ You must be associated with an institution to register students. Please contact your administrator.</p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
