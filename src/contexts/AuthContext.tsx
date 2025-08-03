@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           // Fetch user's institution and role
-          setTimeout(async () => {
+          const fetchUserData = async () => {
             try {
               const { data: institutionUser, error } = await supabase
                 .from('institution_users')
@@ -52,11 +52,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               if (!error && institutionUser) {
                 setInstitutionId(institutionUser.institution_id);
                 setUserRole(institutionUser.role);
+                console.log('Institution loaded:', institutionUser.institution_id);
+              } else {
+                console.log('No institution found for user, error:', error);
+                setInstitutionId(null);
+                setUserRole(null);
               }
             } catch (err) {
-              console.log('No institution found for user');
+              console.log('Error fetching institution:', err);
+              setInstitutionId(null);
+              setUserRole(null);
             }
-          }, 0);
+          };
+          
+          fetchUserData();
         } else {
           setInstitutionId(null);
           setUserRole(null);
