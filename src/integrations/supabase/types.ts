@@ -604,6 +604,60 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_results: {
+        Row: {
+          career_profile: Json | null
+          career_recommendations: string[] | null
+          cluster_points: number | null
+          created_at: string
+          email: string | null
+          id: string
+          mean_grade: string
+          phone_number: string | null
+          recommended_courses: Json
+          result_code: string
+          student_name: string | null
+          subjects: Json
+          total_points: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          career_profile?: Json | null
+          career_recommendations?: string[] | null
+          cluster_points?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          mean_grade: string
+          phone_number?: string | null
+          recommended_courses: Json
+          result_code: string
+          student_name?: string | null
+          subjects: Json
+          total_points: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          career_profile?: Json | null
+          career_recommendations?: string[] | null
+          cluster_points?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          mean_grade?: string
+          phone_number?: string | null
+          recommended_courses?: Json
+          result_code?: string
+          student_name?: string | null
+          subjects?: Json
+          total_points?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       students: {
         Row: {
           admission_number: string
@@ -748,7 +802,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_result_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
