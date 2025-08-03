@@ -707,6 +707,7 @@ export type Database = {
           code: string
           created_at: string
           id: string
+          institution_id: string | null
           level: string
           name: string
         }
@@ -714,6 +715,7 @@ export type Database = {
           code: string
           created_at?: string
           id?: string
+          institution_id?: string | null
           level: string
           name: string
         }
@@ -721,6 +723,7 @@ export type Database = {
           code?: string
           created_at?: string
           id?: string
+          institution_id?: string | null
           level?: string
           name?: string
         }
