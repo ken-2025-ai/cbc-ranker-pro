@@ -347,10 +347,22 @@ const MarksEntry = () => {
 
     setSaving(true);
     try {
+      // Find the actual subject UUID from the database
+      const { data: subjectData, error: subjectError } = await supabase
+        .from('subjects')
+        .select('id')
+        .eq('code', getAvailableSubjects().find(s => s.id === selectedSubject)?.code)
+        .eq('institution_id', institutionId)
+        .single();
+
+      if (subjectError || !subjectData) {
+        throw new Error('Subject not found in database. Please ensure subjects are properly set up.');
+      }
+
       // Prepare marks data for upsert
       const marksToSave = studentsWithMarks.map(student => ({
         student_id: student.id,
-        subject_id: selectedSubject,
+        subject_id: subjectData.id,
         exam_period_id: selectedExamPeriod,
         score: student.marks[selectedSubject],
         grade: null, // Will be calculated by the system if needed
