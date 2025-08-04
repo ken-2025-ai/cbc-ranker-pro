@@ -44,6 +44,15 @@ interface ReportCardProps {
   institutionName?: string;
 }
 
+const getScoreBasedRemark = (score: number) => {
+  if (score >= 90) return "Keep up the excellence.";
+  if (score >= 80) return "Great job, stay focused.";
+  if (score >= 70) return "Well done, aim higher.";
+  if (score >= 60) return "Work harder next time.";
+  if (score >= 50) return "Keep trying, don't quit.";
+  return "Work hard, seek help.";
+};
+
 const getCBCGrade = (score: number, level: string) => {
   const isJuniorSecondary = level === 'junior_secondary';
   
@@ -220,7 +229,7 @@ const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
                           </span>
                         </td>
                         <td className="border border-gray-400 p-2">
-                          {mark.remarks || 'Good work'}
+                          {mark.remarks || getScoreBasedRemark(mark.score)}
                         </td>
                       </tr>
                     );
