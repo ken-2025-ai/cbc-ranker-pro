@@ -219,7 +219,7 @@ const StudentReports = () => {
   };
 
   const handleDownloadReport = async () => {
-    if (!reportData || !reportCardRef.current) return;
+    if (!reportData) return;
 
     try {
       setLoading(true);
@@ -227,15 +227,30 @@ const StudentReports = () => {
       // Show the print view temporarily
       setShowPrintView(true);
       
-      // Wait for the component to render
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait longer for the component to fully render with all styles
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (!reportCardRef.current) {
+        throw new Error('Report card element not found');
+      }
+      
+      // Add logging to help debug
+      console.log('Starting PDF generation...');
+      console.log('Report card element:', reportCardRef.current);
       
       const canvas = await html2canvas(reportCardRef.current, {
         scale: 2,
         useCORS: true,
         allowTaint: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        logging: true,
+        width: reportCardRef.current.scrollWidth,
+        height: reportCardRef.current.scrollHeight,
+        scrollX: 0,
+        scrollY: 0
       });
+      
+      console.log('Canvas created successfully:', canvas);
       
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -256,6 +271,7 @@ const StudentReports = () => {
         heightLeft -= pageHeight;
       }
       
+      console.log('PDF generated successfully');
       pdf.save(`${reportData.student.full_name}_Report_Card.pdf`);
       
       toast({
@@ -267,7 +283,7 @@ const StudentReports = () => {
       console.error('Error generating PDF:', error);
       toast({
         title: "Download Failed",
-        description: "Failed to generate PDF. Please try again.",
+        description: `Failed to generate PDF: ${error.message}`,
         variant: "destructive"
       });
     } finally {
