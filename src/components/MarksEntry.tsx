@@ -347,22 +347,38 @@ const MarksEntry = () => {
 
     setSaving(true);
     try {
-      // Find the actual subject UUID from the database
-      const { data: subjectData, error: subjectError } = await supabase
-        .from('subjects')
-        .select('id')
-        .eq('code', getAvailableSubjects().find(s => s.id === selectedSubject)?.code)
-        .eq('institution_id', institutionId)
-        .single();
-
-      if (subjectError || !subjectData) {
-        throw new Error('Subject not found in database. Please ensure subjects are properly set up.');
+      // Check if selectedSubject is already a valid UUID from database subjects
+      let subjectId = selectedSubject;
+      
+      // If it's one of the CBC subject codes, find the corresponding subject in database
+      if (selectedSubject && !selectedSubject.includes('-')) {
+        const selectedSubjectInfo = getAvailableSubjects().find(s => s.id === selectedSubject);
+        if (selectedSubjectInfo) {
+          const { data: dbSubject, error: subjectError } = await supabase
+            .from('subjects')
+            .select('id')
+            .eq('code', selectedSubjectInfo.code)
+            .eq('institution_id', institutionId)
+            .single();
+          
+          if (subjectError || !dbSubject) {
+            toast({
+              title: "Subject Not Found",
+              description: `The subject "${selectedSubjectInfo.name}" is not set up in your institution. Please add it to the subjects list first.`,
+              variant: "destructive"
+            });
+            setSaving(false);
+            return;
+          }
+          
+          subjectId = dbSubject.id;
+        }
       }
 
       // Prepare marks data for upsert
       const marksToSave = studentsWithMarks.map(student => ({
         student_id: student.id,
-        subject_id: subjectData.id,
+        subject_id: subjectId,
         exam_period_id: selectedExamPeriod,
         score: student.marks[selectedSubject],
         grade: null, // Will be calculated by the system if needed
