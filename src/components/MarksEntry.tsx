@@ -49,7 +49,7 @@ const CBC_SUBJECTS = {
   'upper_primary': [
     { id: 'eng_up', name: 'English', code: 'ENG' },
     { id: 'kis_up', name: 'Kiswahili', code: 'KIS' },
-    { id: 'mat_up', name: 'Mathematics', code: 'MAT' },
+    { id: 'mat_up', name: 'Mathematics', code: 'MATH' },
     { id: 'sci_up', name: 'Science and Technology', code: 'SCI' },
     { id: 'sst_up', name: 'Social Studies', code: 'SST' },
     { id: 'cre_up', name: 'Christian Religious Education', code: 'CRE' },
@@ -347,6 +347,17 @@ const MarksEntry = () => {
 
     setSaving(true);
     try {
+      // Check if user has an institution
+      if (!institutionId) {
+        toast({
+          title: "Institution Required",
+          description: "You must be associated with an institution to save marks.",
+          variant: "destructive"
+        });
+        setSaving(false);
+        return;
+      }
+
       // Check if selectedSubject is already a valid UUID from database subjects
       let subjectId = selectedSubject;
       
@@ -362,16 +373,37 @@ const MarksEntry = () => {
             .single();
           
           if (subjectError || !dbSubject) {
+            // Try to create the subject if it doesn't exist
+            const subjectLevel = getSubjectLevel(selectedSubject);
+            const { data: newSubject, error: createError } = await supabase
+              .from('subjects')
+              .insert({
+                name: selectedSubjectInfo.name,
+                code: selectedSubjectInfo.code,
+                level: subjectLevel,
+                institution_id: institutionId
+              })
+              .select('id')
+              .single();
+            
+            if (createError || !newSubject) {
+              toast({
+                title: "Subject Creation Failed",
+                description: `Could not create subject "${selectedSubjectInfo.name}". Please add it manually first.`,
+                variant: "destructive"
+              });
+              setSaving(false);
+              return;
+            }
+            
+            subjectId = newSubject.id;
             toast({
-              title: "Subject Not Found",
-              description: `The subject "${selectedSubjectInfo.name}" is not set up in your institution. Please add it to the subjects list first.`,
-              variant: "destructive"
+              title: "Subject Created",
+              description: `"${selectedSubjectInfo.name}" has been added to your institution.`,
             });
-            setSaving(false);
-            return;
+          } else {
+            subjectId = dbSubject.id;
           }
-          
-          subjectId = dbSubject.id;
         }
       }
 
