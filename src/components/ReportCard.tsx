@@ -36,6 +36,7 @@ interface StudentReportData {
   classRank: number;
   streamRank: number;
   totalStudents: number;
+  totalStreamStudents: number;
   recommendations: string;
 }
 
@@ -181,7 +182,7 @@ const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
               <div className="flex">
                 <span className="font-semibold w-32">Stream Position:</span>
                 <span className="border-b border-gray-400 flex-1 pl-2 font-semibold">
-                  Position {data.streamRank} in {data.student.stream} stream
+                  Position {data.streamRank} out of {data.totalStreamStudents} students
                 </span>
               </div>
             )}
