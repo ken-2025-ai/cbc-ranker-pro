@@ -172,9 +172,19 @@ const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
               <span className="border-b border-gray-400 flex-1 pl-2">{data.student.stream || 'N/A'}</span>
             </div>
             <div className="flex">
-              <span className="font-semibold w-32">Class Rank:</span>
-              <span className="border-b border-gray-400 flex-1 pl-2">{data.classRank} of {data.totalStudents}</span>
+              <span className="font-semibold w-32">Class Position:</span>
+              <span className="border-b border-gray-400 flex-1 pl-2 font-semibold">
+                Position {data.classRank} out of {data.totalStudents} students
+              </span>
             </div>
+            {data.student.stream && data.streamRank && (
+              <div className="flex">
+                <span className="font-semibold w-32">Stream Position:</span>
+                <span className="border-b border-gray-400 flex-1 pl-2 font-semibold">
+                  Position {data.streamRank} in {data.student.stream} stream
+                </span>
+              </div>
+            )}
             <div className="flex">
               <span className="font-semibold w-32">Overall Average:</span>
               <span className="border-b border-gray-400 flex-1 pl-2 font-bold text-blue-800">
