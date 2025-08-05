@@ -219,40 +219,61 @@ const StudentReports = () => {
   };
 
   const handleDownloadReport = async () => {
-    if (!reportData) return;
+    if (!reportData) {
+      toast({
+        title: "No Report Data",
+        description: "Please generate a report first before downloading",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Starting PDF generation...', { reportData });
       
       // Show the print view temporarily
       setShowPrintView(true);
       
       // Wait longer for the component to fully render with all styles
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       if (!reportCardRef.current) {
+        console.error('Report card ref is null');
         throw new Error('Report card element not found');
       }
       
-      // Add logging to help debug
-      console.log('Starting PDF generation...');
-      console.log('Report card element:', reportCardRef.current);
+      console.log('Report card element found:', reportCardRef.current);
+      console.log('Element dimensions:', {
+        scrollWidth: reportCardRef.current.scrollWidth,
+        scrollHeight: reportCardRef.current.scrollHeight,
+        clientWidth: reportCardRef.current.clientWidth,
+        clientHeight: reportCardRef.current.clientHeight
+      });
       
       const canvas = await html2canvas(reportCardRef.current, {
         scale: 2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
-        logging: true,
+        logging: false,
         width: reportCardRef.current.scrollWidth,
         height: reportCardRef.current.scrollHeight,
         scrollX: 0,
-        scrollY: 0
+        scrollY: 0,
+        removeContainer: true
       });
       
-      console.log('Canvas created successfully:', canvas);
+      console.log('Canvas created successfully:', {
+        width: canvas.width,
+        height: canvas.height
+      });
       
-      const imgData = canvas.toDataURL('image/png');
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Canvas has invalid dimensions');
+      }
+      
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = 210;
       const pageHeight = 295;
@@ -271,8 +292,9 @@ const StudentReports = () => {
         heightLeft -= pageHeight;
       }
       
-      console.log('PDF generated successfully');
-      pdf.save(`${reportData.student.full_name}_Report_Card.pdf`);
+      const fileName = `${reportData.student.full_name.replace(/[^a-zA-Z0-9]/g, '_')}_Report_Card.pdf`;
+      console.log('Saving PDF as:', fileName);
+      pdf.save(fileName);
       
       toast({
         title: "Download Successful",
@@ -283,7 +305,7 @@ const StudentReports = () => {
       console.error('Error generating PDF:', error);
       toast({
         title: "Download Failed",
-        description: `Failed to generate PDF: ${error.message}`,
+        description: `Failed to generate PDF: ${error?.message || 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
