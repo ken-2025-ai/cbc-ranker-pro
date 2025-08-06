@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { 
   Settings as SettingsIcon, 
   GraduationCap, 
@@ -17,13 +19,19 @@ import {
   Phone,
   Plus,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Sun,
+  Moon,
+  Crown
 } from "lucide-react";
 
 const Settings = () => {
+  const { theme, setTheme } = useTheme();
   const [curriculumLevel, setCurriculumLevel] = useState("upper-primary");
   const [schoolName, setSchoolName] = useState("Your School Name");
   const [streams] = useState(["8A", "8B", "8C", "7A", "7B"]);
+
+  const isDarkMode = theme === "dark";
 
   const upperPrimaryGrades = [
     { grade: "Below Expectation", range: "0-29", color: "destructive" },
@@ -64,6 +72,74 @@ const Settings = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+          {/* Theme Toggle Section */}
+          <Card className="col-span-1 lg:col-span-2">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Crown className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg sm:text-2xl flex items-center gap-2">
+                    <span>🌗</span>
+                    Command of the Crown
+                  </CardTitle>
+                  <CardDescription className="text-sm sm:text-base italic">
+                    Noble user, choose thy realm!
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center space-y-4 p-6 rounded-xl bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border border-primary/10">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-lg font-medium">
+                    <Sun className="h-5 w-5 text-amber-500" />
+                    <span className="font-bold">Light Mode</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    Let your screen glow with the brilliance of day, illuminating every scroll and script with clarity and grace.
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-center py-4">
+                  <div className="flex items-center space-x-4">
+                    <Label htmlFor="theme-toggle" className="flex items-center gap-2 cursor-pointer">
+                      <Sun className="h-4 w-4 text-amber-500" />
+                      <span className="font-medium">Light</span>
+                    </Label>
+                    <Switch
+                      id="theme-toggle"
+                      checked={isDarkMode}
+                      onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                      className="data-[state=checked]:bg-slate-600"
+                    />
+                    <Label htmlFor="theme-toggle" className="flex items-center gap-2 cursor-pointer">
+                      <span className="font-medium">Dark</span>
+                      <Moon className="h-4 w-4 text-blue-400" />
+                    </Label>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-lg font-medium">
+                    <Moon className="h-5 w-5 text-blue-400" />
+                    <span className="font-bold">Dark Mode</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    Embrace the shadows of the night, where focus deepens and your eyes rest under the gentle veil of darkness.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="text-center p-4 rounded-lg bg-secondary/30 border border-primary/20">
+                <p className="text-sm text-muted-foreground">
+                  ⚔️ <em>Switch between kingdoms with the Royal Toggle above. Your preference shall reign until you decree otherwise.</em>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Grading System Controls */}
           <Card className="col-span-1 lg:col-span-2">
             <CardHeader className="pb-4">
