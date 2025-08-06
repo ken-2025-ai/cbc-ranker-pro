@@ -46,34 +46,34 @@ const Settings = () => {
   const currentGrades = curriculumLevel === "upper-primary" ? upperPrimaryGrades : juniorSecondaryGrades;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 p-3 sm:p-6 pb-20 lg:pb-6">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 rounded-full bg-primary/10">
-              <SettingsIcon className="h-8 w-8 text-primary" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+            <div className="p-2 sm:p-3 rounded-full bg-primary/10">
+              <SettingsIcon className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent text-center">
               CBC Settings
             </h1>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             Configure your institution's grading system, manage academic data, and customize your CBC experience
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           {/* Grading System Controls */}
           <Card className="col-span-1 lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center gap-3">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
-                  <GraduationCap className="h-6 w-6 text-primary" />
+                  <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl">Grading System Controls</CardTitle>
-                  <CardDescription>Configure curriculum level and grade boundaries</CardDescription>
+                  <CardTitle className="text-lg sm:text-2xl">Grading System Controls</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">Configure curriculum level and grade boundaries</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -97,14 +97,14 @@ const Settings = () => {
                 <h4 className="text-lg font-semibold mb-4 text-primary">
                   {curriculumLevel === "upper-primary" ? "Upper Primary" : "Junior Secondary"} Grade Boundaries
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {currentGrades.map((grade, index) => (
                     <Card key={index} className="border-2 hover:shadow-md transition-shadow">
-                      <CardContent className="p-4 text-center">
-                        <Badge variant={grade.color as any} className="mb-2 w-full justify-center py-1">
+                      <CardContent className="p-3 sm:p-4 text-center">
+                        <Badge variant={grade.color as any} className="mb-2 w-full justify-center py-1 text-xs sm:text-sm">
                           {grade.range}
                         </Badge>
-                        <p className="text-sm font-medium text-foreground">{grade.grade}</p>
+                        <p className="text-xs sm:text-sm font-medium text-foreground leading-tight">{grade.grade}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -115,14 +115,14 @@ const Settings = () => {
 
           {/* Institution Controls */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
-                  <School className="h-6 w-6 text-primary" />
+                  <School className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Institution Controls</CardTitle>
-                  <CardDescription>Manage school information and streams</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Institution Controls</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">Manage school information and streams</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -156,11 +156,11 @@ const Settings = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Input placeholder="Enter new stream (e.g., 8D)" className="flex-1" />
-                  <Button className="flex items-center gap-2">
+                  <Button className="flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]">
                     <Plus className="h-4 w-4" />
-                    Add Stream
+                    <span className="sm:inline">Add Stream</span>
                   </Button>
                 </div>
               </div>
@@ -169,14 +169,14 @@ const Settings = () => {
 
           {/* Account & Security Settings */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
-                  <Shield className="h-6 w-6 text-primary" />
+                  <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Account & Security</CardTitle>
-                  <CardDescription>Manage your account security settings</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Account & Security</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">Manage your account security settings</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -206,7 +206,7 @@ const Settings = () => {
                     </p>
                   </div>
                   
-                  <Button className="w-full">Update Password</Button>
+                  <Button className="w-full min-h-[44px]">Update Password</Button>
                 </div>
               </div>
             </CardContent>
@@ -214,14 +214,14 @@ const Settings = () => {
 
           {/* Student Removal Section */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div className="p-2 rounded-lg bg-destructive/10">
-                  <UserMinus className="h-6 w-6 text-destructive" />
+                  <UserMinus className="h-5 w-5 sm:h-6 sm:w-6 text-destructive" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Student Management</CardTitle>
-                  <CardDescription>Remove students from the system</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Student Management</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">Remove students from the system</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -251,7 +251,7 @@ const Settings = () => {
                   </p>
                 </div>
                 
-                <Button variant="destructive" className="w-full">
+                <Button variant="destructive" className="w-full min-h-[44px]">
                   <UserMinus className="h-4 w-4 mr-2" />
                   Remove Student
                 </Button>
@@ -261,14 +261,14 @@ const Settings = () => {
 
           {/* Help & Support Section */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
-                  <HelpCircle className="h-6 w-6 text-primary" />
+                  <HelpCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Help & Support</CardTitle>
-                  <CardDescription>Get assistance when you need it</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Help & Support</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">Get assistance when you need it</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -298,7 +298,7 @@ const Settings = () => {
                   </div>
                 </div>
                 
-                <Button className="w-full" variant="outline">
+                <Button className="w-full min-h-[44px]" variant="outline">
                   <HelpCircle className="h-4 w-4 mr-2" />
                   Contact Support
                 </Button>
