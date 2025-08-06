@@ -91,9 +91,12 @@ const generateAdvice = (marks: Mark[]): string => {
 const StudentReports = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('');
+  const [examPeriods, setExamPeriods] = useState<{id: string, name: string}[]>([]);
   const [reportData, setReportData] = useState<StudentReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
+  const [showPeriodSelection, setShowPeriodSelection] = useState(false);
   const reportCardRef = useRef<HTMLDivElement>(null);
   const { institutionId } = useAuth();
   const { toast } = useToast();
@@ -101,6 +104,7 @@ const StudentReports = () => {
   useEffect(() => {
     if (institutionId) {
       fetchStudents();
+      fetchExamPeriods();
     }
   }, [institutionId]);
 
@@ -124,6 +128,26 @@ const StudentReports = () => {
     }
   };
 
+  const fetchExamPeriods = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('exam_periods')
+        .select('id, name')
+        .eq('institution_id', institutionId)
+        .order('name');
+
+      if (error) throw error;
+      setExamPeriods(data || []);
+    } catch (error) {
+      console.error('Error fetching exam periods:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load exam periods",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Group students by grade and stream for better organization
   const groupedStudents = students.reduce((acc, student) => {
     const key = `${student.grade}${student.stream || ''}`;
@@ -134,7 +158,7 @@ const StudentReports = () => {
     return acc;
   }, {} as Record<string, Student[]>);
 
-  const fetchStudentReport = async (studentId: string) => {
+  const fetchStudentReport = async (studentId: string, periodId?: string) => {
     setLoading(true);
     try {
       // Fetch student details
@@ -147,7 +171,7 @@ const StudentReports = () => {
       if (studentError) throw studentError;
 
       // Fetch marks with subject and exam period details
-      const { data: marks, error: marksError } = await supabase
+      let marksQuery = supabase
         .from('marks')
         .select(`
           id,
@@ -158,6 +182,13 @@ const StudentReports = () => {
           exam_period:exam_periods(id, name, term, start_date, end_date)
         `)
         .eq('student_id', studentId);
+
+      // Filter by exam period if specified
+      if (periodId) {
+        marksQuery = marksQuery.eq('exam_period_id', periodId);
+      }
+
+      const { data: marks, error: marksError } = await marksQuery;
 
       if (marksError) throw marksError;
 
@@ -321,6 +352,11 @@ const StudentReports = () => {
       return;
     }
 
+    if (!selectedPeriod) {
+      setShowPeriodSelection(true);
+      return;
+    }
+
     try {
       setLoading(true);
       console.log('Starting PDF generation...', { reportData });
@@ -461,6 +497,66 @@ const StudentReports = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Royal Period Selection Modal */}
+        {showPeriodSelection && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md mx-auto bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 border-2 border-amber-300 dark:border-amber-700 shadow-2xl">
+              <CardHeader className="text-center">
+                <div className="text-4xl mb-2">👑</div>
+                <CardTitle className="text-xl font-bold text-amber-800 dark:text-amber-200">
+                  🎓 Your Majesty's Command
+                </CardTitle>
+                <CardDescription className="text-amber-700 dark:text-amber-300 text-sm leading-relaxed">
+                  Before proceeding to download the student's performance report, kindly select the desired academic period from the list below. Only results from the chosen period shall be analyzed and included in the final royal scroll (PDF).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-amber-100 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                    <span>⚠️</span>
+                    <em>Note: Failure to choose an academic period will result in a blocked attempt to generate the report.</em>
+                  </p>
+                </div>
+                
+                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                  <SelectTrigger className="w-full border-amber-300 dark:border-amber-700 bg-white dark:bg-amber-950">
+                    <SelectValue placeholder="🏛️ Choose Academic Period..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-amber-950 border-amber-300 dark:border-amber-700">
+                    {examPeriods.map((period) => (
+                      <SelectItem key={period.id} value={period.id}>
+                        📚 {period.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <div className="flex gap-2 pt-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowPeriodSelection(false)}
+                    className="flex-1 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      if (selectedPeriod) {
+                        setShowPeriodSelection(false);
+                        fetchStudentReport(selectedStudent, selectedPeriod);
+                      }
+                    }}
+                    disabled={!selectedPeriod}
+                    className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    🏆 Proceed to Download
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {reportData && (
           <div className="grid gap-6">
