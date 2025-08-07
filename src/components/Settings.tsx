@@ -90,50 +90,58 @@ const Settings = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-center space-y-4 p-6 rounded-xl bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border border-primary/10">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center gap-2 text-lg font-medium">
-                    <Sun className="h-5 w-5 text-amber-500" />
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="text-center space-y-4 p-4 sm:p-6 rounded-xl bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border border-primary/10">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-base sm:text-lg font-medium">
+                    <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                     <span className="font-bold">Light Mode</span>
                   </div>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed px-2">
                     Let your screen glow with the brilliance of day, illuminating every scroll and script with clarity and grace.
                   </p>
                 </div>
                 
-                <div className="flex items-center justify-center py-4">
-                  <div className="flex items-center space-x-4">
-                    <Label htmlFor="theme-toggle" className="flex items-center gap-2 cursor-pointer">
-                      <Sun className="h-4 w-4 text-amber-500" />
+                <div className="flex items-center justify-center py-3 sm:py-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <Label 
+                      htmlFor="theme-toggle" 
+                      className="flex items-center gap-1 sm:gap-2 cursor-pointer text-sm sm:text-base"
+                      onClick={() => setTheme("light")}
+                    >
+                      <Sun className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
                       <span className="font-medium">Light</span>
                     </Label>
                     <Switch
                       id="theme-toggle"
                       checked={isDarkMode}
                       onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                      className="data-[state=checked]:bg-slate-600"
+                      className="data-[state=checked]:bg-slate-600 scale-90 sm:scale-100"
                     />
-                    <Label htmlFor="theme-toggle" className="flex items-center gap-2 cursor-pointer">
+                    <Label 
+                      htmlFor="theme-toggle" 
+                      className="flex items-center gap-1 sm:gap-2 cursor-pointer text-sm sm:text-base"
+                      onClick={() => setTheme("dark")}
+                    >
                       <span className="font-medium">Dark</span>
-                      <Moon className="h-4 w-4 text-blue-400" />
+                      <Moon className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400" />
                     </Label>
                   </div>
                 </div>
                 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center gap-2 text-lg font-medium">
-                    <Moon className="h-5 w-5 text-blue-400" />
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-base sm:text-lg font-medium">
+                    <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
                     <span className="font-bold">Dark Mode</span>
                   </div>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed px-2">
                     Embrace the shadows of the night, where focus deepens and your eyes rest under the gentle veil of darkness.
                   </p>
                 </div>
               </div>
               
-              <div className="text-center p-4 rounded-lg bg-secondary/30 border border-primary/20">
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center p-3 sm:p-4 rounded-lg bg-secondary/30 border border-primary/20">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   ⚔️ <em>Switch between kingdoms with the Royal Toggle above. Your preference shall reign until you decree otherwise.</em>
                 </p>
               </div>
