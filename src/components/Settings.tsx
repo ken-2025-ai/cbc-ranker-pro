@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,11 +30,92 @@ import {
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
+  const { institutionId } = useAuth();
+  const { toast } = useToast();
   const [curriculumLevel, setCurriculumLevel] = useState("upper-primary");
   const [schoolName, setSchoolName] = useState("Your School Name");
   const [streams] = useState(["8A", "8B", "8C", "7A", "7B"]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<string>("");
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const isDarkMode = theme === "dark";
+
+  useEffect(() => {
+    if (institutionId) {
+      fetchStudents();
+    }
+  }, [institutionId]);
+
+  const fetchStudents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, full_name, admission_number, grade, stream')
+        .eq('institution_id', institutionId)
+        .order('full_name');
+
+      if (error) throw error;
+      setStudents(data || []);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load students",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRemoveStudent = async () => {
+    if (!selectedStudent) {
+      toast({
+        title: "No Student Selected",
+        description: "Please select a student to remove",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsRemoving(true);
+    try {
+      // First, delete related marks
+      const { error: marksError } = await supabase
+        .from('marks')
+        .delete()
+        .eq('student_id', selectedStudent);
+
+      if (marksError) throw marksError;
+
+      // Then delete the student
+      const { error: studentError } = await supabase
+        .from('students')
+        .delete()
+        .eq('id', selectedStudent);
+
+      if (studentError) throw studentError;
+
+      const removedStudent = students.find(s => s.id === selectedStudent);
+      
+      toast({
+        title: "Student Removed",
+        description: `${removedStudent?.full_name} has been permanently removed from the system`,
+        variant: "default"
+      });
+
+      setSelectedStudent("");
+      fetchStudents();
+    } catch (error: any) {
+      console.error('Error removing student:', error);
+      toast({
+        title: "Removal Failed",
+        description: error.message || "Failed to remove student",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRemoving(false);
+    }
+  };
 
   const upperPrimaryGrades = [
     { grade: "Below Expectation", range: "0-29", color: "destructive" },
@@ -313,14 +397,16 @@ const Settings = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="student-search">Select Student</Label>
-                  <Select>
+                  <Select value={selectedStudent} onValueChange={setSelectedStudent}>
                     <SelectTrigger>
                       <SelectValue placeholder="Search by name or admission number" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="student1">John Doe - ADM001</SelectItem>
-                      <SelectItem value="student2">Jane Smith - ADM002</SelectItem>
-                      <SelectItem value="student3">Mike Johnson - ADM003</SelectItem>
+                      {students.map((student) => (
+                        <SelectItem key={student.id} value={student.id}>
+                          {student.full_name} - {student.admission_number} (Grade {student.grade}{student.stream ? ` ${student.stream}` : ''})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -335,9 +421,14 @@ const Settings = () => {
                   </p>
                 </div>
                 
-                <Button variant="destructive" className="w-full min-h-[44px]">
+                <Button 
+                  variant="destructive" 
+                  className="w-full min-h-[44px]"
+                  onClick={handleRemoveStudent}
+                  disabled={!selectedStudent || isRemoving}
+                >
                   <UserMinus className="h-4 w-4 mr-2" />
-                  Remove Student
+                  {isRemoving ? 'Removing...' : 'Remove Student'}
                 </Button>
               </div>
             </CardContent>
