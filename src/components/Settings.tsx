@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   Sun,
   Moon,
-  Crown
+  Crown,
+  Search
 } from "lucide-react";
 
 const Settings = () => {
@@ -38,6 +39,7 @@ const Settings = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [isRemoving, setIsRemoving] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
 
   const isDarkMode = theme === "dark";
 
@@ -396,17 +398,40 @@ const Settings = () => {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="student-search">Select Student</Label>
+                  <Label htmlFor="student-search">Search Student</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="student-search"
+                        placeholder="Search by name or admission number..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="student-select">Select Student</Label>
                   <Select value={selectedStudent} onValueChange={setSelectedStudent}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Search by name or admission number" />
+                      <SelectValue placeholder="Choose a student to remove" />
                     </SelectTrigger>
                     <SelectContent>
-                      {students.map((student) => (
-                        <SelectItem key={student.id} value={student.id}>
-                          {student.full_name} - {student.admission_number} (Grade {student.grade}{student.stream ? ` ${student.stream}` : ''})
-                        </SelectItem>
-                      ))}
+                      {students
+                        .filter(student => 
+                          !studentSearchQuery || 
+                          student.full_name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                          student.admission_number.toLowerCase().includes(studentSearchQuery.toLowerCase())
+                        )
+                        .map((student) => (
+                          <SelectItem key={student.id} value={student.id}>
+                            {student.full_name} - {student.admission_number} (Grade {student.grade}{student.stream ? ` ${student.stream}` : ''})
+                          </SelectItem>
+                        ))
+                      }
                     </SelectContent>
                   </Select>
                 </div>
