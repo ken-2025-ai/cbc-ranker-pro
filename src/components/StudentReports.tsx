@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Download, FileText, TrendingUp, Award } from 'lucide-react';
+import { Download, FileText, TrendingUp, Award, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -97,6 +99,7 @@ const StudentReports = () => {
   const [loading, setLoading] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
   const [showPeriodSelection, setShowPeriodSelection] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
   const reportCardRef = useRef<HTMLDivElement>(null);
   const { institutionId } = useAuth();
   const { toast } = useToast();
@@ -148,8 +151,15 @@ const StudentReports = () => {
     }
   };
 
-  // Group students by grade and stream for better organization
-  const groupedStudents = students.reduce((acc, student) => {
+  // Filter students based on search query first
+  const filteredStudents = students.filter(student => 
+    !studentSearchQuery || 
+    student.full_name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+    student.admission_number.toLowerCase().includes(studentSearchQuery.toLowerCase())
+  );
+
+  // Group filtered students by grade and stream for better organization
+  const groupedStudents = filteredStudents.reduce((acc, student) => {
     const key = `${student.grade}${student.stream || ''}`;
     if (!acc[key]) {
       acc[key] = [];
@@ -467,7 +477,21 @@ const StudentReports = () => {
             <CardTitle>Select Student</CardTitle>
             <CardDescription>Choose a student to generate their performance report</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="student-search">Search Student</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="student-search"
+                  placeholder="Search by name or admission number..."
+                  value={studentSearchQuery}
+                  onChange={(e) => setStudentSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
             <div className="flex gap-4">
               <Select value={selectedStudent} onValueChange={setSelectedStudent}>
                 <SelectTrigger className="w-full max-w-md">
