@@ -600,45 +600,79 @@ const StudentReports = () => {
 
     try {
       setLoadingClassReport(true);
+      console.log('Starting class PDF generation...');
       
       // Show the print view temporarily
       setShowClassPrintView(true);
       
-      // Wait for the component to fully render
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Wait for the component to fully render and load all content
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       if (!classReportRef.current) {
         throw new Error('Class report element not found');
       }
+
+      console.log('Element dimensions:', {
+        scrollWidth: classReportRef.current.scrollWidth,
+        scrollHeight: classReportRef.current.scrollHeight,
+        offsetWidth: classReportRef.current.offsetWidth,
+        offsetHeight: classReportRef.current.offsetHeight
+      });
+
+      // Force a reflow to ensure everything is rendered
+      classReportRef.current.style.display = 'block';
+      classReportRef.current.style.visibility = 'visible';
       
       const canvas = await html2canvas(classReportRef.current, {
-        scale: 4, // Increased for 300+ DPI quality
+        scale: 3, // Balanced scale for performance and quality
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
-        logging: false,
+        logging: true, // Enable logging for debugging
         width: classReportRef.current.scrollWidth,
         height: classReportRef.current.scrollHeight,
         scrollX: 0,
         scrollY: 0,
         removeContainer: true,
-        imageTimeout: 20000,
-        
+        imageTimeout: 30000, // Increased timeout
         onclone: (clonedDoc) => {
+          console.log('Cloning document for PDF generation...');
           // Apply high-quality font styling for crisp text
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach((element) => {
             const htmlElement = element as HTMLElement;
             if (htmlElement.style) {
-              htmlElement.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
-              htmlElement.style.fontSize = `${parseFloat(getComputedStyle(htmlElement).fontSize) * 1.2}px`;
+              // Use web-safe fonts for better compatibility
+              htmlElement.style.fontFamily = 'Arial, "Helvetica Neue", Helvetica, sans-serif';
               htmlElement.style.setProperty('-webkit-font-smoothing', 'antialiased');
               htmlElement.style.setProperty('-moz-osx-font-smoothing', 'grayscale');
               htmlElement.style.setProperty('text-rendering', 'optimizeLegibility');
               htmlElement.style.setProperty('font-variant-ligatures', 'none');
+              
+              // Ensure text is black for PDF
+              if (htmlElement.tagName.toLowerCase().includes('text') || 
+                  htmlElement.tagName === 'P' || 
+                  htmlElement.tagName === 'SPAN' ||
+                  htmlElement.tagName === 'DIV') {
+                htmlElement.style.color = '#000000';
+              }
+            }
+          });
+          
+          // Ensure all images are loaded
+          const images = clonedDoc.querySelectorAll('img');
+          images.forEach((img) => {
+            if (!img.complete) {
+              console.warn('Image not fully loaded:', img.src);
             }
           });
         }
+      });
+      
+      console.log('Canvas created:', {
+        width: canvas.width,
+        height: canvas.height,
+        dataLength: canvas.toDataURL('image/png', 1.0).length
       });
       
       if (canvas.width === 0 || canvas.height === 0) {
@@ -648,33 +682,49 @@ const StudentReports = () => {
       // Generate high-quality PNG for better text clarity
       const imgData = canvas.toDataURL('image/png', 1.0);
       
-      // Create PDF with high-resolution settings
+      if (!imgData || imgData === 'data:,') {
+        throw new Error('Failed to generate image data from canvas');
+      }
+      
+      // Create PDF with optimized settings
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4',
-        compress: true,
-        precision: 2
+        compress: false, // Disable compression for better quality
+        precision: 16
       });
       
-      const imgWidth = 297;
-      const pageHeight = 210;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
       
+      console.log('PDF dimensions:', {
+        pdfWidth,
+        pdfHeight,
+        imgWidth,
+        imgHeight,
+        aspectRatio: canvas.width / canvas.height
+      });
+      
+      let heightLeft = imgHeight;
       let position = 0;
       
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+      heightLeft -= pdfHeight;
       
+      // Add additional pages if needed
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= pdfHeight;
       }
       
       const fileName = `${classReportData.className.replace(/[^a-zA-Z0-9]/g, '_')}_Class_Report.pdf`;
+      console.log('Saving PDF as:', fileName);
       pdf.save(fileName);
       
       toast({
@@ -684,6 +734,7 @@ const StudentReports = () => {
       
     } catch (error) {
       console.error('Error generating class PDF:', error);
+      console.error('Stack trace:', error?.stack);
       toast({
         title: "Download Failed",
         description: `Failed to generate PDF: ${error?.message || 'Unknown error'}`,
