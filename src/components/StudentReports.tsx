@@ -421,7 +421,7 @@ const StudentReports = () => {
       });
       
       const canvas = await html2canvas(reportCardRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
@@ -430,7 +430,20 @@ const StudentReports = () => {
         height: reportCardRef.current.scrollHeight,
         scrollX: 0,
         scrollY: 0,
-        removeContainer: true
+        removeContainer: true,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          // Apply font styling for better text rendering
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((element) => {
+            const htmlElement = element as HTMLElement;
+            if (htmlElement.style) {
+              htmlElement.style.fontFamily = 'Arial, sans-serif';
+              htmlElement.style.setProperty('-webkit-font-smoothing', 'antialiased');
+              htmlElement.style.setProperty('-moz-osx-font-smoothing', 'grayscale');
+            }
+          });
+        }
       });
       
       console.log('Canvas created successfully:', {
@@ -599,7 +612,7 @@ const StudentReports = () => {
       }
       
       const canvas = await html2canvas(classReportRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
@@ -608,7 +621,20 @@ const StudentReports = () => {
         height: classReportRef.current.scrollHeight,
         scrollX: 0,
         scrollY: 0,
-        removeContainer: true
+        removeContainer: true,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          // Apply font styling for better text rendering
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((element) => {
+            const htmlElement = element as HTMLElement;
+            if (htmlElement.style) {
+              htmlElement.style.fontFamily = 'Arial, sans-serif';
+              htmlElement.style.setProperty('-webkit-font-smoothing', 'antialiased');
+              htmlElement.style.setProperty('-moz-osx-font-smoothing', 'grayscale');
+            }
+          });
+        }
       });
       
       if (canvas.width === 0 || canvas.height === 0) {
