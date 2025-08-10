@@ -676,7 +676,9 @@ const StudentReports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {reportData.marks.map((mark, index) => (
+                      {reportData.marks
+                        .sort((a, b) => b.score - a.score) // Sort from highest to lowest score
+                        .map((mark, index) => (
                         <tr key={index} className="border-b">
                           <td className="p-2 font-medium">{mark.subject.name}</td>
                           <td className="p-2">{mark.score}%</td>
