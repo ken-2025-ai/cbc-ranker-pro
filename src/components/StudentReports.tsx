@@ -55,6 +55,19 @@ interface StudentReportData {
   recommendations: string;
 }
 
+interface ClassReportData {
+  className: string;
+  students: {
+    student: Student;
+    marks: Mark[];
+    average: number;
+    rank: number;
+  }[];
+  classAverage: number;
+  subjectAverages: { subject: string; average: number }[];
+  examPeriod?: string;
+}
+
 const getCBCGrade = (level: string, score: number): string => {
   if (typeof score !== "number" || score < 0 || score > 100) {
     return "Invalid Score";
@@ -100,7 +113,17 @@ const StudentReports = () => {
   const [showPrintView, setShowPrintView] = useState(false);
   const [showPeriodSelection, setShowPeriodSelection] = useState(false);
   const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  
+  // Class report states
+  const [classReportData, setClassReportData] = useState<ClassReportData | null>(null);
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedClassPeriod, setSelectedClassPeriod] = useState<string>('');
+  const [showClassPeriodSelection, setShowClassPeriodSelection] = useState(false);
+  const [showClassPrintView, setShowClassPrintView] = useState(false);
+  const [loadingClassReport, setLoadingClassReport] = useState(false);
+  
   const reportCardRef = useRef<HTMLDivElement>(null);
+  const classReportRef = useRef<HTMLDivElement>(null);
   const { institutionId } = useAuth();
   const { toast } = useToast();
 
@@ -167,6 +190,13 @@ const StudentReports = () => {
     acc[key].push(student);
     return acc;
   }, {} as Record<string, Student[]>);
+
+  // Get unique classes for class report selection
+  const availableClasses = Object.keys(groupedStudents).map(classKey => ({
+    key: classKey,
+    label: `Grade ${classKey}`,
+    students: groupedStudents[classKey]
+  }));
 
   const fetchStudentReport = async (studentId: string, periodId?: string) => {
     setLoading(true);
@@ -453,12 +483,241 @@ const StudentReports = () => {
     }
   };
 
+  const fetchClassReport = async (classKey: string, periodId?: string) => {
+    setLoadingClassReport(true);
+    try {
+      // Get all students in the selected class
+      const classStudents = groupedStudents[classKey] || [];
+      
+      if (classStudents.length === 0) {
+        throw new Error('No students found in selected class');
+      }
+
+      const studentsWithMarks = await Promise.all(
+        classStudents.map(async (student) => {
+          // Fetch marks for each student
+          let marksQuery = supabase
+            .from('marks')
+            .select(`
+              id,
+              score,
+              grade,
+              remarks,
+              subject:subjects(id, name, code, level),
+              exam_period:exam_periods(id, name, term, start_date, end_date)
+            `)
+            .eq('student_id', student.id);
+
+          if (periodId) {
+            marksQuery = marksQuery.eq('exam_period_id', periodId);
+          }
+
+          const { data: marks, error } = await marksQuery;
+          if (error) throw error;
+
+          const average = calculateOverallAverage(marks || []);
+          return {
+            student,
+            marks: marks || [],
+            average,
+            rank: 0 // Will be calculated later
+          };
+        })
+      );
+
+      // Sort by average and assign ranks
+      studentsWithMarks.sort((a, b) => b.average - a.average);
+      studentsWithMarks.forEach((studentData, index) => {
+        studentData.rank = index + 1;
+      });
+
+      // Calculate class average
+      const classAverage = studentsWithMarks.reduce((sum, s) => sum + s.average, 0) / studentsWithMarks.length;
+
+      // Calculate subject averages
+      const subjectMap = new Map();
+      studentsWithMarks.forEach(studentData => {
+        studentData.marks.forEach(mark => {
+          const subjectName = mark.subject.name;
+          if (!subjectMap.has(subjectName)) {
+            subjectMap.set(subjectName, []);
+          }
+          subjectMap.get(subjectName).push(mark.score);
+        });
+      });
+
+      const subjectAverages = Array.from(subjectMap.entries()).map(([subject, scores]) => ({
+        subject,
+        average: scores.reduce((a: number, b: number) => a + b, 0) / scores.length
+      })).sort((a, b) => b.average - a.average);
+
+      const selectedPeriodName = periodId 
+        ? examPeriods.find(p => p.id === periodId)?.name 
+        : 'All Periods';
+
+      setClassReportData({
+        className: `Grade ${classKey}`,
+        students: studentsWithMarks,
+        classAverage,
+        subjectAverages,
+        examPeriod: selectedPeriodName
+      });
+
+    } catch (error) {
+      console.error('Error fetching class report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load class report",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingClassReport(false);
+    }
+  };
+
+  const handleDownloadClassReport = async () => {
+    if (!classReportData) {
+      toast({
+        title: "No Class Report Data",
+        description: "Please generate a class report first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoadingClassReport(true);
+      
+      // Show the print view temporarily
+      setShowClassPrintView(true);
+      
+      // Wait for the component to fully render
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      if (!classReportRef.current) {
+        throw new Error('Class report element not found');
+      }
+      
+      const canvas = await html2canvas(classReportRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: classReportRef.current.scrollWidth,
+        height: classReportRef.current.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: true
+      });
+      
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Canvas has invalid dimensions');
+      }
+      
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape for class reports
+      const imgWidth = 297;
+      const pageHeight = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      const fileName = `${classReportData.className.replace(/[^a-zA-Z0-9]/g, '_')}_Class_Report.pdf`;
+      pdf.save(fileName);
+      
+      toast({
+        title: "Download Successful",
+        description: "Class report PDF has been downloaded",
+      });
+      
+    } catch (error) {
+      console.error('Error generating class PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: `Failed to generate PDF: ${error?.message || 'Unknown error'}`,
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingClassReport(false);
+      setShowClassPrintView(false);
+    }
+  };
+
   return (
     <>
       {/* Print View - Hidden by default */}
       {showPrintView && reportData && (
         <div className="fixed top-0 left-0 w-full h-full bg-white z-50 overflow-auto">
           <ReportCard ref={reportCardRef} data={reportData} />
+        </div>
+      )}
+      
+      {/* Class Print View - Hidden by default */}
+      {showClassPrintView && classReportData && (
+        <div className="fixed top-0 left-0 w-full h-full bg-white z-50 overflow-auto">
+          <div ref={classReportRef} className="p-8 bg-white min-h-screen">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold mb-2">{classReportData.className} Performance Report</h1>
+              <p className="text-lg text-gray-600">Academic Period: {classReportData.examPeriod}</p>
+              <p className="text-sm text-gray-500">Class Average: {classReportData.classAverage.toFixed(1)}%</p>
+            </div>
+            
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">Student Rankings</h2>
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border p-2 text-left">Rank</th>
+                    <th className="border p-2 text-left">Student Name</th>
+                    <th className="border p-2 text-left">Admission No.</th>
+                    <th className="border p-2 text-left">Average (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {classReportData.students.map((studentData, index) => (
+                    <tr key={studentData.student.id}>
+                      <td className="border p-2">{studentData.rank}</td>
+                      <td className="border p-2">{studentData.student.full_name}</td>
+                      <td className="border p-2">{studentData.student.admission_number}</td>
+                      <td className="border p-2">{studentData.average.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Subject Performance Summary</h2>
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border p-2 text-left">Subject</th>
+                    <th className="border p-2 text-left">Class Average (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {classReportData.subjectAverages.map((subject) => (
+                    <tr key={subject.subject}>
+                      <td className="border p-2">{subject.subject}</td>
+                      <td className="border p-2">{subject.average.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
       
@@ -517,6 +776,49 @@ const StudentReports = () => {
                 disabled={!selectedStudent || loading}
               >
                 {loading ? 'Generating...' : 'Generate Report'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Class Report Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Class Report</CardTitle>
+            <CardDescription>Generate a comprehensive report for an entire class</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4">
+              <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger className="w-full max-w-md">
+                  <SelectValue placeholder="Select a class..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableClasses.map((classOption) => (
+                    <SelectItem key={classOption.key} value={classOption.key}>
+                      {classOption.label} ({classOption.students.length} students)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedClassPeriod} onValueChange={setSelectedClassPeriod}>
+                <SelectTrigger className="w-full max-w-md">
+                  <SelectValue placeholder="Select exam period..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Periods</SelectItem>
+                  {examPeriods.map((period) => (
+                    <SelectItem key={period.id} value={period.id}>
+                      {period.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={() => selectedClass && fetchClassReport(selectedClass, selectedClassPeriod === 'all' ? undefined : selectedClassPeriod)}
+                disabled={!selectedClass || loadingClassReport}
+              >
+                {loadingClassReport ? 'Generating...' : 'Generate Class Report'}
               </Button>
             </div>
           </CardContent>
@@ -705,6 +1007,97 @@ const StudentReports = () => {
               <CardContent>
                 <div className="bg-accent/10 p-4 rounded-lg">
                   <p className="text-foreground">{generateAdvice(reportData.marks)}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Class Report Results */}
+        {classReportData && (
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">{classReportData.className} Performance Report</CardTitle>
+                    <CardDescription>
+                      Academic Period: {classReportData.examPeriod} • 
+                      Class Average: {classReportData.classAverage.toFixed(1)}%
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleDownloadClassReport} variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Class PDF
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* Student Rankings Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Student Rankings</CardTitle>
+                <CardDescription>Students ranked by overall performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Rank</th>
+                        <th className="text-left p-2">Student Name</th>
+                        <th className="text-left p-2">Admission No.</th>
+                        <th className="text-left p-2">Average (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {classReportData.students.map((studentData) => (
+                        <tr key={studentData.student.id} className="border-b">
+                          <td className="p-2 font-bold">{studentData.rank}</td>
+                          <td className="p-2">{studentData.student.full_name}</td>
+                          <td className="p-2">{studentData.student.admission_number}</td>
+                          <td className="p-2">
+                            <Badge variant={studentData.average >= 70 ? 'default' : studentData.average >= 50 ? 'secondary' : 'destructive'}>
+                              {studentData.average.toFixed(1)}%
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Subject Performance Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Subject Performance Summary</CardTitle>
+                <CardDescription>Class averages by subject (highest to lowest)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Subject</th>
+                        <th className="text-left p-2">Class Average (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {classReportData.subjectAverages.map((subject) => (
+                        <tr key={subject.subject} className="border-b">
+                          <td className="p-2 font-medium">{subject.subject}</td>
+                          <td className="p-2">
+                            <Badge variant={subject.average >= 70 ? 'default' : subject.average >= 50 ? 'secondary' : 'destructive'}>
+                              {subject.average.toFixed(1)}%
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
