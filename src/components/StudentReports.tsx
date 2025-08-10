@@ -68,6 +68,25 @@ interface ClassReportData {
   examPeriod?: string;
 }
 
+interface StreamReportData {
+  streamName: string;
+  totalStudents: number;
+  streamAverage: number;
+  classes: {
+    className: string;
+    students: {
+      student: Student;
+      marks: Mark[];
+      average: number;
+      streamRank: number;
+      classRank: number;
+    }[];
+    classAverage: number;
+  }[];
+  subjectAverages: { subject: string; average: number }[];
+  examPeriod?: string;
+}
+
 const getCBCGrade = (level: string, score: number): string => {
   if (typeof score !== "number" || score < 0 || score > 100) {
     return "Invalid Score";
@@ -121,6 +140,13 @@ const StudentReports = () => {
   const [showClassPeriodSelection, setShowClassPeriodSelection] = useState(false);
   const [showClassPrintView, setShowClassPrintView] = useState(false);
   const [loadingClassReport, setLoadingClassReport] = useState(false);
+  
+  // Stream report states
+  const [streamReportData, setStreamReportData] = useState<StreamReportData | null>(null);
+  const [selectedStream, setSelectedStream] = useState<string>('');
+  const [selectedStreamPeriod, setSelectedStreamPeriod] = useState<string>('');
+  const [showStreamPrintView, setShowStreamPrintView] = useState(false);
+  const [loadingStreamReport, setLoadingStreamReport] = useState(false);
   
   const reportCardRef = useRef<HTMLDivElement>(null);
   const classReportRef = useRef<HTMLDivElement>(null);
@@ -197,6 +223,23 @@ const StudentReports = () => {
     label: `Grade ${classKey}`,
     students: groupedStudents[classKey]
   }));
+
+  // Get unique streams for stream report selection
+  const availableStreams = students.reduce((acc, student) => {
+    if (student.stream) {
+      const existingStream = acc.find(s => s.key === student.stream);
+      if (existingStream) {
+        existingStream.totalStudents++;
+      } else {
+        acc.push({
+          key: student.stream,
+          label: `Stream ${student.stream}`,
+          totalStudents: 1
+        });
+      }
+    }
+    return acc;
+  }, [] as { key: string; label: string; totalStudents: number }[]);
 
   const fetchStudentReport = async (studentId: string, periodId?: string) => {
     setLoading(true);
@@ -746,6 +789,259 @@ const StudentReports = () => {
     }
   };
 
+  const fetchStreamReport = async (streamName: string, periodId?: string) => {
+    setLoadingStreamReport(true);
+    try {
+      // Get all students in the selected stream
+      const streamStudents = students.filter(student => student.stream === streamName);
+      
+      if (streamStudents.length === 0) {
+        throw new Error('No students found in selected stream');
+      }
+
+      // Group students by class within the stream
+      const classGroups = streamStudents.reduce((acc, student) => {
+        const classKey = student.grade;
+        if (!acc[classKey]) {
+          acc[classKey] = [];
+        }
+        acc[classKey].push(student);
+        return acc;
+      }, {} as Record<string, Student[]>);
+
+      // Fetch marks and calculate data for each class
+      const classesData = await Promise.all(
+        Object.entries(classGroups).map(async ([grade, classStudents]) => {
+          const studentsWithMarks = await Promise.all(
+            classStudents.map(async (student) => {
+              let marksQuery = supabase
+                .from('marks')
+                .select(`
+                  id,
+                  score,
+                  grade,
+                  remarks,
+                  subject:subjects(id, name, code, level),
+                  exam_period:exam_periods(id, name, term, start_date, end_date)
+                `)
+                .eq('student_id', student.id);
+
+              if (periodId) {
+                marksQuery = marksQuery.eq('exam_period_id', periodId);
+              }
+
+              const { data: marks } = await marksQuery;
+              const average = calculateOverallAverage(marks || []);
+              
+              return {
+                student,
+                marks: marks || [],
+                average
+              };
+            })
+          );
+
+          // Sort students by average for class ranking
+          studentsWithMarks.sort((a, b) => b.average - a.average);
+          
+          // Add class rankings
+          const studentsWithClassRank = studentsWithMarks.map((studentData, index) => ({
+            ...studentData,
+            classRank: index + 1
+          }));
+
+          const classAverage = studentsWithMarks.reduce((sum, s) => sum + s.average, 0) / studentsWithMarks.length;
+
+          return {
+            className: `Grade ${grade}${streamName}`,
+            students: studentsWithClassRank,
+            classAverage
+          };
+        })
+      );
+
+      // Calculate stream-wide rankings
+      const allStreamStudents = classesData.flatMap(classData => 
+        classData.students.map(s => ({ ...s, className: classData.className }))
+      );
+      
+      allStreamStudents.sort((a, b) => b.average - a.average);
+      
+      // Add stream rankings
+      const classesWithStreamRank = classesData.map(classData => ({
+        ...classData,
+        students: classData.students.map(studentData => {
+          const streamRank = allStreamStudents.findIndex(s => s.student.id === studentData.student.id) + 1;
+          return {
+            ...studentData,
+            streamRank
+          };
+        })
+      }));
+
+      // Calculate stream-wide subject averages
+      const subjectAverages = calculateStreamSubjectAverages(allStreamStudents);
+      const streamAverage = allStreamStudents.reduce((sum, s) => sum + s.average, 0) / allStreamStudents.length;
+
+      const examPeriod = periodId 
+        ? examPeriods.find(p => p.id === periodId)?.name || 'Selected Period'
+        : 'All Periods';
+
+      setStreamReportData({
+        streamName: `Stream ${streamName}`,
+        totalStudents: streamStudents.length,
+        streamAverage,
+        classes: classesWithStreamRank,
+        subjectAverages,
+        examPeriod
+      });
+
+      toast({
+        title: "Stream Report Generated",
+        description: `Report generated for ${streamStudents.length} students in Stream ${streamName}`,
+      });
+
+    } catch (error) {
+      console.error('Error fetching stream report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate stream report",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStreamReport(false);
+    }
+  };
+
+  const calculateStreamSubjectAverages = (students: any[]) => {
+    const subjectMap = new Map();
+    
+    students.forEach(studentData => {
+      studentData.marks.forEach((mark: Mark) => {
+        const subjectName = mark.subject.name;
+        if (!subjectMap.has(subjectName)) {
+          subjectMap.set(subjectName, { scores: [], subject: subjectName });
+        }
+        subjectMap.get(subjectName).scores.push(mark.score);
+      });
+    });
+    
+    return Array.from(subjectMap.values())
+      .map(subject => ({
+        subject: subject.subject,
+        average: subject.scores.reduce((a: number, b: number) => a + b, 0) / subject.scores.length
+      }))
+      .sort((a, b) => b.average - a.average);
+  };
+
+  const handleDownloadStreamReport = async () => {
+    if (!streamReportData) {
+      toast({
+        title: "No Report Data",
+        description: "Please generate a stream report first before downloading",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoadingStreamReport(true);
+      console.log('Starting stream PDF generation...');
+      
+      setShowStreamPrintView(true);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (!streamReportRef.current) {
+        throw new Error('Stream report element not found');
+      }
+
+      const canvas = await html2canvas(streamReportRef.current, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: true,
+        width: streamReportRef.current.scrollWidth,
+        height: streamReportRef.current.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: true,
+        imageTimeout: 30000,
+        onclone: (clonedDoc) => {
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((element) => {
+            const htmlElement = element as HTMLElement;
+            if (htmlElement.style) {
+              htmlElement.style.fontFamily = 'Arial, "Helvetica Neue", Helvetica, sans-serif';
+              htmlElement.style.setProperty('-webkit-font-smoothing', 'antialiased');
+              htmlElement.style.setProperty('-moz-osx-font-smoothing', 'grayscale');
+              htmlElement.style.setProperty('text-rendering', 'optimizeLegibility');
+              
+              if (htmlElement.tagName.toLowerCase().includes('text') || 
+                  htmlElement.tagName === 'P' || 
+                  htmlElement.tagName === 'SPAN' ||
+                  htmlElement.tagName === 'DIV') {
+                htmlElement.style.color = '#000000';
+              }
+            }
+          });
+        }
+      });
+      
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Canvas has invalid dimensions');
+      }
+      
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+        compress: false,
+        precision: 16
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+      heightLeft -= pdfHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= pdfHeight;
+      }
+      
+      const fileName = `${streamReportData.streamName.replace(/[^a-zA-Z0-9]/g, '_')}_Stream_Report.pdf`;
+      pdf.save(fileName);
+      
+      toast({
+        title: "Download Successful",
+        description: "Stream report PDF has been downloaded",
+      });
+      
+    } catch (error) {
+      console.error('Error generating stream PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: `Failed to generate PDF: ${error?.message || 'Unknown error'}`,
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStreamReport(false);
+      setShowStreamPrintView(false);
+    }
+  };
+
+  const streamReportRef = useRef<HTMLDivElement>(null);
+
   return (
     <>
       {/* Print View - Hidden by default */}
@@ -800,6 +1096,94 @@ const StudentReports = () => {
                 </thead>
                 <tbody>
                   {classReportData.subjectAverages.map((subject) => (
+                    <tr key={subject.subject}>
+                      <td className="border p-2">{subject.subject}</td>
+                      <td className="border p-2">{subject.average.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stream Print View - Hidden by default */}
+      {showStreamPrintView && streamReportData && (
+        <div className="fixed top-0 left-0 w-full h-full bg-white z-50 overflow-auto">
+          <div ref={streamReportRef} className="p-8 bg-white min-h-screen">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold mb-2">{streamReportData.streamName} Performance Report</h1>
+              <p className="text-lg text-gray-600">Academic Period: {streamReportData.examPeriod}</p>
+              <p className="text-sm text-gray-500">
+                Stream Average: {streamReportData.streamAverage.toFixed(1)}% • 
+                Total Students: {streamReportData.totalStudents}
+              </p>
+            </div>
+            
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">Stream Rankings</h2>
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border p-2 text-left">Stream Rank</th>
+                    <th className="border p-2 text-left">Class Rank</th>
+                    <th className="border p-2 text-left">Student Name</th>
+                    <th className="border p-2 text-left">Class</th>
+                    <th className="border p-2 text-left">Admission No.</th>
+                    <th className="border p-2 text-left">Average (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {streamReportData.classes.flatMap(classData =>
+                    classData.students.map((studentData) => (
+                      <tr key={studentData.student.id}>
+                        <td className="border p-2 font-bold">{studentData.streamRank}</td>
+                        <td className="border p-2">{studentData.classRank}</td>
+                        <td className="border p-2">{studentData.student.full_name}</td>
+                        <td className="border p-2">{classData.className}</td>
+                        <td className="border p-2">{studentData.student.admission_number}</td>
+                        <td className="border p-2">{studentData.average.toFixed(1)}%</td>
+                      </tr>
+                    ))
+                  ).sort((a, b) => parseInt(a.props.children[0].props.children) - parseInt(b.props.children[0].props.children))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">Class Performance Summary</h2>
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border p-2 text-left">Class</th>
+                    <th className="border p-2 text-left">Students</th>
+                    <th className="border p-2 text-left">Class Average (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {streamReportData.classes.map((classData) => (
+                    <tr key={classData.className}>
+                      <td className="border p-2">{classData.className}</td>
+                      <td className="border p-2">{classData.students.length}</td>
+                      <td className="border p-2">{classData.classAverage.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Subject Performance Summary</h2>
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border p-2 text-left">Subject</th>
+                    <th className="border p-2 text-left">Stream Average (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {streamReportData.subjectAverages.map((subject) => (
                     <tr key={subject.subject}>
                       <td className="border p-2">{subject.subject}</td>
                       <td className="border p-2">{subject.average.toFixed(1)}%</td>
@@ -910,6 +1294,49 @@ const StudentReports = () => {
                 disabled={!selectedClass || loadingClassReport}
               >
                 {loadingClassReport ? 'Generating...' : 'Generate Class Report'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stream Report Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Entire Stream Report</CardTitle>
+            <CardDescription>Generate a comprehensive report for all students across all classes in a stream</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4">
+              <Select value={selectedStream} onValueChange={setSelectedStream}>
+                <SelectTrigger className="w-full max-w-md">
+                  <SelectValue placeholder="Select a stream..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableStreams.map((streamOption) => (
+                    <SelectItem key={streamOption.key} value={streamOption.key}>
+                      {streamOption.label} ({streamOption.totalStudents} students)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedStreamPeriod} onValueChange={setSelectedStreamPeriod}>
+                <SelectTrigger className="w-full max-w-md">
+                  <SelectValue placeholder="Select exam period..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Periods</SelectItem>
+                  {examPeriods.map((period) => (
+                    <SelectItem key={period.id} value={period.id}>
+                      {period.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={() => selectedStream && fetchStreamReport(selectedStream, selectedStreamPeriod === 'all' ? undefined : selectedStreamPeriod)}
+                disabled={!selectedStream || loadingStreamReport}
+              >
+                {loadingStreamReport ? 'Generating...' : 'Generate Stream Report'}
               </Button>
             </div>
           </CardContent>
@@ -1178,6 +1605,142 @@ const StudentReports = () => {
                     </thead>
                     <tbody>
                       {classReportData.subjectAverages.map((subject) => (
+                        <tr key={subject.subject} className="border-b">
+                          <td className="p-2 font-medium">{subject.subject}</td>
+                          <td className="p-2">
+                            <Badge variant={subject.average >= 70 ? 'default' : subject.average >= 50 ? 'secondary' : 'destructive'}>
+                              {subject.average.toFixed(1)}%
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Stream Report Results */}
+        {streamReportData && (
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">{streamReportData.streamName} Performance Report</CardTitle>
+                    <CardDescription>
+                      Academic Period: {streamReportData.examPeriod} • 
+                      Stream Average: {streamReportData.streamAverage.toFixed(1)}% • 
+                      Total Students: {streamReportData.totalStudents}
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleDownloadStreamReport} variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Stream PDF
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* Stream Rankings Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Stream Rankings</CardTitle>
+                <CardDescription>All students ranked by stream-wide performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Stream Rank</th>
+                        <th className="text-left p-2">Class Rank</th>
+                        <th className="text-left p-2">Student Name</th>
+                        <th className="text-left p-2">Class</th>
+                        <th className="text-left p-2">Average (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {streamReportData.classes
+                        .flatMap(classData => 
+                          classData.students.map(studentData => ({
+                            ...studentData,
+                            className: classData.className
+                          }))
+                        )
+                        .sort((a, b) => a.streamRank - b.streamRank)
+                        .map((studentData) => (
+                          <tr key={studentData.student.id} className="border-b">
+                            <td className="p-2 font-bold">{studentData.streamRank}</td>
+                            <td className="p-2">{studentData.classRank}</td>
+                            <td className="p-2">{studentData.student.full_name}</td>
+                            <td className="p-2">{studentData.className}</td>
+                            <td className="p-2">
+                              <Badge variant={studentData.average >= 70 ? 'default' : studentData.average >= 50 ? 'secondary' : 'destructive'}>
+                                {studentData.average.toFixed(1)}%
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Class Performance Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Class Performance Summary</CardTitle>
+                <CardDescription>Performance overview by class within the stream</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Class</th>
+                        <th className="text-left p-2">Students</th>
+                        <th className="text-left p-2">Class Average (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {streamReportData.classes.map((classData) => (
+                        <tr key={classData.className} className="border-b">
+                          <td className="p-2 font-medium">{classData.className}</td>
+                          <td className="p-2">{classData.students.length}</td>
+                          <td className="p-2">
+                            <Badge variant={classData.classAverage >= 70 ? 'default' : classData.classAverage >= 50 ? 'secondary' : 'destructive'}>
+                              {classData.classAverage.toFixed(1)}%
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Subject Performance Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Subject Performance Summary</CardTitle>
+                <CardDescription>Stream averages by subject (highest to lowest)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Subject</th>
+                        <th className="text-left p-2">Stream Average (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {streamReportData.subjectAverages.map((subject) => (
                         <tr key={subject.subject} className="border-b">
                           <td className="p-2 font-medium">{subject.subject}</td>
                           <td className="p-2">
