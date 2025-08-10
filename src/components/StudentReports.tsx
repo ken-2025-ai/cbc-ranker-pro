@@ -612,7 +612,7 @@ const StudentReports = () => {
       }
       
       const canvas = await html2canvas(classReportRef.current, {
-        scale: 3,
+        scale: 4, // Increased for 300+ DPI quality
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
@@ -622,16 +622,20 @@ const StudentReports = () => {
         scrollX: 0,
         scrollY: 0,
         removeContainer: true,
-        imageTimeout: 15000,
+        imageTimeout: 20000,
+        
         onclone: (clonedDoc) => {
-          // Apply font styling for better text rendering
+          // Apply high-quality font styling for crisp text
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach((element) => {
             const htmlElement = element as HTMLElement;
             if (htmlElement.style) {
-              htmlElement.style.fontFamily = 'Arial, sans-serif';
+              htmlElement.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+              htmlElement.style.fontSize = `${parseFloat(getComputedStyle(htmlElement).fontSize) * 1.2}px`;
               htmlElement.style.setProperty('-webkit-font-smoothing', 'antialiased');
               htmlElement.style.setProperty('-moz-osx-font-smoothing', 'grayscale');
+              htmlElement.style.setProperty('text-rendering', 'optimizeLegibility');
+              htmlElement.style.setProperty('font-variant-ligatures', 'none');
             }
           });
         }
@@ -641,8 +645,18 @@ const StudentReports = () => {
         throw new Error('Canvas has invalid dimensions');
       }
       
+      // Generate high-quality PNG for better text clarity
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape for class reports
+      
+      // Create PDF with high-resolution settings
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+        precision: 2
+      });
+      
       const imgWidth = 297;
       const pageHeight = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
