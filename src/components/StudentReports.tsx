@@ -80,10 +80,15 @@ interface StreamReportData {
       average: number;
       streamRank: number;
       classRank: number;
+      subjectScores?: Record<string, number>;
+      totalMarks?: number;
+      overallRank?: number;
+      subjectCount?: number;
     }[];
     classAverage: number;
   }[];
-  subjectAverages: { subject: string; average: number }[];
+  subjectAverages?: { subject: string; average: number }[];
+  allSubjects?: string[];
   examPeriod?: string;
 }
 
@@ -819,18 +824,8 @@ const StudentReports = () => {
         throw new Error('No students found in selected class');
       }
 
-      // Group students by stream within the class
-      const streamGroups = classStudents.reduce((acc, student) => {
-        const streamKey = student.stream || 'No Stream';
-        if (!acc[streamKey]) {
-          acc[streamKey] = [];
-        }
-        acc[streamKey].push(student);
-        return acc;
-      }, {} as Record<string, Student[]>);
-
-      // Fetch marks for ALL students first to enable cross-stream ranking
-      const allStudentsWithMarks = await Promise.all(
+      // Fetch marks for all students
+      const studentsWithMarks = await Promise.all(
         classStudents.map(async (student) => {
           let marksQuery = supabase
             .from('marks')
@@ -849,40 +844,60 @@ const StudentReports = () => {
           }
 
           const { data: marks } = await marksQuery;
-          const average = calculateOverallAverage(marks || []);
+
+          const validMarks = marks?.filter(mark => mark.subject && mark.score !== null) || [];
           
+          // Create subject scores object for easy access
+          const subjectScores = validMarks.reduce((acc, mark) => {
+            acc[mark.subject.name] = Number(mark.score);
+            return acc;
+          }, {} as Record<string, number>);
+
+          const totalMarks = validMarks.reduce((sum, mark) => sum + Number(mark.score), 0);
+          const average = validMarks.length > 0 ? totalMarks / validMarks.length : 0;
+
           return {
             student,
-            marks: marks || [],
-            average
+            marks: validMarks,
+            subjectScores,
+            totalMarks,
+            average,
+            subjectCount: validMarks.length
           };
         })
       );
 
-      // Sort ALL students by average for overall grade ranking
-      allStudentsWithMarks.sort((a, b) => b.average - a.average);
-      
-      // Add overall grade rankings to each student
-      const allStudentsWithGradeRank = allStudentsWithMarks.map((studentData, index) => ({
-        ...studentData,
-        gradeRank: index + 1
+      // Get all unique subjects across all students for table headers
+      const allSubjects = Array.from(new Set(
+        studentsWithMarks.flatMap(studentData => 
+          studentData.marks.map(mark => mark.subject.name)
+        )
+      )).sort();
+
+      // Sort by total marks (descending) and assign ranks
+      const sortedStudents = studentsWithMarks.sort((a, b) => b.totalMarks - a.totalMarks);
+      const studentsWithRanks = sortedStudents.map((student, index) => ({
+        ...student,
+        overallRank: index + 1
       }));
 
-      // Now group the ranked students by stream
-      const streamsData = Object.entries(streamGroups).map(([streamName, streamStudents]) => {
-        // Get the student data for this stream
-        const streamStudentData = allStudentsWithGradeRank.filter(
-          studentData => (studentData.student.stream || 'No Stream') === streamName
-        );
+      // Group by stream for additional analysis
+      const streamGroups = studentsWithRanks.reduce((acc, studentData) => {
+        const streamName = studentData.student.stream || 'No Stream';
+        if (!acc[streamName]) {
+          acc[streamName] = [];
+        }
+        acc[streamName].push(studentData);
+        return acc;
+      }, {} as Record<string, typeof studentsWithRanks>);
 
-        // Sort within stream for stream rankings
-        streamStudentData.sort((a, b) => b.average - a.average);
-        
-        // Add stream rankings
+      // Create stream data with rankings within each stream
+      const streamsData = Object.entries(streamGroups).map(([streamName, streamStudents]) => {
+        const streamStudentData = streamStudents.sort((a, b) => b.totalMarks - a.totalMarks);
         const studentsWithStreamRank = streamStudentData.map((studentData, index) => ({
           ...studentData,
           streamRank: index + 1,
-          classRank: studentData.gradeRank // Use grade rank as class rank
+          classRank: studentData.overallRank // Use overall rank as class rank
         }));
 
         const streamAverage = streamStudentData.reduce((sum, s) => sum + s.average, 0) / streamStudentData.length;
@@ -894,11 +909,9 @@ const StudentReports = () => {
         };
       });
 
-      // Calculate overall statistics
-      const subjectAverages = calculateStreamSubjectAverages(allStudentsWithGradeRank);
-      const overallAverage = allStudentsWithGradeRank.reduce((sum, s) => sum + s.average, 0) / allStudentsWithGradeRank.length;
+      const overallAverage = studentsWithRanks.reduce((sum, s) => sum + s.average, 0) / studentsWithRanks.length;
 
-      const examPeriod = periodId 
+      const examPeriodName = periodId 
         ? examPeriods.find(p => p.id === periodId)?.name || 'Selected Period'
         : 'All Periods';
 
@@ -907,8 +920,8 @@ const StudentReports = () => {
         totalStudents: classStudents.length,
         streamAverage: overallAverage,
         classes: streamsData,
-        subjectAverages,
-        examPeriod
+        examPeriod: examPeriodName,
+        allSubjects
       });
 
       toast({
@@ -1659,22 +1672,25 @@ const StudentReports = () => {
               </CardHeader>
             </Card>
 
-            {/* Stream Rankings Card */}
+            {/* Detailed Subject Scores Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Stream Rankings</CardTitle>
-                <CardDescription>All students ranked by stream-wide performance</CardDescription>
+                <CardTitle>Detailed Performance Report</CardTitle>
+                <CardDescription>Individual subject scores and rankings for all students</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                  <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left p-2">Stream Rank</th>
-                        <th className="text-left p-2">Class Rank</th>
-                        <th className="text-left p-2">Student Name</th>
-                        <th className="text-left p-2">Class</th>
-                        <th className="text-left p-2">Average (%)</th>
+                        <th className="text-left p-2 font-semibold">Rank</th>
+                        <th className="text-left p-2 font-semibold">Student Name</th>
+                        <th className="text-left p-2 font-semibold">Class/Stream</th>
+                        {streamReportData.allSubjects?.map(subject => (
+                          <th key={subject} className="text-center p-2 font-semibold">{subject}</th>
+                        ))}
+                        <th className="text-center p-2 font-semibold">Total</th>
+                        <th className="text-center p-2 font-semibold">Mean</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1685,14 +1701,36 @@ const StudentReports = () => {
                             className: classData.className
                           }))
                         )
-                        .sort((a, b) => a.streamRank - b.streamRank)
+                        .sort((a, b) => (a.overallRank || 0) - (b.overallRank || 0))
                         .map((studentData) => (
-                          <tr key={studentData.student.id} className="border-b">
-                            <td className="p-2 font-bold">{studentData.streamRank}</td>
-                            <td className="p-2">{studentData.classRank}</td>
-                            <td className="p-2">{studentData.student.full_name}</td>
+                          <tr key={studentData.student.id} className="border-b hover:bg-muted/50">
+                            <td className="p-2 font-bold text-center">{studentData.overallRank || studentData.classRank}</td>
+                            <td className="p-2 font-medium">{studentData.student.full_name}</td>
                             <td className="p-2">{studentData.className}</td>
-                            <td className="p-2">
+                            {streamReportData.allSubjects?.map(subject => (
+                              <td key={subject} className="p-2 text-center">
+                                {studentData.subjectScores?.[subject] ? (
+                                  <Badge 
+                                    variant={
+                                      studentData.subjectScores[subject] >= 80 ? 'default' : 
+                                      studentData.subjectScores[subject] >= 60 ? 'secondary' : 
+                                      'destructive'
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {studentData.subjectScores[subject]}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </td>
+                            ))}
+                            <td className="p-2 text-center font-semibold">
+                              <Badge variant="outline">
+                                {studentData.totalMarks || Math.round(studentData.average * (studentData.subjectCount || 0))}
+                              </Badge>
+                            </td>
+                            <td className="p-2 text-center">
                               <Badge variant={studentData.average >= 70 ? 'default' : studentData.average >= 50 ? 'secondary' : 'destructive'}>
                                 {studentData.average.toFixed(1)}%
                               </Badge>
