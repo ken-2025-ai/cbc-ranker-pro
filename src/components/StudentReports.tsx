@@ -1686,7 +1686,7 @@ const StudentReports = () => {
                         <th className="text-left p-2 font-semibold">Rank</th>
                         <th className="text-left p-2 font-semibold">Student Name</th>
                         <th className="text-left p-2 font-semibold">Class/Stream</th>
-                        {streamReportData.allSubjects?.map(subject => (
+                        {(streamReportData.allSubjects || []).map(subject => (
                           <th key={subject} className="text-center p-2 font-semibold">{subject}</th>
                         ))}
                         <th className="text-center p-2 font-semibold">Total</th>
@@ -1707,7 +1707,7 @@ const StudentReports = () => {
                             <td className="p-2 font-bold text-center">{studentData.overallRank || studentData.classRank}</td>
                             <td className="p-2 font-medium">{studentData.student.full_name}</td>
                             <td className="p-2">{studentData.className}</td>
-                            {streamReportData.allSubjects?.map(subject => (
+                            {(streamReportData.allSubjects || []).map(subject => (
                               <td key={subject} className="p-2 text-center">
                                 {studentData.subjectScores?.[subject] ? (
                                   <Badge 
