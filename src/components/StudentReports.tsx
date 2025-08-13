@@ -217,7 +217,24 @@ const StudentReports = () => {
     return acc;
   }, {} as Record<string, Student[]>);
 
-  // Get unique classes for class report selection
+  // Get unique class levels (numeric parts) for class report selection
+  const availableClassLevels = students.reduce((acc, student) => {
+    // Extract numeric part from grade (e.g., "9" from "9A" or "10" from "10B")
+    const numericGrade = student.grade.match(/^\d+/)?.[0];
+    if (numericGrade && !acc.find(c => c.key === numericGrade)) {
+      const studentsInLevel = students.filter(s => s.grade.startsWith(numericGrade));
+      const streams = [...new Set(studentsInLevel.map(s => s.stream).filter(Boolean))];
+      acc.push({
+        key: numericGrade,
+        label: `Class ${numericGrade} (${streams.length} streams: ${streams.join(', ')})`,
+        students: studentsInLevel
+      });
+    }
+    return acc;
+  }, [] as { key: string; label: string; students: Student[] }[])
+    .sort((a, b) => parseInt(a.key) - parseInt(b.key));
+
+  // Keep the old groupedStudents logic for individual class selection
   const availableClasses = Object.keys(groupedStudents).map(classKey => ({
     key: classKey,
     label: `Grade ${classKey}`,
@@ -789,11 +806,14 @@ const StudentReports = () => {
     }
   };
 
-  const fetchStreamReport = async (className: string, periodId?: string) => {
+  const fetchStreamReport = async (classLevel: string, periodId?: string) => {
     setLoadingStreamReport(true);
     try {
-      // Get all students in the selected class (single grade with all streams)
-      const classStudents = students.filter(student => student.grade === className);
+      // Get all students in the selected class level (all streams within that numeric level)
+      const classStudents = students.filter(student => {
+        const numericGrade = student.grade.match(/^\d+/)?.[0];
+        return numericGrade === classLevel;
+      });
       
       if (classStudents.length === 0) {
         throw new Error('No students found in selected class');
@@ -868,7 +888,7 @@ const StudentReports = () => {
         const streamAverage = streamStudentData.reduce((sum, s) => sum + s.average, 0) / streamStudentData.length;
 
         return {
-          className: `${className} ${streamName}`,
+          className: `${classLevel}${streamName}`,
           students: studentsWithStreamRank,
           classAverage: streamAverage
         };
@@ -883,7 +903,7 @@ const StudentReports = () => {
         : 'All Periods';
 
       setStreamReportData({
-        streamName: `Grade ${className} - Cross-Stream Rankings`,
+        streamName: `Class ${classLevel} - Cross-Stream Rankings`,
         totalStudents: classStudents.length,
         streamAverage: overallAverage,
         classes: streamsData,
@@ -1298,18 +1318,18 @@ const StudentReports = () => {
         <Card>
           <CardHeader>
             <CardTitle>Entire Stream Report</CardTitle>
-            <CardDescription>Generate a comprehensive report for all students across all classes in a stream</CardDescription>
+            <CardDescription>Generate a cross-stream ranking report for all students within a selected class level (e.g., Class 9 includes 9A, 9B, 9C)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-4">
               <Select value={selectedStream} onValueChange={setSelectedStream}>
                 <SelectTrigger className="w-full max-w-md">
-                  <SelectValue placeholder="Select a stream..." />
+                  <SelectValue placeholder="Select a class level..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableStreams.map((streamOption) => (
-                    <SelectItem key={streamOption.key} value={streamOption.key}>
-                      {streamOption.label} ({streamOption.totalStudents} students)
+                  {availableClassLevels.map((classLevel) => (
+                    <SelectItem key={classLevel.key} value={classLevel.key}>
+                      {classLevel.label} ({classLevel.students.length} students)
                     </SelectItem>
                   ))}
                 </SelectContent>
