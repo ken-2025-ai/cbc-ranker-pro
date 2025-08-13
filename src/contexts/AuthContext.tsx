@@ -74,12 +74,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Check for existing session on mount
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Session error:', error);
+          setLoading(false);
+          return;
+        }
+        
+        if (session) {
+          setSession(session);
+          setUser(session.user);
+          // Trigger user data fetch if we have a session
+          if (session.user) {
+            const { data: institutionUser } = await supabase
+              .from('institution_users')
+              .select('institution_id, role')
+              .eq('user_id', session.user.id)
+              .single();
+            
+            if (institutionUser) {
+              setInstitutionId(institutionUser.institution_id);
+              setUserRole(institutionUser.role);
+              console.log('Institution loaded:', institutionUser.institution_id);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error getting initial session:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
 
     return () => subscription.unsubscribe();
   }, []);
