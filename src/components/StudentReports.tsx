@@ -1694,9 +1694,9 @@ const StudentReports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {streamReportData.classes
+                      {(streamReportData.classes || [])
                         .flatMap(classData => 
-                          classData.students.map(studentData => ({
+                          (classData.students || []).map(studentData => ({
                             ...studentData,
                             className: classData.className
                           }))
