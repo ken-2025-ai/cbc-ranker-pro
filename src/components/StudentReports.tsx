@@ -789,29 +789,29 @@ const StudentReports = () => {
     }
   };
 
-  const fetchStreamReport = async (streamName: string, periodId?: string) => {
+  const fetchStreamReport = async (className: string, periodId?: string) => {
     setLoadingStreamReport(true);
     try {
-      // Get all students in the selected stream
-      const streamStudents = students.filter(student => student.stream === streamName);
+      // Get all students in the selected class (single grade with all streams)
+      const classStudents = students.filter(student => student.grade === className);
       
-      if (streamStudents.length === 0) {
-        throw new Error('No students found in selected stream');
+      if (classStudents.length === 0) {
+        throw new Error('No students found in selected class');
       }
 
-      // Group students by class within the stream
-      const classGroups = streamStudents.reduce((acc, student) => {
-        const classKey = student.grade;
-        if (!acc[classKey]) {
-          acc[classKey] = [];
+      // Group students by stream within the class
+      const streamGroups = classStudents.reduce((acc, student) => {
+        const streamKey = student.stream || 'No Stream';
+        if (!acc[streamKey]) {
+          acc[streamKey] = [];
         }
-        acc[classKey].push(student);
+        acc[streamKey].push(student);
         return acc;
       }, {} as Record<string, Student[]>);
 
-      // Fetch marks and calculate data for each class
-      const classesData = await Promise.all(
-        Object.entries(classGroups).map(async ([grade, classStudents]) => {
+      // Fetch marks and calculate data for each stream
+      const streamsData = await Promise.all(
+        Object.entries(streamGroups).map(async ([streamName, streamStudents]) => {
           const studentsWithMarks = await Promise.all(
             classStudents.map(async (student) => {
               let marksQuery = supabase
@@ -853,52 +853,53 @@ const StudentReports = () => {
           const classAverage = studentsWithMarks.reduce((sum, s) => sum + s.average, 0) / studentsWithMarks.length;
 
           return {
-            className: `Grade ${grade}${streamName}`,
+            className: `${className}${streamName}`,
             students: studentsWithClassRank,
             classAverage
           };
         })
       );
 
-      // Calculate stream-wide rankings
-      const allStreamStudents = classesData.flatMap(classData => 
-        classData.students.map(s => ({ ...s, className: classData.className }))
+      // Calculate class-wide rankings
+      const allClassStudents = streamsData.flatMap(streamData => 
+        streamData.students.map(s => ({ ...s, streamName: streamData.className }))
       );
       
-      allStreamStudents.sort((a, b) => b.average - a.average);
+      allClassStudents.sort((a, b) => b.average - a.average);
       
-      // Add stream rankings
-      const classesWithStreamRank = classesData.map(classData => ({
-        ...classData,
-        students: classData.students.map(studentData => {
-          const streamRank = allStreamStudents.findIndex(s => s.student.id === studentData.student.id) + 1;
+      // Add class rankings
+      const streamsWithClassRank = streamsData.map(streamData => ({
+        ...streamData,
+        students: streamData.students.map(studentData => {
+          const classRank = allClassStudents.findIndex(s => s.student.id === studentData.student.id) + 1;
           return {
             ...studentData,
-            streamRank
+            streamRank: classRank, // For compatibility with the interface
+            classRank
           };
         })
       }));
 
-      // Calculate stream-wide subject averages
-      const subjectAverages = calculateStreamSubjectAverages(allStreamStudents);
-      const streamAverage = allStreamStudents.reduce((sum, s) => sum + s.average, 0) / allStreamStudents.length;
+      // Calculate class-wide subject averages
+      const subjectAverages = calculateStreamSubjectAverages(allClassStudents);
+      const classAverage = allClassStudents.reduce((sum, s) => sum + s.average, 0) / allClassStudents.length;
 
       const examPeriod = periodId 
         ? examPeriods.find(p => p.id === periodId)?.name || 'Selected Period'
         : 'All Periods';
 
       setStreamReportData({
-        streamName: `Stream ${streamName}`,
-        totalStudents: streamStudents.length,
-        streamAverage,
-        classes: classesWithStreamRank,
+        streamName: `Grade ${className} - All Streams`,
+        totalStudents: classStudents.length,
+        streamAverage: classAverage,
+        classes: streamsWithClassRank,
         subjectAverages,
         examPeriod
       });
 
       toast({
-        title: "Stream Report Generated",
-        description: `Report generated for ${streamStudents.length} students in Stream ${streamName}`,
+        title: "Class Report Generated",
+        description: `Report generated for ${classStudents.length} students across all streams`,
       });
 
     } catch (error) {
