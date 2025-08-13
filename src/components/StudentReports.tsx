@@ -809,97 +809,91 @@ const StudentReports = () => {
         return acc;
       }, {} as Record<string, Student[]>);
 
-      // Fetch marks and calculate data for each stream
-      const streamsData = await Promise.all(
-        Object.entries(streamGroups).map(async ([streamName, streamStudents]) => {
-          const studentsWithMarks = await Promise.all(
-            classStudents.map(async (student) => {
-              let marksQuery = supabase
-                .from('marks')
-                .select(`
-                  id,
-                  score,
-                  grade,
-                  remarks,
-                  subject:subjects(id, name, code, level),
-                  exam_period:exam_periods(id, name, term, start_date, end_date)
-                `)
-                .eq('student_id', student.id);
+      // Fetch marks for ALL students first to enable cross-stream ranking
+      const allStudentsWithMarks = await Promise.all(
+        classStudents.map(async (student) => {
+          let marksQuery = supabase
+            .from('marks')
+            .select(`
+              id,
+              score,
+              grade,
+              remarks,
+              subject:subjects(id, name, code, level),
+              exam_period:exam_periods(id, name, term, start_date, end_date)
+            `)
+            .eq('student_id', student.id);
 
-              if (periodId) {
-                marksQuery = marksQuery.eq('exam_period_id', periodId);
-              }
+          if (periodId) {
+            marksQuery = marksQuery.eq('exam_period_id', periodId);
+          }
 
-              const { data: marks } = await marksQuery;
-              const average = calculateOverallAverage(marks || []);
-              
-              return {
-                student,
-                marks: marks || [],
-                average
-              };
-            })
-          );
-
-          // Sort students by average for class ranking
-          studentsWithMarks.sort((a, b) => b.average - a.average);
+          const { data: marks } = await marksQuery;
+          const average = calculateOverallAverage(marks || []);
           
-          // Add class rankings
-          const studentsWithClassRank = studentsWithMarks.map((studentData, index) => ({
-            ...studentData,
-            classRank: index + 1
-          }));
-
-          const classAverage = studentsWithMarks.reduce((sum, s) => sum + s.average, 0) / studentsWithMarks.length;
-
           return {
-            className: `${className}${streamName}`,
-            students: studentsWithClassRank,
-            classAverage
+            student,
+            marks: marks || [],
+            average
           };
         })
       );
 
-      // Calculate class-wide rankings
-      const allClassStudents = streamsData.flatMap(streamData => 
-        streamData.students.map(s => ({ ...s, streamName: streamData.className }))
-      );
+      // Sort ALL students by average for overall grade ranking
+      allStudentsWithMarks.sort((a, b) => b.average - a.average);
       
-      allClassStudents.sort((a, b) => b.average - a.average);
-      
-      // Add class rankings
-      const streamsWithClassRank = streamsData.map(streamData => ({
-        ...streamData,
-        students: streamData.students.map(studentData => {
-          const classRank = allClassStudents.findIndex(s => s.student.id === studentData.student.id) + 1;
-          return {
-            ...studentData,
-            streamRank: classRank, // For compatibility with the interface
-            classRank
-          };
-        })
+      // Add overall grade rankings to each student
+      const allStudentsWithGradeRank = allStudentsWithMarks.map((studentData, index) => ({
+        ...studentData,
+        gradeRank: index + 1
       }));
 
-      // Calculate class-wide subject averages
-      const subjectAverages = calculateStreamSubjectAverages(allClassStudents);
-      const classAverage = allClassStudents.reduce((sum, s) => sum + s.average, 0) / allClassStudents.length;
+      // Now group the ranked students by stream
+      const streamsData = Object.entries(streamGroups).map(([streamName, streamStudents]) => {
+        // Get the student data for this stream
+        const streamStudentData = allStudentsWithGradeRank.filter(
+          studentData => (studentData.student.stream || 'No Stream') === streamName
+        );
+
+        // Sort within stream for stream rankings
+        streamStudentData.sort((a, b) => b.average - a.average);
+        
+        // Add stream rankings
+        const studentsWithStreamRank = streamStudentData.map((studentData, index) => ({
+          ...studentData,
+          streamRank: index + 1,
+          classRank: studentData.gradeRank // Use grade rank as class rank
+        }));
+
+        const streamAverage = streamStudentData.reduce((sum, s) => sum + s.average, 0) / streamStudentData.length;
+
+        return {
+          className: `${className} ${streamName}`,
+          students: studentsWithStreamRank,
+          classAverage: streamAverage
+        };
+      });
+
+      // Calculate overall statistics
+      const subjectAverages = calculateStreamSubjectAverages(allStudentsWithGradeRank);
+      const overallAverage = allStudentsWithGradeRank.reduce((sum, s) => sum + s.average, 0) / allStudentsWithGradeRank.length;
 
       const examPeriod = periodId 
         ? examPeriods.find(p => p.id === periodId)?.name || 'Selected Period'
         : 'All Periods';
 
       setStreamReportData({
-        streamName: `Grade ${className} - All Streams`,
+        streamName: `Grade ${className} - Cross-Stream Rankings`,
         totalStudents: classStudents.length,
-        streamAverage: classAverage,
-        classes: streamsWithClassRank,
+        streamAverage: overallAverage,
+        classes: streamsData,
         subjectAverages,
         examPeriod
       });
 
       toast({
-        title: "Class Report Generated",
-        description: `Report generated for ${classStudents.length} students across all streams`,
+        title: "Stream Comparison Report Generated",
+        description: `Report generated for ${classStudents.length} students across ${Object.keys(streamGroups).length} streams with cross-stream rankings`,
       });
 
     } catch (error) {
