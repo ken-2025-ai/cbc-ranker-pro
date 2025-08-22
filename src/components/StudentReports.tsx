@@ -87,8 +87,8 @@ interface StreamReportData {
     }[];
     classAverage: number;
   }[];
-  subjectAverages?: { subject: string; average: number }[];
-  allSubjects?: string[];
+  subjectAverages: { subject: string; average: number }[];
+  allSubjects: string[];
   examPeriod?: string;
 }
 
@@ -146,19 +146,21 @@ const StudentReports = () => {
   const [showClassPrintView, setShowClassPrintView] = useState(false);
   const [loadingClassReport, setLoadingClassReport] = useState(false);
   
-  // Stream report states
+  // Stream report states - Fixed naming for clarity
   const [streamReportData, setStreamReportData] = useState<StreamReportData | null>(null);
-  const [selectedStream, setSelectedStream] = useState<string>('');
+  const [selectedClassLevel, setSelectedClassLevel] = useState<string>('');
   const [selectedStreamPeriod, setSelectedStreamPeriod] = useState<string>('');
   const [showStreamPrintView, setShowStreamPrintView] = useState(false);
   const [loadingStreamReport, setLoadingStreamReport] = useState(false);
   
   const reportCardRef = useRef<HTMLDivElement>(null);
   const classReportRef = useRef<HTMLDivElement>(null);
+  const streamReportRef = useRef<HTMLDivElement>(null);
   const { institutionId } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('StudentReports: institutionId changed:', institutionId);
     if (institutionId) {
       fetchStudents();
       fetchExamPeriods();
@@ -167,6 +169,7 @@ const StudentReports = () => {
 
   const fetchStudents = async () => {
     try {
+      console.log('Fetching students for institution:', institutionId);
       const { data, error } = await supabase
         .from('students')
         .select('id, full_name, admission_number, grade, stream')
@@ -174,6 +177,7 @@ const StudentReports = () => {
         .order('grade, stream, full_name');
 
       if (error) throw error;
+      console.log('Students fetched successfully:', data?.length || 0);
       setStudents(data || []);
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -187,6 +191,7 @@ const StudentReports = () => {
 
   const fetchExamPeriods = async () => {
     try {
+      console.log('Fetching exam periods for institution:', institutionId);
       const { data, error } = await supabase
         .from('exam_periods')
         .select('id, name')
@@ -194,6 +199,7 @@ const StudentReports = () => {
         .order('name');
 
       if (error) throw error;
+      console.log('Exam periods fetched successfully:', data?.length || 0);
       setExamPeriods(data || []);
     } catch (error) {
       console.error('Error fetching exam periods:', error);
@@ -245,23 +251,6 @@ const StudentReports = () => {
     label: `Grade ${classKey}`,
     students: groupedStudents[classKey]
   }));
-
-  // Get unique streams for stream report selection
-  const availableStreams = students.reduce((acc, student) => {
-    if (student.stream) {
-      const existingStream = acc.find(s => s.key === student.stream);
-      if (existingStream) {
-        existingStream.totalStudents++;
-      } else {
-        acc.push({
-          key: student.stream,
-          label: `Stream ${student.stream}`,
-          totalStudents: 1
-        });
-      }
-    }
-    return acc;
-  }, [] as { key: string; label: string; totalStudents: number }[]);
 
   const fetchStudentReport = async (studentId: string, periodId?: string) => {
     setLoading(true);
@@ -811,8 +800,11 @@ const StudentReports = () => {
     }
   };
 
+  // Fixed stream report function with proper error handling and null checks
   const fetchStreamReport = async (classLevel: string, periodId?: string) => {
+    console.log('Starting fetchStreamReport with:', { classLevel, periodId });
     setLoadingStreamReport(true);
+    
     try {
       // Get all students in the selected class level (all streams within that numeric level)
       const classStudents = students.filter(student => {
@@ -820,66 +812,103 @@ const StudentReports = () => {
         return numericGrade === classLevel;
       });
       
+      console.log('Found students for class level:', classStudents.length);
+      
       if (classStudents.length === 0) {
-        throw new Error('No students found in selected class');
+        throw new Error('No students found in selected class level');
       }
 
-      // Fetch marks for all students
+      // Fetch marks for all students with proper error handling
       const studentsWithMarks = await Promise.all(
         classStudents.map(async (student) => {
-          let marksQuery = supabase
-            .from('marks')
-            .select(`
-              id,
-              score,
-              grade,
-              remarks,
-              subject:subjects(id, name, code, level),
-              exam_period:exam_periods(id, name, term, start_date, end_date)
-            `)
-            .eq('student_id', student.id);
+          try {
+            let marksQuery = supabase
+              .from('marks')
+              .select(`
+                id,
+                score,
+                grade,
+                remarks,
+                subject:subjects(id, name, code, level),
+                exam_period:exam_periods(id, name, term, start_date, end_date)
+              `)
+              .eq('student_id', student.id);
 
-          if (periodId) {
-            marksQuery = marksQuery.eq('exam_period_id', periodId);
+            if (periodId) {
+              marksQuery = marksQuery.eq('exam_period_id', periodId);
+            }
+
+            const { data: marks, error } = await marksQuery;
+            if (error) {
+              console.error('Error fetching marks for student:', student.id, error);
+              // Continue with empty marks instead of failing
+            }
+
+            // Ensure marks is an array and filter out invalid entries
+            const validMarks = (marks || []).filter(mark => 
+              mark && 
+              mark.subject && 
+              mark.subject.name && 
+              typeof mark.score === 'number' && 
+              !isNaN(mark.score)
+            );
+            
+            console.log(`Student ${student.full_name}: ${validMarks.length} valid marks`);
+            
+            // Create subject scores object for easy access
+            const subjectScores = validMarks.reduce((acc, mark) => {
+              acc[mark.subject.name] = Number(mark.score);
+              return acc;
+            }, {} as Record<string, number>);
+
+            const totalMarks = validMarks.reduce((sum, mark) => sum + Number(mark.score), 0);
+            const average = validMarks.length > 0 ? totalMarks / validMarks.length : 0;
+
+            return {
+              student,
+              marks: validMarks,
+              subjectScores,
+              totalMarks,
+              average,
+              subjectCount: validMarks.length
+            };
+          } catch (studentError) {
+            console.error('Error processing student:', student.id, studentError);
+            // Return student with empty data instead of failing
+            return {
+              student,
+              marks: [],
+              subjectScores: {},
+              totalMarks: 0,
+              average: 0,
+              subjectCount: 0
+            };
           }
-
-          const { data: marks } = await marksQuery;
-
-          const validMarks = marks?.filter(mark => mark.subject && mark.score !== null) || [];
-          
-          // Create subject scores object for easy access
-          const subjectScores = validMarks.reduce((acc, mark) => {
-            acc[mark.subject.name] = Number(mark.score);
-            return acc;
-          }, {} as Record<string, number>);
-
-          const totalMarks = validMarks.reduce((sum, mark) => sum + Number(mark.score), 0);
-          const average = validMarks.length > 0 ? totalMarks / validMarks.length : 0;
-
-          return {
-            student,
-            marks: validMarks,
-            subjectScores,
-            totalMarks,
-            average,
-            subjectCount: validMarks.length
-          };
         })
       );
+
+      console.log('Processed students with marks:', studentsWithMarks.length);
 
       // Get all unique subjects across all students for table headers
       const allSubjects = Array.from(new Set(
         studentsWithMarks.flatMap(studentData => 
-          studentData.marks.map(mark => mark.subject.name)
+          (studentData.marks || []).map(mark => mark.subject?.name).filter(Boolean)
         )
       )).sort();
 
+      console.log('All subjects found:', allSubjects);
+
       // Sort by total marks (descending) and assign ranks
-      const sortedStudents = studentsWithMarks.sort((a, b) => b.totalMarks - a.totalMarks);
+      const sortedStudents = studentsWithMarks
+        .filter(student => student.totalMarks > 0) // Only include students with marks
+        .sort((a, b) => b.totalMarks - a.totalMarks);
+      
       const studentsWithRanks = sortedStudents.map((student, index) => ({
         ...student,
         overallRank: index + 1
       }));
+
+      console.log('Students with ranks:', studentsWithRanks.length);
 
       // Group by stream for additional analysis
       const streamGroups = studentsWithRanks.reduce((acc, studentData) => {
@@ -891,16 +920,20 @@ const StudentReports = () => {
         return acc;
       }, {} as Record<string, typeof studentsWithRanks>);
 
+      console.log('Stream groups:', Object.keys(streamGroups));
+
       // Create stream data with rankings within each stream
       const streamsData = Object.entries(streamGroups).map(([streamName, streamStudents]) => {
-        const streamStudentData = streamStudents.sort((a, b) => b.totalMarks - a.totalMarks);
+        const streamStudentData = (streamStudents || []).sort((a, b) => b.totalMarks - a.totalMarks);
         const studentsWithStreamRank = streamStudentData.map((studentData, index) => ({
           ...studentData,
           streamRank: index + 1,
           classRank: studentData.overallRank // Use overall rank as class rank
         }));
 
-        const streamAverage = streamStudentData.reduce((sum, s) => sum + s.average, 0) / streamStudentData.length;
+        const streamAverage = streamStudentData.length > 0 
+          ? streamStudentData.reduce((sum, s) => sum + (s.average || 0), 0) / streamStudentData.length
+          : 0;
 
         return {
           className: `${classLevel}${streamName}`,
@@ -909,20 +942,47 @@ const StudentReports = () => {
         };
       });
 
-      const overallAverage = studentsWithRanks.reduce((sum, s) => sum + s.average, 0) / studentsWithRanks.length;
+      console.log('Streams data created:', streamsData.length);
+
+      const overallAverage = studentsWithRanks.length > 0 
+        ? studentsWithRanks.reduce((sum, s) => sum + (s.average || 0), 0) / studentsWithRanks.length
+        : 0;
+
+      // Calculate subject averages with proper null checks
+      const subjectAverages = allSubjects.map(subject => {
+        const scores = studentsWithRanks
+          .map(student => student.subjectScores?.[subject])
+          .filter(score => typeof score === 'number' && !isNaN(score));
+        
+        const average = scores.length > 0 
+          ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+          : 0;
+        
+        return { subject, average };
+      }).sort((a, b) => b.average - a.average);
 
       const examPeriodName = periodId 
         ? examPeriods.find(p => p.id === periodId)?.name || 'Selected Period'
         : 'All Periods';
 
-      setStreamReportData({
+      const reportData: StreamReportData = {
         streamName: `Class ${classLevel} - Cross-Stream Rankings`,
         totalStudents: classStudents.length,
         streamAverage: overallAverage,
         classes: streamsData,
         examPeriod: examPeriodName,
-        allSubjects
+        allSubjects,
+        subjectAverages
+      };
+
+      console.log('Final report data:', {
+        streamName: reportData.streamName,
+        totalStudents: reportData.totalStudents,
+        classesCount: reportData.classes.length,
+        subjectsCount: reportData.allSubjects.length
       });
+
+      setStreamReportData(reportData);
 
       toast({
         title: "Stream Comparison Report Generated",
@@ -933,33 +993,12 @@ const StudentReports = () => {
       console.error('Error fetching stream report:', error);
       toast({
         title: "Error",
-        description: "Failed to generate stream report",
+        description: `Failed to generate stream report: ${error.message}`,
         variant: "destructive",
       });
     } finally {
       setLoadingStreamReport(false);
     }
-  };
-
-  const calculateStreamSubjectAverages = (students: any[]) => {
-    const subjectMap = new Map();
-    
-    students.forEach(studentData => {
-      studentData.marks.forEach((mark: Mark) => {
-        const subjectName = mark.subject.name;
-        if (!subjectMap.has(subjectName)) {
-          subjectMap.set(subjectName, { scores: [], subject: subjectName });
-        }
-        subjectMap.get(subjectName).scores.push(mark.score);
-      });
-    });
-    
-    return Array.from(subjectMap.values())
-      .map(subject => ({
-        subject: subject.subject,
-        average: subject.scores.reduce((a: number, b: number) => a + b, 0) / subject.scores.length
-      }))
-      .sort((a, b) => b.average - a.average);
   };
 
   const handleDownloadStreamReport = async () => {
@@ -1068,8 +1107,6 @@ const StudentReports = () => {
     }
   };
 
-  const streamReportRef = useRef<HTMLDivElement>(null);
-
   return (
     <>
       {/* Print View - Hidden by default */}
@@ -1136,7 +1173,7 @@ const StudentReports = () => {
         </div>
       )}
 
-      {/* Stream Print View - Hidden by default */}
+      {/* Stream Print View - Hidden by default with proper null checks */}
       {showStreamPrintView && streamReportData && (
         <div className="fixed top-0 left-0 w-full h-full bg-white z-50 overflow-auto">
           <div ref={streamReportRef} className="p-8 bg-white min-h-screen">
@@ -1163,8 +1200,8 @@ const StudentReports = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {streamReportData.classes.flatMap(classData =>
-                    classData.students.map((studentData) => (
+                  {(streamReportData.classes || []).flatMap(classData =>
+                    (classData.students || []).map((studentData) => (
                       <tr key={studentData.student.id}>
                         <td className="border p-2 font-bold">{studentData.streamRank}</td>
                         <td className="border p-2">{studentData.classRank}</td>
@@ -1190,10 +1227,10 @@ const StudentReports = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {streamReportData.classes.map((classData) => (
+                  {(streamReportData.classes || []).map((classData) => (
                     <tr key={classData.className}>
                       <td className="border p-2">{classData.className}</td>
-                      <td className="border p-2">{classData.students.length}</td>
+                      <td className="border p-2">{(classData.students || []).length}</td>
                       <td className="border p-2">{classData.classAverage.toFixed(1)}%</td>
                     </tr>
                   ))}
@@ -1211,7 +1248,7 @@ const StudentReports = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {streamReportData.subjectAverages.map((subject) => (
+                  {(streamReportData.subjectAverages || []).map((subject) => (
                     <tr key={subject.subject}>
                       <td className="border p-2">{subject.subject}</td>
                       <td className="border p-2">{subject.average.toFixed(1)}%</td>
@@ -1327,7 +1364,7 @@ const StudentReports = () => {
           </CardContent>
         </Card>
 
-        {/* Stream Report Section */}
+        {/* Stream Report Section - Fixed with proper debugging */}
         <Card>
           <CardHeader>
             <CardTitle>Entire Stream Report</CardTitle>
@@ -1335,7 +1372,7 @@ const StudentReports = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-4">
-              <Select value={selectedStream} onValueChange={setSelectedStream}>
+              <Select value={selectedClassLevel} onValueChange={setSelectedClassLevel}>
                 <SelectTrigger className="w-full max-w-md">
                   <SelectValue placeholder="Select a class level..." />
                 </SelectTrigger>
@@ -1361,8 +1398,13 @@ const StudentReports = () => {
                 </SelectContent>
               </Select>
               <Button 
-                onClick={() => selectedStream && fetchStreamReport(selectedStream, selectedStreamPeriod === 'all' ? undefined : selectedStreamPeriod)}
-                disabled={!selectedStream || loadingStreamReport}
+                onClick={() => {
+                  console.log('Stream report button clicked:', { selectedClassLevel, selectedStreamPeriod });
+                  if (selectedClassLevel) {
+                    fetchStreamReport(selectedClassLevel, selectedStreamPeriod === 'all' ? undefined : selectedStreamPeriod);
+                  }
+                }}
+                disabled={!selectedClassLevel || loadingStreamReport}
               >
                 {loadingStreamReport ? 'Generating...' : 'Generate Stream Report'}
               </Button>
@@ -1650,7 +1692,7 @@ const StudentReports = () => {
           </div>
         )}
 
-        {/* Stream Report Results */}
+        {/* Stream Report Results - Fixed with proper null checks and debugging */}
         {streamReportData && (
           <div className="grid gap-6">
             <Card>
@@ -1672,7 +1714,7 @@ const StudentReports = () => {
               </CardHeader>
             </Card>
 
-            {/* Detailed Subject Scores Table */}
+            {/* Detailed Subject Scores Table - Fixed with proper null checks */}
             <Card>
               <CardHeader>
                 <CardTitle>Detailed Performance Report</CardTitle>
@@ -1760,10 +1802,10 @@ const StudentReports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {streamReportData.classes.map((classData) => (
+                      {(streamReportData.classes || []).map((classData) => (
                         <tr key={classData.className} className="border-b">
                           <td className="p-2 font-medium">{classData.className}</td>
-                          <td className="p-2">{classData.students.length}</td>
+                          <td className="p-2">{(classData.students || []).length}</td>
                           <td className="p-2">
                             <Badge variant={classData.classAverage >= 70 ? 'default' : classData.classAverage >= 50 ? 'secondary' : 'destructive'}>
                               {classData.classAverage.toFixed(1)}%
@@ -1793,7 +1835,7 @@ const StudentReports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {streamReportData.subjectAverages.map((subject) => (
+                      {(streamReportData.subjectAverages || []).map((subject) => (
                         <tr key={subject.subject} className="border-b">
                           <td className="p-2 font-medium">{subject.subject}</td>
                           <td className="p-2">
