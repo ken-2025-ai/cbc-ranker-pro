@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useRef } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,10 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
   const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   console.log('Auth page - user:', user, 'authLoading:', authLoading);
 
@@ -52,8 +55,32 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const handleTap = () => {
+    const newTapCount = tapCount + 1;
+    setTapCount(newTapCount);
+    
+    // Clear existing timeout
+    if (tapTimeoutRef.current) {
+      clearTimeout(tapTimeoutRef.current);
+    }
+    
+    // Navigate to admin auth if 4 taps reached
+    if (newTapCount >= 4) {
+      navigate('/admin/auth');
+      return;
+    }
+    
+    // Reset tap count after 2 seconds of no taps
+    tapTimeoutRef.current = setTimeout(() => {
+      setTapCount(0);
+    }, 2000);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center p-4">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center p-4"
+      onClick={handleTap}
+    >
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
