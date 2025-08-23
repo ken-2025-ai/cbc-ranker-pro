@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Shield, Lock, User } from 'lucide-react';
 
 const AdminAuth = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('Admin.account@gmail.com');
+  const [password, setPassword] = useState('access5293@Me_');
   const [loading, setLoading] = useState(false);
   const { user, signIn, loading: authLoading } = useAdminAuth();
 
@@ -33,6 +34,22 @@ const AdminAuth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    // For development: Set admin password if it's the first time
+    if (email === 'Admin.account@gmail.com' && password === 'access5293@Me_') {
+      try {
+        await supabase.functions.invoke('admin-auth', {
+          body: { 
+            email: 'Admin.account@gmail.com', 
+            password: 'access5293@Me_', 
+            action: 'hash_password' 
+          }
+        });
+      } catch (err) {
+        console.log('Password hash attempt:', err);
+      }
+    }
+    
     await signIn(email, password);
     setLoading(false);
   };
