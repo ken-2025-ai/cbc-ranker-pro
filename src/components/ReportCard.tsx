@@ -33,11 +33,12 @@ interface StudentReportData {
   };
   marks: Mark[];
   overallAverage: number;
-  classRank: number;
-  streamRank: number;
+  classRank: number | string; // Can be "X" for incomplete
+  streamRank: number | string; // Can be "X" for incomplete
   totalStudents: number;
   totalStreamStudents: number;
   recommendations: string;
+  isIncomplete?: boolean; // Flag for incomplete results
 }
 
 interface ReportCardProps {
@@ -175,14 +176,22 @@ const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
             <div className="flex">
               <span className="font-semibold w-32">Class Position:</span>
               <span className="border-b border-gray-400 flex-1 pl-2 font-semibold">
-                Position {data.classRank} out of {data.totalStudents} students
+                {data.isIncomplete || data.classRank === "X" ? (
+                  <span className="text-red-600 font-bold">X (Incomplete)</span>
+                ) : (
+                  `Position ${data.classRank} out of ${data.totalStudents} students`
+                )}
               </span>
             </div>
-            {data.student.stream && data.streamRank && (
+            {data.student.stream && (
               <div className="flex">
                 <span className="font-semibold w-32">Stream Position:</span>
                 <span className="border-b border-gray-400 flex-1 pl-2 font-semibold">
-                  Position {data.streamRank} out of {data.totalStreamStudents} students
+                  {data.isIncomplete || data.streamRank === "X" ? (
+                    <span className="text-red-600 font-bold">X (Incomplete)</span>
+                  ) : (
+                    `Position ${data.streamRank} out of ${data.totalStreamStudents} students`
+                  )}
                 </span>
               </div>
             )}

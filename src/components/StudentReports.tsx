@@ -48,11 +48,12 @@ interface StudentReportData {
   subjectProgress: { subject: string; [key: string]: any }[];
   examComparison: { exam: string; average: number }[];
   overallAverage: number;
-  classRank: number;
-  streamRank: number;
+  classRank: number | string; // Can be "X" for incomplete
+  streamRank: number | string; // Can be "X" for incomplete
   totalStudents: number;
   totalStreamStudents: number;
   recommendations: string;
+  isIncomplete?: boolean; // Flag for incomplete results
 }
 
 interface ClassReportData {
@@ -287,7 +288,7 @@ const StudentReports = () => {
       if (marksError) throw marksError;
 
       // Calculate actual rankings and student counts
-      const { classRank, streamRank, totalStudents, totalStreamStudents } = await calculateStudentRankings(student, marks || []);
+      const { classRank, streamRank, totalStudents, totalStreamStudents, isIncomplete } = await calculateStudentRankings(student, marks || []);
 
       // Process data for charts
       const subjectProgress = processSubjectProgress(marks || []);
@@ -304,7 +305,8 @@ const StudentReports = () => {
         streamRank,
         totalStudents,
         totalStreamStudents,
-        recommendations: generateAdvice(marks || [])
+        recommendations: generateAdvice(marks || []),
+        isIncomplete
       });
     } catch (error) {
       console.error('Error fetching report:', error);
@@ -366,52 +368,67 @@ const StudentReports = () => {
 
   const calculateStudentRankings = async (student: Student, marks: Mark[]) => {
     try {
-      // Calculate student's overall average
-      const studentAverage = calculateOverallAverage(marks);
+      console.log('StudentReports: Calculating rankings for student:', student.id, 'marks:', marks.length);
 
-      // Get all students in the same grade (class)
+      // Get all students in the same class with their marks to determine max subjects
       const { data: classStudents, error: classError } = await supabase
         .from('students')
-        .select('id, full_name, grade, stream')
-        .eq('institution_id', institutionId)
-        .eq('grade', student.grade);
+        .select('*')
+        .eq('grade', student.grade)
+        .eq('institution_id', institutionId);
 
       if (classError) throw classError;
+
+      // Get marks for all students to determine max subject count
+      const allStudentMarks = await Promise.all(
+        (classStudents || []).map(async (classStudent) => {
+          const { data: studentMarks } = await supabase
+            .from('marks')
+            .select('score, subject_id')
+            .eq('student_id', classStudent.id);
+          
+          return {
+            studentId: classStudent.id,
+            marks: studentMarks || [],
+            subjectCount: (studentMarks || []).length,
+            average: calculateAverageFromScores(studentMarks || [])
+          };
+        })
+      );
+
+      // Find the maximum number of subjects done by any student
+      const maxSubjects = Math.max(...allStudentMarks.map(s => s.subjectCount));
+      console.log('StudentReports: Max subjects in class:', maxSubjects, 'Current student subjects:', marks.length);
+
+      // Check if current student has incomplete results
+      const isIncomplete = marks.length < maxSubjects;
+      
+      if (isIncomplete) {
+        console.log('StudentReports: Student has incomplete results, returning X');
+        return {
+          classRank: "X" as const,
+          streamRank: "X" as const, 
+          totalStudents: classStudents?.length || 1,
+          totalStreamStudents: 0,
+          isIncomplete: true
+        };
+      }
 
       // Get all students in the same stream (if stream exists)
       const streamStudents = student.stream 
         ? classStudents?.filter(s => s.stream === student.stream) || []
         : [];
 
-      // Calculate averages for all class students
-      const classAverages = await Promise.all(
-        (classStudents || []).map(async (classStudent) => {
-          const { data: studentMarks } = await supabase
-            .from('marks')
-            .select('score')
-            .eq('student_id', classStudent.id);
-          
-          const average = calculateAverageFromScores(studentMarks || []);
-          return { studentId: classStudent.id, average };
-        })
-      );
-
-      // Calculate stream averages (if stream exists)
-      const streamAverages = student.stream ? await Promise.all(
-        streamStudents.map(async (streamStudent) => {
-          const { data: studentMarks } = await supabase
-            .from('marks')
-            .select('score')
-            .eq('student_id', streamStudent.id);
-          
-          const average = calculateAverageFromScores(studentMarks || []);
-          return { studentId: streamStudent.id, average };
-        })
-      ) : [];
+      // Only rank students with complete results (maxSubjects)
+      const completeClassStudents = allStudentMarks.filter(s => s.subjectCount === maxSubjects);
+      const completeStreamStudents = completeClassStudents.filter(s => {
+        const studentData = classStudents?.find(cs => cs.id === s.studentId);
+        return studentData?.stream === student.stream;
+      });
 
       // Sort by average (descending) to get rankings
-      const sortedClassAverages = classAverages.sort((a, b) => b.average - a.average);
-      const sortedStreamAverages = streamAverages.sort((a, b) => b.average - a.average);
+      const sortedClassAverages = completeClassStudents.sort((a, b) => b.average - a.average);
+      const sortedStreamAverages = completeStreamStudents.sort((a, b) => b.average - a.average);
 
       // Find student's position
       const classRank = sortedClassAverages.findIndex(s => s.studentId === student.id) + 1;
@@ -423,15 +440,17 @@ const StudentReports = () => {
         classRank: classRank || 1,
         streamRank: streamRank || 1,
         totalStudents: classStudents?.length || 1,
-        totalStreamStudents: streamStudents.length || 1
+        totalStreamStudents: streamStudents.length || 1,
+        isIncomplete: false
       };
     } catch (error) {
       console.error('Error calculating rankings:', error);
       return {
-        classRank: 1,
-        streamRank: 1,
+        classRank: 1 as const,
+        streamRank: 1 as const,
         totalStudents: 1,
-        totalStreamStudents: 1
+        totalStreamStudents: 1,
+        isIncomplete: false
       };
     }
   };
