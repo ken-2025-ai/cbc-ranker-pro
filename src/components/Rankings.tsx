@@ -20,6 +20,7 @@ interface StudentRanking {
   averageScore: number;
   subjectCount: number;
   rank: number;
+  result?: string;
   previousRank?: number;
 }
 
@@ -152,21 +153,45 @@ const Rankings = () => {
         subject.streamScores.get(stream).push(mark.score);
       });
 
-      // Calculate student rankings
+      // Calculate student rankings with X logic
       const students = Array.from(studentMap.values()).map((student, index) => ({
         ...student,
         averageScore: student.scores.length > 0 ? student.totalMarks / student.scores.length : 0,
         subjectCount: student.scores.length,
-        rank: 0 // Will be calculated after sorting
+        rank: 0, // Will be calculated after sorting
+        result: "" // Will be set to "X" for incomplete results
       }));
 
-      // Sort by average score and assign ranks
-      students.sort((a, b) => b.averageScore - a.averageScore);
-      students.forEach((student, index) => {
+      // Find the maximum number of subjects done by any student
+      const maxSubjects = Math.max(...students.map(s => s.subjectCount));
+      
+      // Mark students with incomplete results as "X"
+      students.forEach(student => {
+        if (student.subjectCount < maxSubjects) {
+          student.result = "X";
+        }
+      });
+
+      // Only rank students who did all subjects (no "X")
+      const completeStudents = students.filter(student => student.result !== "X");
+      
+      // Sort complete students by average score and assign ranks
+      completeStudents.sort((a, b) => b.averageScore - a.averageScore);
+      completeStudents.forEach((student, index) => {
         student.rank = index + 1;
       });
 
-      setStudentRankings(students);
+      // Set rank to 0 for incomplete students
+      students.forEach(student => {
+        if (student.result === "X") {
+          student.rank = 0;
+        }
+      });
+
+      // Combine complete and incomplete students for display (complete first)
+      const sortedStudents = [...completeStudents, ...students.filter(s => s.result === "X")];
+
+      setStudentRankings(sortedStudents);
 
       // Calculate stream rankings
       const streamMap = new Map<string, any>();
@@ -326,13 +351,19 @@ const Rankings = () => {
                           key={student.id} 
                           className="flex items-center justify-between p-4 rounded-lg border bg-card hover:shadow-elevated transition-smooth"
                         >
-                          <div className="flex items-center gap-4">
-                            <Badge className={`${getRankBadgeColor(student.rank)} min-w-[60px] justify-center`}>
-                              <span className="flex items-center gap-1">
-                                {getRankIcon(student.rank)}
-                                #{student.rank}
-                              </span>
-                            </Badge>
+                           <div className="flex items-center gap-4">
+                             {student.result === "X" ? (
+                               <Badge className="bg-red-500 text-white min-w-[60px] justify-center">
+                                 X
+                               </Badge>
+                             ) : (
+                               <Badge className={`${getRankBadgeColor(student.rank)} min-w-[60px] justify-center`}>
+                                 <span className="flex items-center gap-1">
+                                   {getRankIcon(student.rank)}
+                                   #{student.rank}
+                                 </span>
+                               </Badge>
+                             )}
                             <div>
                               <h4 className="font-semibold text-foreground">{student.name}</h4>
                               <p className="text-sm text-muted-foreground">
@@ -340,14 +371,14 @@ const Rankings = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-primary">
-                              {student.averageScore.toFixed(1)}%
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {student.subjectCount} subjects
-                            </p>
-                          </div>
+                           <div className="text-right">
+                             <div className="text-lg font-bold text-primary">
+                               {student.result === "X" ? "Incomplete" : `${student.averageScore.toFixed(1)}%`}
+                             </div>
+                             <p className="text-xs text-muted-foreground">
+                               {student.subjectCount} subjects{student.result === "X" ? " (Incomplete)" : ""}
+                             </p>
+                           </div>
                         </div>
                       ))}
                     </div>
