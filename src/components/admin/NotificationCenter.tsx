@@ -146,19 +146,21 @@ const NotificationCenter = () => {
 
   const sendNotification = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('admin_notifications')
-        .update({
-          is_sent: true,
-          sent_at: new Date().toISOString(),
-        })
-        .eq('id', notificationId);
+      // Call the send-notification edge function
+      const { data, error } = await supabase.functions.invoke('send-notification', {
+        body: {
+          notificationId,
+          sessionToken: user?.id // Use user ID as reference
+        }
+      });
 
-      if (error) throw error;
+      if (error || data.error) {
+        throw new Error(data?.error || error.message);
+      }
 
       toast({
         title: "Success",
-        description: "Notification sent successfully",
+        description: `Notification sent successfully! ${data.stats?.emailsSent || 0} emails sent to ${data.stats?.totalInstitutions || 0} institutions`,
       });
 
       fetchData();

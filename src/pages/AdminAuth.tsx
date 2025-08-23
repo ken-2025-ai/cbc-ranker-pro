@@ -120,10 +120,15 @@ const AdminAuth = () => {
               </Button>
             </form>
             
-            <div className="mt-6 p-4 bg-slate-700/30 rounded-lg border border-slate-600/50">
-              <p className="text-xs text-slate-400 text-center">
-                🔒 Secure admin access with session management and activity logging
-              </p>
+            
+            <div className="mt-4 p-4 bg-slate-700/30 rounded-lg border border-slate-600/50">
+              <div className="text-center">
+                <p className="text-sm text-slate-300 mb-2">Ready to test the admin panel?</p>
+                <p className="text-xs text-slate-400">
+                  The credentials are pre-filled for your convenience. 
+                  Click "Sign In to Admin Panel" to access the full control center.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
