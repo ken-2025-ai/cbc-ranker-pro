@@ -127,7 +127,7 @@ const ReportsAnalytics = () => {
     }, {});
 
     const revenueChartData = Object.entries(monthlyRevenue)
-      .map(([month, revenue]) => ({ month, revenue, institutions: 0 }))
+      .map(([month, revenue]) => ({ month, revenue: Number(revenue), institutions: 0 }))
       .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
       .slice(-12); // Last 12 months
 
@@ -142,7 +142,7 @@ const ReportsAnalytics = () => {
     }, {});
 
     const countyChartData = Object.entries(countyCount)
-      .map(([county, count]) => ({ county, count }))
+      .map(([county, count]) => ({ county, count: Number(count) }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10); // Top 10 counties
 

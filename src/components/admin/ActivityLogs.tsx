@@ -69,7 +69,14 @@ const ActivityLogs = () => {
 
       if (error) throw error;
 
-      setLogs(data || []);
+      // Type cast the data to ensure proper types
+      const typedLogs: ActivityLog[] = (data || []).map(log => ({
+        ...log,
+        ip_address: log.ip_address ? String(log.ip_address) : null,
+        user_agent: log.user_agent ? String(log.user_agent) : null,
+      }));
+
+      setLogs(typedLogs);
       setTotalPages(Math.ceil((count || 0) / logsPerPage));
     } catch (error) {
       console.error('Error fetching logs:', error);
