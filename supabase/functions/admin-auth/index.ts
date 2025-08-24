@@ -19,7 +19,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { email, password, action } = await req.json();
+  const body = await req.json();
+  const { email, password, action, session_token } = body || {};
 
     if (action === 'login') {
       // Get admin user
@@ -48,8 +49,17 @@ serve(async (req) => {
         }
       }
 
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, adminUser.password_hash);
+      // Verify password safely (handle invalid hash formats)
+      let isValidPassword = false;
+      try {
+        if (typeof adminUser.password_hash === 'string' && adminUser.password_hash.startsWith('$2')) {
+          isValidPassword = await bcrypt.compare(password, adminUser.password_hash);
+        } else {
+          isValidPassword = false;
+        }
+      } catch (e) {
+        isValidPassword = false;
+      }
       
       if (!isValidPassword) {
         // Increment failed login attempts
@@ -96,15 +106,17 @@ serve(async (req) => {
         });
       }
 
-      // Log admin activity
+      // Log admin activity (ensure inet compatibility)
+      const ipHeader = req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() || null;
+      const userAgent = req.headers.get('user-agent') || null;
       await supabaseClient
         .from('admin_activity_logs')
         .insert({
           admin_id: adminUser.id,
           action_type: 'login',
           description: `Admin ${adminUser.email} logged in`,
-          ip_address: req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown',
-          user_agent: req.headers.get('user-agent') || 'unknown'
+          ip_address: ipHeader,
+          user_agent: userAgent
         });
 
       return new Response(JSON.stringify({
@@ -123,8 +135,7 @@ serve(async (req) => {
     }
 
     if (action === 'verify_session') {
-      const { session_token } = await req.json();
-      
+      // session_token is taken from the already parsed body
       const { data: session, error: sessionError } = await supabaseClient
         .from('admin_sessions')
         .select(`
@@ -159,8 +170,6 @@ serve(async (req) => {
     }
 
     if (action === 'logout') {
-      const { session_token } = await req.json();
-      
       await supabaseClient
         .from('admin_sessions')
         .delete()

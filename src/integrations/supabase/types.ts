@@ -1374,6 +1374,60 @@ export type Database = {
           },
         ]
       }
+      projects: {
+        Row: {
+          actual_cost: number | null
+          budget: number
+          created_at: string
+          description: string | null
+          end_date: string | null
+          estimated_cost: number
+          id: string
+          location: string
+          materials: Json | null
+          name: string
+          start_date: string
+          status: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          budget?: number
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          estimated_cost?: number
+          id?: string
+          location: string
+          materials?: Json | null
+          name: string
+          start_date: string
+          status?: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_cost?: number | null
+          budget?: number
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          estimated_cost?: number
+          id?: string
+          location?: string
+          materials?: Json | null
+          name?: string
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       saved_results: {
         Row: {
           career_profile: Json | null
