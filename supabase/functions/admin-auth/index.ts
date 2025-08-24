@@ -49,15 +49,37 @@ serve(async (req) => {
         }
       }
 
+      // Handle initial setup - if password is temp_hash, hash the provided password
+      if (adminUser.password_hash === 'temp_hash' && email === 'Admin.account@gmail.com') {
+        const hashedPassword = await bcrypt.hash(password, 12);
+        const { error: updateError } = await supabaseClient
+          .from('admin_users')
+          .update({ password_hash: hashedPassword })
+          .eq('id', adminUser.id);
+        
+        if (updateError) {
+          console.error('Failed to update admin password:', updateError);
+          return new Response(JSON.stringify({ error: 'Setup error' }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 500,
+          });
+        }
+        
+        // Password is now set, continue with login
+        adminUser.password_hash = hashedPassword;
+      }
+
       // Verify password safely (handle invalid hash formats)
       let isValidPassword = false;
       try {
         if (typeof adminUser.password_hash === 'string' && adminUser.password_hash.startsWith('$2')) {
           isValidPassword = await bcrypt.compare(password, adminUser.password_hash);
         } else {
+          console.error('Invalid password hash format for user:', adminUser.email);
           isValidPassword = false;
         }
       } catch (e) {
+        console.error('Password comparison error:', e);
         isValidPassword = false;
       }
       
