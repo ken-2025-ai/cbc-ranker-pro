@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import { compare, hash } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,7 +51,7 @@ serve(async (req) => {
 
       // Handle initial setup - if password is temp_hash, hash the provided password
       if (adminUser.password_hash === 'temp_hash' && email === 'Admin.account@gmail.com') {
-        const hashedPassword = await bcrypt.hash(password, 12);
+        const hashedPassword = await hash(password, 12);
         const { error: updateError } = await supabaseClient
           .from('admin_users')
           .update({ password_hash: hashedPassword })
@@ -73,7 +73,7 @@ serve(async (req) => {
       let isValidPassword = false;
       try {
         if (typeof adminUser.password_hash === 'string' && adminUser.password_hash.startsWith('$2')) {
-          isValidPassword = await bcrypt.compare(password, adminUser.password_hash);
+          isValidPassword = await compare(password, adminUser.password_hash);
         } else {
           console.error('Invalid password hash format for user:', adminUser.email);
           isValidPassword = false;
@@ -205,7 +205,7 @@ serve(async (req) => {
 
     if (action === 'hash_password') {
       // This is for setting up the initial admin password
-      const hashedPassword = await bcrypt.hash(password, 12);
+      const hashedPassword = await hash(password, 12);
       
       await supabaseClient
         .from('admin_users')
