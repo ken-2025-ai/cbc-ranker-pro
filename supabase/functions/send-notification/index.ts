@@ -104,6 +104,48 @@ serve(async (req) => {
     let emailsSent = 0;
     let errors: string[] = [];
 
+    // Create in-app notifications for users from target institutions
+    let inAppNotificationsCreated = 0;
+    if (notification.delivery_method.includes('in_app')) {
+      for (const institution of institutions || []) {
+        try {
+          // Get all users from this institution
+          const { data: institutionUsers, error: usersError } = await supabaseClient
+            .from('institution_users')
+            .select('user_id')
+            .eq('institution_id', institution.id);
+
+          if (usersError) {
+            console.error(`Failed to get users for institution ${institution.name}:`, usersError);
+            continue;
+          }
+
+          // Create in-app notifications for each user
+          if (institutionUsers && institutionUsers.length > 0) {
+            const userNotifications = institutionUsers.map(iu => ({
+              user_id: iu.user_id,
+              title: notification.title,
+              message: notification.message,
+              notification_type: notification.notification_type,
+              priority: notification.notification_type === 'deadline_reminder' ? 'high' : 'normal'
+            }));
+
+            const { error: notificationError } = await supabaseClient
+              .from('user_notifications')
+              .insert(userNotifications);
+
+            if (notificationError) {
+              console.error(`Failed to create in-app notifications for ${institution.name}:`, notificationError);
+            } else {
+              inAppNotificationsCreated += userNotifications.length;
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing institution ${institution.name}:`, error);
+        }
+      }
+    }
+
     // Send emails if email delivery is enabled
     if (notification.delivery_method.includes('email')) {
       for (const institution of institutions || []) {
@@ -152,7 +194,7 @@ serve(async (req) => {
       .insert({
         admin_id: session.admin_users.id,
         action_type: 'notification',
-        description: `Sent notification "${notification.title}" to ${institutions?.length || 0} institutions (${emailsSent} emails sent)`,
+        description: `Sent notification "${notification.title}" to ${institutions?.length || 0} institutions (${emailsSent} emails sent, ${inAppNotificationsCreated} in-app notifications created)`,
         target_type: 'notification',
         target_id: notificationId,
         ip_address: req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown',
@@ -164,6 +206,7 @@ serve(async (req) => {
       stats: {
         totalInstitutions: institutions?.length || 0,
         emailsSent,
+        inAppNotificationsCreated,
         errors
       }
     }), {

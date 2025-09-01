@@ -7,6 +7,7 @@ import MarksEntry from "@/components/MarksEntry";
 import StudentReports from "@/components/StudentReports";
 import Rankings from "@/components/Rankings";
 import Settings from "@/components/Settings";
+import NotificationToast from "@/components/NotificationToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
@@ -52,6 +53,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <NotificationToast />
       <Navigation currentView={currentView} onViewChange={setCurrentView} />
       
       {/* Main Content Area */}

@@ -14,6 +14,7 @@ import {
   LogOut
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import NotificationBell from "@/components/NotificationBell";
 
 interface NavigationProps {
   currentView: string;
@@ -70,12 +71,15 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
         
         {/* User Section */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-card">
-          <div className="px-2 py-1 text-sm text-muted-foreground truncate">
-            {user?.email}
+          <div className="flex items-center justify-between mb-2">
+            <div className="px-2 py-1 text-sm text-muted-foreground truncate">
+              {user?.email}
+            </div>
+            <NotificationBell />
           </div>
           <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-primary mt-1"
+            className="w-full justify-start text-muted-foreground hover:text-primary"
             onClick={signOut}
           >
             <LogOut className="mr-3 h-4 w-4" />
@@ -95,13 +99,16 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
             <h2 className="font-bold text-primary">CBC Records</h2>
           </div>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Menu Overlay */}

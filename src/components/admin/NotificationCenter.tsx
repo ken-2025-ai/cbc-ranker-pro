@@ -54,7 +54,7 @@ const NotificationCenter = () => {
     message: '',
     notificationType: 'general',
     targetType: 'all',
-    deliveryMethod: ['in_app'],
+    deliveryMethod: ['in_app', 'email'],
   });
 
   useEffect(() => {
@@ -160,7 +160,7 @@ const NotificationCenter = () => {
 
       toast({
         title: "Success",
-        description: `Notification sent successfully! ${data.stats?.emailsSent || 0} emails sent to ${data.stats?.totalInstitutions || 0} institutions`,
+        description: `Notification sent successfully! ${data.stats?.emailsSent || 0} emails sent, ${data.stats?.inAppNotificationsCreated || 0} in-app notifications created for ${data.stats?.totalInstitutions || 0} institutions`,
       });
 
       fetchData();
@@ -180,7 +180,7 @@ const NotificationCenter = () => {
       message: '',
       notificationType: 'general',
       targetType: 'all',
-      deliveryMethod: ['in_app'],
+      deliveryMethod: ['in_app', 'email'],
     });
     setSelectedInstitutions([]);
   };
@@ -344,6 +344,57 @@ const NotificationCenter = () => {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label className="text-slate-300">Delivery Methods</Label>
+                <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="in_app"
+                      checked={notificationForm.deliveryMethod.includes('in_app')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setNotificationForm({
+                            ...notificationForm,
+                            deliveryMethod: [...notificationForm.deliveryMethod.filter(m => m !== 'in_app'), 'in_app']
+                          });
+                        } else {
+                          setNotificationForm({
+                            ...notificationForm,
+                            deliveryMethod: notificationForm.deliveryMethod.filter(m => m !== 'in_app')
+                          });
+                        }
+                      }}
+                    />
+                    <label htmlFor="in_app" className="text-sm text-slate-300 cursor-pointer">
+                      In-App Notification
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="email"
+                      checked={notificationForm.deliveryMethod.includes('email')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setNotificationForm({
+                            ...notificationForm,
+                            deliveryMethod: [...notificationForm.deliveryMethod.filter(m => m !== 'email'), 'email']
+                          });
+                        } else {
+                          setNotificationForm({
+                            ...notificationForm,
+                            deliveryMethod: notificationForm.deliveryMethod.filter(m => m !== 'email')
+                          });
+                        }
+                      }}
+                    />
+                    <label htmlFor="email" className="text-sm text-slate-300 cursor-pointer">
+                      Email
+                    </label>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400">Select at least one delivery method</p>
+              </div>
 
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
