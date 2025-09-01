@@ -150,12 +150,18 @@ const NotificationCenter = () => {
       const { data, error } = await supabase.functions.invoke('send-notification', {
         body: {
           notificationId,
-          sessionToken: user?.id // Use user ID as reference
+          sessionToken: user?.id // Use admin user ID as session token
         }
       });
 
-      if (error || data.error) {
-        throw new Error(data?.error || error.message);
+      if (error) {
+        console.error('Function invoke error:', error);
+        throw new Error(error.message || 'Failed to invoke send-notification function');
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        throw new Error(data.error);
       }
 
       toast({

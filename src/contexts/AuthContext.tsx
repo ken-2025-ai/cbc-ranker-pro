@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user's institution and role
+          // Fetch user's institution and role, and check if user is blocked
           const fetchUserData = async () => {
             try {
               const { data: institutionUser, error } = await supabase
@@ -50,6 +50,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
               
               if (!error && institutionUser) {
+                // Check if institution is blocked or inactive
+                const { data: institution, error: instError } = await supabase
+                  .from('admin_institutions')
+                  .select('is_blocked, is_active')
+                  .eq('id', institutionUser.institution_id)
+                  .single();
+                
+                if (!instError && institution && (institution.is_blocked || !institution.is_active)) {
+                  // Block user access by signing them out
+                  toast({
+                    title: "Access Restricted",
+                    description: "Your institution account has been restricted. Please contact support.",
+                    variant: "destructive",
+                  });
+                  await supabase.auth.signOut();
+                  return;
+                }
+                
                 setInstitutionId(institutionUser.institution_id);
                 setUserRole(institutionUser.role);
                 console.log('Institution loaded:', institutionUser.institution_id);
@@ -96,6 +114,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               .single();
             
             if (institutionUser) {
+              // Check if institution is blocked or inactive
+              const { data: institution } = await supabase
+                .from('admin_institutions')
+                .select('is_blocked, is_active')
+                .eq('id', institutionUser.institution_id)
+                .single();
+              
+              if (institution && (institution.is_blocked || !institution.is_active)) {
+                await supabase.auth.signOut();
+                return;
+              }
+              
               setInstitutionId(institutionUser.institution_id);
               setUserRole(institutionUser.role);
               console.log('Institution loaded:', institutionUser.institution_id);

@@ -155,17 +155,37 @@ const InstitutionManagement = () => {
 
   const toggleBlockStatus = async (institution: Institution) => {
     try {
+      const newBlockedStatus = !institution.is_blocked;
+      
       const { error } = await supabase
         .from('admin_institutions')
-        .update({ is_blocked: !institution.is_blocked })
+        .update({ 
+          is_blocked: newBlockedStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', institution.id);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Institution ${institution.is_blocked ? 'unblocked' : 'blocked'} successfully`,
+        description: `Institution ${institution.is_blocked ? 'unblocked' : 'blocked'} successfully. ${newBlockedStatus ? 'Users from this institution are now blocked from accessing their accounts.' : 'Users can now access their accounts again.'}`,
       });
+
+      // Log the admin activity
+      try {
+        await supabase
+          .from('admin_activity_logs')
+          .insert({
+            admin_id: sessionToken,
+            action_type: 'block_toggle',
+            description: `${newBlockedStatus ? 'Blocked' : 'Unblocked'} institution: ${institution.name}`,
+            target_type: 'institution',
+            target_id: institution.id,
+          });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
 
       fetchInstitutions();
     } catch (error) {
@@ -455,8 +475,12 @@ const InstitutionManagement = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => startImpersonation(institution)}
+                    onClick={() => {
+                      // Redirect to user panel with institution context
+                      window.open(`/?admin_view=${institution.id}`, '_blank');
+                    }}
                     className="text-orange-400 border-orange-500/50 hover:bg-orange-600/20"
+                    title="View user account"
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
