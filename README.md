@@ -1,73 +1,100 @@
-# Welcome to your Lovable project
 
-## Project info
 
-**URL**: https://lovable.dev/projects/1ae4987a-61bc-4a71-be0b-8464481a2e8e
+# 📊 CBC Pro Ranker
 
-## How can I edit this code?
+A modern academic ranking system tailored for the **Kenyan Competency-Based Curriculum (CBC)**. This tool helps schools manage student performance, calculate grades, rank learners by stream/class, and generate printable report forms with personalized advice.
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## ✨ Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1ae4987a-61bc-4a71-be0b-8464481a2e8e) and start prompting.
+✅ **Multi-School Login** – Each institution has its own secure login page and data separation.
+✅ **Student Marks Management** – Store, edit, and calculate scores across subjects.
+✅ **Automatic Grading** – Computes grades based on CBC standards.
+✅ **Ranking System** –
 
-Changes made via Lovable will be committed automatically to this repo.
+* Per **stream** (e.g., 7A, 7B)
+* Overall **class performance**
+  ✅ **Performance Analytics** – Averages for each stream and for the whole class.
+  ✅ **Report Generation** – Independent, printable student report forms with teacher remarks & advice.
+  ✅ **User-Friendly Dashboard** – Simple, clean interface designed for schools.
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+* **Frontend:** HTML, CSS, JavaScript
+* **Backend/Data:** LocalStorage / (MongoDB or MySQL optional for scaling)
+* **Deployment:** Works as a standalone web app, can be hosted on any server
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Getting Started
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. **Clone the Repository**
 
-# Step 3: Install the necessary dependencies.
-npm i
+   ```bash
+   git clone https://github.com/your-username/cbc-pro-ranker.git
+   cd cbc-pro-ranker
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+2. **Open in Browser**
+   Simply open `index.html` in your browser.
+
+3. **Login/Register Institution**
+   Each school has its own login page – ensuring data is separate and secure.
+
+---
+
+## 📂 Project Structure
+
+```
+cbc-pro-ranker/
+│── index.html        # Main entry point  
+│── /css              # Stylesheets  
+│── /js               # JavaScript logic  
+│── /assets           # Logos, images  
+│── README.md         # Documentation  
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📸 Screenshots
 
-**Use GitHub Codespaces**
+*(Add screenshots of your dashboard, student ranking page, and report card here)*
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🎯 Use Cases
 
-This project is built with:
+* Primary & Junior Secondary Schools in Kenya
+* Teachers generating CBC report forms
+* Schools analyzing stream/class performance
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 📌 Future Improvements
 
-Simply open [Lovable](https://lovable.dev/projects/1ae4987a-61bc-4a71-be0b-8464481a2e8e) and click on Share -> Publish.
+* 🔒 Enhanced authentication (Admin/Teacher roles)
+* ☁️ Cloud storage for cross-device access
+* 📱 Mobile-friendly responsive version
+* 📊 Advanced analytics dashboards
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 👨‍💻 Author
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+**Ken Kenddagor Tarbei**
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+* 📚 Rongo University, 2nd Year Student
+* 📧 Email: [kenkendagor3@gmail.com](mailto:kenkendagor3@gmail.com)
+* 📞 Phone: +254768731991
+* 🌐 [Portfolio](https://github.com/ken-2025-ai) | [LinkedIn](https://www.linkedin.com/in/ken-kendagor-a46a56356) | [Twitter](https://x.com/bigmeechie254)
+
+---
+
+## 🏆 Acknowledgments
+
+* Kenyan Competency-Based Curriculum (CBC) guidelines
+
+
