@@ -2,3 +2,6 @@ project_id = "tzdpqwkbkuqypzzuphmt"
 
 [functions.admin-auth]
 verify_jwt = false
+
+[functions.institution-auth]
+verify_jwt = false

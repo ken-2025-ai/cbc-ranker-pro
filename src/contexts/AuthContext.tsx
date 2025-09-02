@@ -1,17 +1,37 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface Institution {
+  id: string;
+  name: string;
+  username: string;
+  headteacher_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  county?: string;
+  subscription_status: string;
+  subscription_expires_at?: string;
+}
+
+interface InstitutionSession {
+  institution_id: string;
+  username: string;
+  name: string;
+  token: string;
+  expires_at: string;
+  last_login: string;
+}
+
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  institution: Institution | null;
+  session: InstitutionSession | null;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (username: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   institutionId: string | null;
-  userRole: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,194 +45,232 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [institution, setInstitution] = useState<Institution | null>(null);
+  const [session, setSession] = useState<InstitutionSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [institutionId, setInstitutionId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user's institution and role, and check if user is blocked
-          const fetchUserData = async () => {
-            try {
-              const { data: institutionUser, error } = await supabase
-                .from('institution_users')
-                .select('institution_id, role')
-                .eq('user_id', session.user.id)
-                .single();
-              
-              if (!error && institutionUser) {
-                // Check if institution is blocked or inactive
-                const { data: institution, error: instError } = await supabase
-                  .from('admin_institutions')
-                  .select('is_blocked, is_active')
-                  .eq('id', institutionUser.institution_id)
-                  .single();
-                
-                if (!instError && institution && (institution.is_blocked || !institution.is_active)) {
-                  // Block user access by signing them out
-                  toast({
-                    title: "Access Restricted",
-                    description: "Your institution account has been restricted. Please contact support.",
-                    variant: "destructive",
-                  });
-                  await supabase.auth.signOut();
-                  return;
-                }
-                
-                setInstitutionId(institutionUser.institution_id);
-                setUserRole(institutionUser.role);
-                console.log('Institution loaded:', institutionUser.institution_id);
-              } else {
-                console.log('No institution found for user, error:', error);
-                setInstitutionId(null);
-                setUserRole(null);
-              }
-            } catch (err) {
-              console.log('Error fetching institution:', err);
-              setInstitutionId(null);
-              setUserRole(null);
-            }
-          };
-          
-          fetchUserData();
-        } else {
-          setInstitutionId(null);
-          setUserRole(null);
-        }
-        setLoading(false);
-      }
-    );
-
     // Check for existing session on mount
-    const getInitialSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Session error:', error);
+    const checkSession = async () => {
+      // Check for admin impersonation first
+      const impersonationData = localStorage.getItem('admin_impersonation_session');
+      if (impersonationData) {
+        try {
+          const { session: sessionData, institution: inst } = JSON.parse(impersonationData);
+          setSession(sessionData);
+          setInstitution(inst);
+          setInstitutionId(inst.id);
+          
+          // Show impersonation banner
+          toast({
+            title: "Impersonation Mode Active",
+            description: `You are viewing ${inst.name} as admin`,
+            variant: "default",
+          });
+          
           setLoading(false);
           return;
+        } catch (err) {
+          localStorage.removeItem('admin_impersonation_session');
         }
-        
-        if (session) {
-          setSession(session);
-          setUser(session.user);
-          // Trigger user data fetch if we have a session
-          if (session.user) {
-            const { data: institutionUser } = await supabase
-              .from('institution_users')
-              .select('institution_id, role')
-              .eq('user_id', session.user.id)
+      }
+
+      const storedSession = localStorage.getItem('institution_session');
+      if (storedSession) {
+        try {
+          const sessionData = JSON.parse(storedSession) as InstitutionSession;
+          
+          // Check if session is still valid
+          if (new Date(sessionData.expires_at) > new Date()) {
+            // Verify institution status in real-time
+            const { data: inst, error } = await supabase
+              .from('admin_institutions')
+              .select('*')
+              .eq('id', sessionData.institution_id)
               .single();
-            
-            if (institutionUser) {
-              // Check if institution is blocked or inactive
-              const { data: institution } = await supabase
-                .from('admin_institutions')
-                .select('is_blocked, is_active')
-                .eq('id', institutionUser.institution_id)
-                .single();
-              
-              if (institution && (institution.is_blocked || !institution.is_active)) {
-                await supabase.auth.signOut();
+
+            if (error || !inst) {
+              localStorage.removeItem('institution_session');
+              setLoading(false);
+              return;
+            }
+
+            // Check if institution is blocked, inactive, or expired
+            if (inst.is_blocked) {
+              toast({
+                title: "Account Blocked",
+                description: "Your account has been blocked by admin. Please contact support.",
+                variant: "destructive",
+              });
+              localStorage.removeItem('institution_session');
+              setLoading(false);
+              return;
+            }
+
+            if (!inst.is_active) {
+              toast({
+                title: "Account Deactivated",
+                description: "This institution account has been deactivated. Please contact support.",
+                variant: "destructive",
+              });
+              localStorage.removeItem('institution_session');
+              setLoading(false);
+              return;
+            }
+
+            if (inst.subscription_expires_at) {
+              const expiryDate = new Date(inst.subscription_expires_at);
+              if (expiryDate < new Date()) {
+                toast({
+                  title: "Subscription Expired",
+                  description: "Your subscription has expired. Please contact admin to renew.",
+                  variant: "destructive",
+                });
+                localStorage.removeItem('institution_session');
+                setLoading(false);
                 return;
               }
-              
-              setInstitutionId(institutionUser.institution_id);
-              setUserRole(institutionUser.role);
-              console.log('Institution loaded:', institutionUser.institution_id);
+            }
+
+            // Set session data
+            setSession(sessionData);
+            setInstitution(inst);
+            setInstitutionId(inst.id);
+          } else {
+            localStorage.removeItem('institution_session');
+          }
+        } catch (err) {
+          console.error('Session parsing error:', err);
+          localStorage.removeItem('institution_session');
+        }
+      }
+      setLoading(false);
+    };
+
+    checkSession();
+
+    // Set up real-time subscription monitoring
+    const channel = supabase
+      .channel('institution-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'admin_institutions',
+          filter: `id=eq.${institutionId}`
+        },
+        (payload) => {
+          console.log('Institution updated:', payload);
+          const updatedInst = payload.new as any;
+          
+          // Check if institution was blocked or deactivated
+          if (updatedInst.is_blocked || !updatedInst.is_active) {
+            toast({
+              title: "Access Restricted",
+              description: updatedInst.is_blocked ? "Your account has been blocked." : "Your account has been deactivated.",
+              variant: "destructive",
+            });
+            signOut();
+          } else if (updatedInst.subscription_expires_at) {
+            const expiryDate = new Date(updatedInst.subscription_expires_at);
+            if (expiryDate < new Date()) {
+              toast({
+                title: "Subscription Expired",
+                description: "Your subscription has expired.",
+                variant: "destructive",
+              });
+              signOut();
             }
           }
         }
-      } catch (err) {
-        console.error('Error getting initial session:', err);
-      } finally {
-        setLoading(false);
-      }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
-
-    getInitialSession();
-
-    return () => subscription.unsubscribe();
-  }, []);
+  }, [institutionId]);
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl
-      }
+    toast({
+      title: "Registration Not Available",
+      description: "Please contact your administrator to create an institution account.",
+      variant: "destructive",
     });
-    
-    if (error) {
-      toast({
-        title: "Sign Up Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Sign Up Successful",
-        description: "Please check your email to confirm your account.",
-      });
-    }
-    
-    return { error };
+    return { error: "Registration not available" };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) {
-      toast({
-        title: "Sign In Error",
-        description: error.message,
-        variant: "destructive",
+  const signIn = async (username: string, password: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('institution-auth', {
+        body: { action: 'login', username, password }
       });
-    } else {
+
+      if (error || data.error) {
+        const errorMessage = data?.error || error?.message || 'Login failed';
+        toast({
+          title: "Login Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return { error: errorMessage };
+      }
+
+      // Store session
+      localStorage.setItem('institution_session', JSON.stringify(data.session));
+      setSession(data.session);
+      setInstitution(data.institution);
+      setInstitutionId(data.institution.id);
+
       toast({
         title: "Welcome back!",
-        description: "You have successfully signed in.",
+        description: `Signed in to ${data.institution.name}`,
       });
+
+      setLoading(false);
+      return { error: null };
+    } catch (err) {
+      console.error('Sign in error:', err);
+      setLoading(false);
+      return { error: 'Network error' };
     }
-    
-    return { error };
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Sign Out Error",
-        description: error.message,
-        variant: "destructive",
-      });
+    try {
+      if (session?.token) {
+        await supabase.functions.invoke('institution-auth', {
+          body: { action: 'logout', session_token: session.token }
+        });
+      }
+    } catch (err) {
+      console.error('Sign out error:', err);
     }
+
+    setInstitution(null);
+    setSession(null);
+    setInstitutionId(null);
+    localStorage.removeItem('institution_session');
+    
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
   };
 
   const value = {
-    user,
+    institution,
     session,
     loading,
     signUp,
     signIn,
     signOut,
     institutionId,
-    userRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -8,12 +8,13 @@ import StudentReports from "@/components/StudentReports";
 import Rankings from "@/components/Rankings";
 import Settings from "@/components/Settings";
 import NotificationToast from "@/components/NotificationToast";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState("dashboard");
-  const { user, loading } = useAuth();
+  const { institution, loading } = useAuth();
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -28,7 +29,7 @@ const Index = () => {
   }
 
   // Redirect to auth if not authenticated
-  if (!user) {
+  if (!institution) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -54,6 +55,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <NotificationToast />
+      <ImpersonationBanner />
       <Navigation currentView={currentView} onViewChange={setCurrentView} />
       
       {/* Main Content Area */}

@@ -130,9 +130,31 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const startImpersonation = (institution: any) => {
     setIsImpersonating(true);
     setImpersonatedInstitution(institution);
+    
+    // Create impersonation session for user panel
+    const impersonationSession = {
+      institution_id: institution.id,
+      username: institution.username,
+      name: institution.name,
+      token: `impersonate_${Date.now()}`,
+      expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours
+      last_login: new Date().toISOString()
+    };
+    
+    // Store in localStorage with special flag
+    localStorage.setItem('admin_impersonation_session', JSON.stringify({
+      session: impersonationSession,
+      institution: institution,
+      admin_id: sessionToken
+    }));
+    
+    // Open user panel in new tab
+    const userPanelUrl = `${window.location.origin}/?impersonation=true`;
+    window.open(userPanelUrl, '_blank');
+    
     toast({
-      title: "Impersonation Mode",
-      description: `Now viewing as ${institution.name}`,
+      title: "Impersonation Started",
+      description: `Opening ${institution.name} user panel in new tab`,
       variant: "default",
     });
   };

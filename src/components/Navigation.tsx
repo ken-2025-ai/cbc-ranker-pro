@@ -23,7 +23,7 @@ interface NavigationProps {
 
 const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { signOut, user } = useAuth();
+  const { signOut, institution } = useAuth();
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
@@ -73,7 +73,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-card">
           <div className="flex items-center justify-between mb-2">
             <div className="px-2 py-1 text-sm text-muted-foreground truncate">
-              {user?.email}
+              {institution?.name}
             </div>
             <NotificationBell />
           </div>
@@ -136,7 +136,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
             {/* Mobile User Section */}
             <div className="pt-2 border-t border-primary/10 mt-2">
               <div className="px-2 py-1 text-sm text-muted-foreground truncate">
-                {user?.email}
+                {institution?.name}
               </div>
               <Button
                 variant="ghost"

@@ -476,11 +476,10 @@ const InstitutionManagement = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      // Redirect to user panel with institution context
-                      window.open(`/?admin_view=${institution.id}`, '_blank');
+                      startImpersonation(institution);
                     }}
                     className="text-orange-400 border-orange-500/50 hover:bg-orange-600/20"
-                    title="View user account"
+                    title="Impersonate institution"
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
