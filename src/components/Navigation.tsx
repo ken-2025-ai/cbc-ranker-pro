@@ -71,11 +71,13 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
         
         {/* User Section */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-card">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <div className="px-2 py-1 text-sm text-muted-foreground truncate">
               {institution?.name}
             </div>
-            <NotificationBell />
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -99,8 +101,10 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
             <h2 className="font-bold text-primary">CBC Records</h2>
           </div>
           
-          <div className="flex items-center gap-2">
-            <NotificationBell />
+          <div className="flex items-center gap-3">
+            <div className="p-1 rounded-lg bg-accent/20">
+              <NotificationBell />
+            </div>
             <Button
               variant="ghost"
               size="icon"

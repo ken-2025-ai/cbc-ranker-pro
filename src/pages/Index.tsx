@@ -9,11 +9,13 @@ import Rankings from "@/components/Rankings";
 import Settings from "@/components/Settings";
 import NotificationToast from "@/components/NotificationToast";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import FloatingNotificationIndicator from "@/components/FloatingNotificationIndicator";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState("dashboard");
+  const [showNotifications, setShowNotifications] = useState(false);
   const { institution, loading } = useAuth();
 
   // Show loading spinner while checking authentication
@@ -57,6 +59,9 @@ const Index = () => {
       <NotificationToast />
       <ImpersonationBanner />
       <Navigation currentView={currentView} onViewChange={setCurrentView} />
+      <FloatingNotificationIndicator 
+        onOpenNotifications={() => setShowNotifications(true)} 
+      />
       
       {/* Main Content Area */}
       <div className="lg:ml-64 lg:pt-0 pt-16 pb-16 lg:pb-0">

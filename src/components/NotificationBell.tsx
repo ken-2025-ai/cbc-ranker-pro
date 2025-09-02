@@ -155,17 +155,21 @@ const NotificationBell = () => {
       <Button
         variant="ghost"
         size="sm"
-        className="relative"
+        className={`relative p-2 hover-scale transition-smooth ${unreadCount > 0 ? 'animate-pulse' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <Bell className="h-5 w-5" />
+        <Bell className={`h-5 w-5 transition-smooth ${unreadCount > 0 ? 'text-primary animate-bounce' : 'text-muted-foreground hover:text-primary'}`} />
         {unreadCount > 0 && (
-          <Badge 
-            className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs bg-red-500 text-white"
-            variant="secondary"
-          >
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </Badge>
+          <>
+            {/* Pulsing glow effect */}
+            <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
+            <Badge 
+              className="absolute -top-2 -right-2 h-6 w-6 p-0 text-xs bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-background shadow-elegant animate-bounce"
+              variant="secondary"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Badge>
+          </>
         )}
       </Button>
 
