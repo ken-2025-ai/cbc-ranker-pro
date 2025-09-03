@@ -29,7 +29,7 @@ interface AuthContextType {
   session: InstitutionSession | null;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
-  signIn: (username: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   institutionId: string | null;
 }
@@ -203,13 +203,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: "Registration not available" };
   };
 
-  const signIn = async (username: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      console.log('Attempting login with username:', username);
+      console.log('Attempting login with email:', email);
       
       const { data, error } = await supabase.functions.invoke('institution-auth', {
-        body: { action: 'login', username, password }
+        body: { action: 'login', email, password }
       });
 
       console.log('Login response:', { data, error });

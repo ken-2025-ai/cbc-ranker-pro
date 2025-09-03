@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, GraduationCap } from 'lucide-react';
 
 const Auth = () => {
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,7 +40,7 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await signIn(username, password);
+    await signIn(email, password);
     setLoading(false);
   };
 
@@ -112,19 +111,16 @@ const Auth = () => {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-username">Institution Username</Label>
+                    <Label htmlFor="signin-email">Email</Label>
                     <Input
-                      id="signin-username"
-                      type="text"
-                      placeholder="e.g., Ken, namgoi"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      id="signin-email"
+                      type="email"
+                      placeholder="Enter your institution email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       required
                       disabled={loading}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Use your institution username (not email address)
-                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signin-password">Password</Label>

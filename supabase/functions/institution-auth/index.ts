@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, username, password, session_token } = await req.json();
+    const { action, email, password, session_token } = await req.json();
     console.log('Institution auth action:', action);
 
     if (action === 'login') {
@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
       const { data: institution, error } = await supabase
         .from('admin_institutions')
         .select('*')
-        .eq('username', username)
+        .eq('email', email)
         .single();
 
       if (error || !institution) {
