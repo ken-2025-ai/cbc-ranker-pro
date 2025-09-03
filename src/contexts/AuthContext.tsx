@@ -206,15 +206,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (username: string, password: string) => {
     setLoading(true);
     try {
+      console.log('Attempting login with username:', username);
+      
       const { data, error } = await supabase.functions.invoke('institution-auth', {
         body: { action: 'login', username, password }
       });
 
-      if (error || data.error) {
+      console.log('Login response:', { data, error });
+
+      if (error || data?.error) {
         const errorMessage = data?.error || error?.message || 'Login failed';
+        
+        // Provide more helpful error messages
+        let userFriendlyMessage = errorMessage;
+        if (errorMessage.includes('Institution not found')) {
+          userFriendlyMessage = 'Institution not found. Please check your username and try again.';
+        } else if (errorMessage.includes('Invalid password')) {
+          userFriendlyMessage = 'Incorrect password. Please try again.';
+        } else if (errorMessage.includes('blocked')) {
+          userFriendlyMessage = 'Your account has been blocked. Please contact support.';
+        } else if (errorMessage.includes('expired')) {
+          userFriendlyMessage = 'Your subscription has expired. Please contact admin to renew.';
+        }
+        
         toast({
           title: "Login Error",
-          description: errorMessage,
+          description: userFriendlyMessage,
           variant: "destructive",
         });
         setLoading(false);

@@ -116,12 +116,15 @@ const Auth = () => {
                     <Input
                       id="signin-username"
                       type="text"
-                      placeholder="Enter your institution username"
+                      placeholder="e.g., Ken, namgoi"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       required
                       disabled={loading}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Use your institution username (not email address)
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signin-password">Password</Label>
