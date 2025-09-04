@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       const { data: institution, error } = await supabase
         .from('admin_institutions')
         .select('*')
-        .or(`email.eq.${identifier},username.eq.${identifier}`)
+        .or(`email.eq."${identifier}",username.eq."${identifier}"`)
         .maybeSingle();
 
       if (error || !institution) {
