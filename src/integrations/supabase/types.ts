@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_participants: number | null
+          meeting_schedule: string | null
+          name: string
+          teacher_in_charge: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_participants?: number | null
+          meeting_schedule?: string | null
+          name: string
+          teacher_in_charge?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_participants?: number | null
+          meeting_schedule?: string | null
+          name?: string
+          teacher_in_charge?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      activity_participants: {
+        Row: {
+          activity_id: string
+          created_at: string
+          id: string
+          joined_date: string | null
+          status: string | null
+          student_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          joined_date?: string | null
+          status?: string | null
+          student_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          joined_date?: string | null
+          status?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       admin_activity_logs: {
         Row: {
           action_type: string
@@ -754,6 +820,48 @@ export type Database = {
         }
         Relationships: []
       }
+      disciplinary_records: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          description: string
+          id: string
+          incident_date: string
+          incident_type: string
+          parent_notified: boolean | null
+          reported_by: string | null
+          status: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          incident_date: string
+          incident_type: string
+          parent_notified?: boolean | null
+          reported_by?: string | null
+          status?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          incident_date?: string
+          incident_type?: string
+          parent_notified?: boolean | null
+          reported_by?: string | null
+          status?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exam_periods: {
         Row: {
           created_at: string
@@ -1006,6 +1114,81 @@ export type Database = {
         }
         Relationships: []
       }
+      library_books: {
+        Row: {
+          author: string
+          available_copies: number | null
+          category: string
+          created_at: string
+          id: string
+          isbn: string | null
+          title: string
+          total_copies: number | null
+          updated_at: string
+        }
+        Insert: {
+          author: string
+          available_copies?: number | null
+          category: string
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          title: string
+          total_copies?: number | null
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          available_copies?: number | null
+          category?: string
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          title?: string
+          total_copies?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      library_borrowings: {
+        Row: {
+          book_id: string
+          borrowed_date: string
+          created_at: string
+          due_date: string
+          fine_amount: number | null
+          id: string
+          returned_date: string | null
+          status: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          borrowed_date?: string
+          created_at?: string
+          due_date: string
+          fine_amount?: number | null
+          id?: string
+          returned_date?: string | null
+          status?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          borrowed_date?: string
+          created_at?: string
+          due_date?: string
+          fine_amount?: number | null
+          id?: string
+          returned_date?: string | null
+          status?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       livestock: {
         Row: {
           age_months: number | null
@@ -1153,6 +1336,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parents_guardians: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_primary_contact: boolean | null
+          occupation: string | null
+          phone_number: string | null
+          relationship: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_primary_contact?: boolean | null
+          occupation?: string | null
+          phone_number?: string | null
+          relationship: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_primary_contact?: boolean | null
+          occupation?: string | null
+          phone_number?: string | null
+          relationship?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       patients: {
         Row: {
@@ -1482,6 +1707,105 @@ export type Database = {
         }
         Relationships: []
       }
+      school_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_time: string | null
+          event_date: string
+          event_type: string
+          id: string
+          institution_id: string
+          is_active: boolean | null
+          location: string | null
+          start_time: string | null
+          target_audience: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_time?: string | null
+          event_date: string
+          event_type: string
+          id?: string
+          institution_id: string
+          is_active?: boolean | null
+          location?: string | null
+          start_time?: string | null
+          target_audience?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_time?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          institution_id?: string
+          is_active?: boolean | null
+          location?: string | null
+          start_time?: string | null
+          target_audience?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      staff: {
+        Row: {
+          created_at: string
+          department: string
+          email: string | null
+          employee_number: string
+          full_name: string
+          hire_date: string | null
+          id: string
+          institution_id: string
+          phone: string | null
+          position: string
+          salary: number | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department: string
+          email?: string | null
+          employee_number: string
+          full_name: string
+          hire_date?: string | null
+          id?: string
+          institution_id: string
+          phone?: string | null
+          position: string
+          salary?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          email?: string | null
+          employee_number?: string
+          full_name?: string
+          hire_date?: string | null
+          id?: string
+          institution_id?: string
+          phone?: string | null
+          position?: string
+          salary?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_assignments: {
         Row: {
           assignment_id: string
@@ -1577,6 +1901,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      student_health_records: {
+        Row: {
+          allergies: string | null
+          blood_group: string | null
+          created_at: string
+          doctor_name: string | null
+          doctor_phone: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          id: string
+          insurance_details: string | null
+          medical_conditions: string | null
+          medications: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          allergies?: string | null
+          blood_group?: string | null
+          created_at?: string
+          doctor_name?: string | null
+          doctor_phone?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          id?: string
+          insurance_details?: string | null
+          medical_conditions?: string | null
+          medications?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          allergies?: string | null
+          blood_group?: string | null
+          created_at?: string
+          doctor_name?: string | null
+          doctor_phone?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          id?: string
+          insurance_details?: string | null
+          medical_conditions?: string | null
+          medications?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       students: {
         Row: {
@@ -1731,6 +2103,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      timetables: {
+        Row: {
+          academic_year: number | null
+          class_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean | null
+          room: string | null
+          start_time: string
+          subject_id: string
+          teacher_id: string | null
+          term: number | null
+          updated_at: string
+        }
+        Insert: {
+          academic_year?: number | null
+          class_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          room?: string | null
+          start_time: string
+          subject_id: string
+          teacher_id?: string | null
+          term?: number | null
+          updated_at?: string
+        }
+        Update: {
+          academic_year?: number | null
+          class_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          room?: string | null
+          start_time?: string
+          subject_id?: string
+          teacher_id?: string | null
+          term?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_kcse_results: {
         Row: {
