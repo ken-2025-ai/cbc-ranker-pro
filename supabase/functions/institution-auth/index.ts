@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import bcrypt from 'https://esm.sh/bcryptjs@2.4.3';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -20,11 +21,12 @@ Deno.serve(async (req) => {
 
     if (action === 'login') {
       // Authenticate institution
+      const identifier = email;
       const { data: institution, error } = await supabase
         .from('admin_institutions')
         .select('*')
-        .eq('email', email)
-        .single();
+        .or(`email.eq.${identifier},username.eq.${identifier}`)
+        .maybeSingle();
 
       if (error || !institution) {
         console.log('Institution not found:', error);
@@ -74,8 +76,20 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Simple password check (in production, use proper hashing)
-      if (institution.password_hash !== password) {
+      // Password verification: support bcrypt hashes and plaintext
+      let passwordValid = false;
+      const stored = institution.password_hash as string | null;
+      if (stored && (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$'))) {
+        try {
+          passwordValid = bcrypt.compareSync(password, stored);
+        } catch (_e) {
+          passwordValid = false;
+        }
+      } else {
+        passwordValid = stored === password;
+      }
+
+      if (!passwordValid) {
         return new Response(
           JSON.stringify({ error: 'Invalid password' }),
           { 

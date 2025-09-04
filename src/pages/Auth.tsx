@@ -111,11 +111,11 @@ const Auth = () => {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">Email or Username</Label>
                     <Input
                       id="signin-email"
-                      type="email"
-                      placeholder="Enter your institution email"
+                      type="text"
+                      placeholder="Enter your email or username"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
