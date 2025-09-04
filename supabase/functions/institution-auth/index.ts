@@ -98,11 +98,26 @@ Deno.serve(async (req) => {
         last_login: new Date().toISOString()
       };
 
-      // Update last login
+      // Update last login and ensure institutions row exists
       await supabase
         .from('admin_institutions')
         .update({ last_login: new Date().toISOString() })
         .eq('id', institution.id);
+
+      // Ensure a corresponding row exists in public.institutions for FK integrity
+      const upsertPayload = {
+        id: institution.id,
+        name: institution.name,
+        email: institution.email || null,
+        code: institution.username, // use username as institution code
+        address: institution.address || null,
+        phone: institution.phone || null,
+        updated_at: new Date().toISOString()
+      };
+
+      await supabase
+        .from('institutions')
+        .upsert(upsertPayload, { onConflict: 'id' });
 
       return new Response(
         JSON.stringify({ 
