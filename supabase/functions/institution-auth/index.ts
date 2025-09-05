@@ -21,11 +21,10 @@ Deno.serve(async (req) => {
 
     if (action === 'login') {
       // Authenticate institution
-      const identifier = email;
       const { data: institution, error } = await supabase
         .from('admin_institutions')
         .select('*')
-        .or(`email.eq."${identifier}",username.eq."${identifier}"`)
+        .eq('email', email)
         .maybeSingle();
 
       if (error || !institution) {
