@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.institution-auth]
 verify_jwt = false
+
+[functions.institution-signup]
+verify_jwt = false

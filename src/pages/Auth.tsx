@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, GraduationCap } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -14,9 +16,10 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [tapCount, setTapCount] = useState(0);
-  const { signIn, signUp, institution, loading: authLoading } = useAuth();
+  const { signIn, institution, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
 
   console.log('Auth page - institution:', institution, 'authLoading:', authLoading);
 
@@ -46,12 +49,54 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      alert('Passwords do not match');
+    if (!confirmPassword.trim()) {
+      toast({
+        title: "Institution Code Required",
+        description: "Please enter your institution code to create an account.",
+        variant: "destructive",
+      });
       return;
     }
     setLoading(true);
-    await signUp(email, password);
+    
+    try {
+      // First try to create account via institution signup
+      const { data, error } = await supabase.functions.invoke('institution-signup', {
+        body: { 
+          email, 
+          password, 
+          institutionCode: confirmPassword 
+        }
+      });
+
+      if (error || data?.error) {
+        toast({
+          title: "Sign Up Error",
+          description: data?.error || error?.message || 'Failed to create account',
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      toast({
+        title: "Account Created",
+        description: "Your account has been created successfully. You can now sign in.",
+      });
+      
+      // Reset form
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error('Sign up error:', err);
+      toast({
+        title: "Sign Up Error", 
+        description: "Network error. Please try again.",
+        variant: "destructive",
+      });
+    }
+    
     setLoading(false);
   };
 
@@ -166,6 +211,21 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="institution-code">Institution Code</Label>
+                    <Input
+                      id="institution-code"
+                      type="text"
+                      placeholder="Enter your institution code/username"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Contact your administrator if you don't know your institution code
+                    </p>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
                     <Input
                       id="signup-password"
@@ -173,19 +233,6 @@ const Auth = () => {
                       placeholder="Create a strong password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={loading}
-                      minLength={6}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm Password</Label>
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       disabled={loading}
                       minLength={6}
