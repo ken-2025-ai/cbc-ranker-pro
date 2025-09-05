@@ -63,8 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch institution data for authenticated user
-          setTimeout(async () => {
+          // Fetch institution data for authenticated user immediately
+          const fetchInstitution = async () => {
             try {
               const { data: inst, error } = await supabase
                 .from('admin_institutions')
@@ -80,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     description: "Your account has been blocked by admin. Please contact support.",
                     variant: "destructive",
                   });
-                  signOut();
+                  await supabase.auth.signOut();
                   return;
                 }
 
@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     description: "This institution account has been deactivated. Please contact support.",
                     variant: "destructive",
                   });
-                  signOut();
+                  await supabase.auth.signOut();
                   return;
                 }
 
@@ -102,20 +102,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                       description: "Your subscription has expired. Please contact admin to renew.",
                       variant: "destructive",
                     });
-                    signOut();
+                    await supabase.auth.signOut();
                     return;
                   }
                 }
 
                 setInstitution(inst);
                 setInstitutionId(inst.id);
+                console.log('Institution set:', inst);
               } else if (error) {
                 console.error('Error fetching institution:', error);
               }
             } catch (err) {
               console.error('Error in auth state change:', err);
             }
-          }, 0);
+          };
+          
+          fetchInstitution();
         } else {
           setInstitution(null);
           setInstitutionId(null);

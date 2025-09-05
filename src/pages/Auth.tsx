@@ -37,14 +37,22 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (institution) {
+    console.log('Redirecting to dashboard, institution:', institution);
     return <Navigate to="/" replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await signIn(email, password);
+    const result = await signIn(email, password);
     setLoading(false);
+    
+    // If login is successful, redirect will happen automatically via the useEffect check
+    if (!result.error) {
+      // Clear form
+      setEmail('');
+      setPassword('');
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
