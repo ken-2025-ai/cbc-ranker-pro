@@ -34,20 +34,202 @@ const Settings = () => {
   const { institutionId } = useAuth();
   const { toast } = useToast();
   const [curriculumLevel, setCurriculumLevel] = useState("upper-primary");
-  const [schoolName, setSchoolName] = useState("Your School Name");
-  const [streams] = useState(["8A", "8B", "8C", "7A", "7B"]);
+  const [schoolName, setSchoolName] = useState("");
+  const [originalSchoolName, setOriginalSchoolName] = useState("");
+  const [streams, setStreams] = useState<string[]>([]);
+  const [newStream, setNewStream] = useState("");
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [isRemoving, setIsRemoving] = useState(false);
   const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  const [isSavingSchoolName, setIsSavingSchoolName] = useState(false);
+  const [isAddingStream, setIsAddingStream] = useState(false);
+  
+  // Password change form
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const isDarkMode = theme === "dark";
 
   useEffect(() => {
     if (institutionId) {
       fetchStudents();
+      fetchInstitutionData();
     }
   }, [institutionId]);
+
+  const fetchInstitutionData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_institutions')
+        .select('name')
+        .eq('id', institutionId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setSchoolName(data.name || "");
+        setOriginalSchoolName(data.name || "");
+      }
+    } catch (error) {
+      console.error('Error fetching institution data:', error);
+    }
+  };
+
+  const handleSaveSchoolName = async () => {
+    if (!schoolName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "School name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSavingSchoolName(true);
+    try {
+      const { error } = await supabase
+        .from('admin_institutions')
+        .update({ name: schoolName.trim() })
+        .eq('id', institutionId);
+
+      if (error) throw error;
+
+      setOriginalSchoolName(schoolName.trim());
+      toast({
+        title: "Success",
+        description: "School name updated successfully",
+      });
+    } catch (error: any) {
+      console.error('Error updating school name:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update school name",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingSchoolName(false);
+    }
+  };
+
+  const handleAddStream = async () => {
+    if (!newStream.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Stream name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (streams.includes(newStream.trim())) {
+      toast({
+        title: "Validation Error",
+        description: "Stream already exists",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAddingStream(true);
+    try {
+      const updatedStreams = [...streams, newStream.trim()];
+      setStreams(updatedStreams);
+      setNewStream("");
+      
+      toast({
+        title: "Success",
+        description: `Stream "${newStream.trim()}" added successfully`,
+      });
+    } catch (error: any) {
+      console.error('Error adding stream:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add stream",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAddingStream(false);
+    }
+  };
+
+  const handleRemoveStream = async (streamToRemove: string) => {
+    try {
+      const updatedStreams = streams.filter(stream => stream !== streamToRemove);
+      setStreams(updatedStreams);
+      
+      toast({
+        title: "Success",
+        description: `Stream "${streamToRemove}" removed successfully`,
+      });
+    } catch (error: any) {
+      console.error('Error removing stream:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove stream",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({
+        title: "Validation Error",
+        description: "All password fields are required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Validation Error",
+        description: "New passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast({
+        title: "Validation Error",
+        description: "New password must be at least 8 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change password",
+        variant: "destructive"
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const fetchStudents = async () => {
     try {
@@ -299,12 +481,22 @@ const Settings = () => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="school-name" className="text-base font-medium">School Name</Label>
-                <Input
-                  id="school-name"
-                  value={schoolName}
-                  onChange={(e) => setSchoolName(e.target.value)}
-                  className="w-full"
-                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    id="school-name"
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
+                    className="flex-1"
+                    placeholder="Enter school name"
+                  />
+                  <Button 
+                    onClick={handleSaveSchoolName}
+                    disabled={isSavingSchoolName || schoolName.trim() === originalSchoolName.trim()}
+                    className="w-full sm:w-auto min-h-[44px]"
+                  >
+                    {isSavingSchoolName ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
               </div>
 
               <Separator />
@@ -318,19 +510,37 @@ const Settings = () => {
                     {streams.map((stream, index) => (
                       <div key={index} className="flex items-center gap-1 bg-secondary rounded-lg px-3 py-1">
                         <span className="text-sm font-medium">{stream}</span>
-                        <Button variant="ghost" size="sm" className="h-auto p-1 text-muted-foreground hover:text-destructive">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-auto p-1 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveStream(stream)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     ))}
+                    {streams.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No streams added yet</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Input placeholder="Enter new stream (e.g., 8D)" className="flex-1" />
-                  <Button className="flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]">
+                  <Input 
+                    placeholder="Enter new stream (e.g., 8D)" 
+                    className="flex-1"
+                    value={newStream}
+                    onChange={(e) => setNewStream(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddStream()}
+                  />
+                  <Button 
+                    className="flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
+                    onClick={handleAddStream}
+                    disabled={isAddingStream || !newStream.trim()}
+                  >
                     <Plus className="h-4 w-4" />
-                    <span className="sm:inline">Add Stream</span>
+                    <span className="sm:inline">{isAddingStream ? 'Adding...' : 'Add Stream'}</span>
                   </Button>
                 </div>
               </div>
@@ -357,17 +567,35 @@ const Settings = () => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="old-password">Current Password</Label>
-                    <Input id="old-password" type="password" placeholder="Enter current password" />
+                    <Input 
+                      id="old-password" 
+                      type="password" 
+                      placeholder="Enter current password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
-                    <Input id="new-password" type="password" placeholder="Enter new password" />
+                    <Input 
+                      id="new-password" 
+                      type="password" 
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input id="confirm-password" type="password" placeholder="Confirm new password" />
+                    <Input 
+                      id="confirm-password" 
+                      type="password" 
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
                   </div>
                   
                   <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
@@ -376,7 +604,13 @@ const Settings = () => {
                     </p>
                   </div>
                   
-                  <Button className="w-full min-h-[44px]">Update Password</Button>
+                  <Button 
+                    className="w-full min-h-[44px]"
+                    onClick={handleChangePassword}
+                    disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                  >
+                    {isChangingPassword ? 'Updating...' : 'Update Password'}
+                  </Button>
                 </div>
               </div>
             </CardContent>
