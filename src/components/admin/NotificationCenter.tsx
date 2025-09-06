@@ -42,7 +42,7 @@ interface Institution {
 }
 
 const NotificationCenter = () => {
-  const { user } = useAdminAuth();
+  const { user, sessionToken } = useAdminAuth();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -145,12 +145,23 @@ const NotificationCenter = () => {
   };
 
   const sendNotification = async (notificationId: string) => {
+    if (!sessionToken) {
+      toast({
+        title: "Error",
+        description: "No valid admin session found. Please log in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      console.log('Sending notification:', notificationId, 'with session token:', sessionToken);
+      
       // Call the send-notification edge function
       const { data, error } = await supabase.functions.invoke('send-notification', {
         body: {
           notificationId,
-          sessionToken: user?.id // Use admin user ID as session token
+          sessionToken
         }
       });
 

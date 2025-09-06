@@ -19,6 +19,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== Send Notification Function Called ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+    
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -27,8 +31,13 @@ serve(async (req) => {
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
     const { notificationId, sessionToken }: NotificationRequest = await req.json();
+    
+    console.log('Parsed request data:', { notificationId, sessionToken: sessionToken ? 'present' : 'missing' });
 
-    // Verify admin session - use sessionToken as admin user ID for now
+    console.log('Verifying admin session with token:', sessionToken);
+    
+    // Verify admin session using session token from admin_sessions or admin_users table
+    // For now, we'll check if the sessionToken is a valid admin user ID
     const { data: adminUser, error: adminError } = await supabaseClient
       .from('admin_users')
       .select('id, email, full_name, is_active')
@@ -46,6 +55,8 @@ serve(async (req) => {
       });
     }
 
+    console.log('Admin user verified:', adminUser.email);
+
     // Get notification details
     const { data: notification, error: notificationError } = await supabaseClient
       .from('admin_notifications')
@@ -54,11 +65,17 @@ serve(async (req) => {
       .single();
 
     if (notificationError || !notification) {
-      return new Response(JSON.stringify({ error: 'Notification not found' }), {
+      console.error('Notification fetch error:', notificationError);
+      return new Response(JSON.stringify({ 
+        error: 'Notification not found',
+        details: notificationError?.message 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 404,
       });
     }
+
+    console.log('Found notification:', notification.title, 'Target type:', notification.target_type);
 
     // Get target institutions
     let institutionIds: string[] = [];
@@ -84,6 +101,8 @@ serve(async (req) => {
       institutionIds = notification.target_institutions || [];
     }
 
+    console.log('Target institution IDs found:', institutionIds.length, 'institutions');
+
     // Get institution details for email sending
     const { data: institutions, error: instError } = await supabaseClient
       .from('admin_institutions')
@@ -91,11 +110,17 @@ serve(async (req) => {
       .in('id', institutionIds);
 
     if (instError) {
-      return new Response(JSON.stringify({ error: 'Failed to fetch institutions' }), {
+      console.error('Failed to fetch institution details:', instError);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to fetch institutions',
+        details: instError.message 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
+
+    console.log('Fetched institution details for', institutions?.length || 0, 'institutions');
 
     let emailsSent = 0;
     let errors: string[] = [];
@@ -176,13 +201,19 @@ serve(async (req) => {
     }
 
     // Update notification as sent
-    await supabaseClient
+    const { error: updateError } = await supabaseClient
       .from('admin_notifications')
       .update({
-        sent_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        is_sent: true,
+        sent_at: new Date().toISOString()
       })
       .eq('id', notificationId);
+
+    if (updateError) {
+      console.error('Failed to update notification status:', updateError);
+    } else {
+      console.log('Notification marked as sent successfully');
+    }
 
     // Log the activity
     await supabaseClient
@@ -211,7 +242,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Send notification error:', error);
+    console.error('=== Send notification error ===');
+    console.error('Error details:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
       details: error.message 
