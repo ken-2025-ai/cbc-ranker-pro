@@ -66,11 +66,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Fetch institution data for authenticated user immediately
           const fetchInstitution = async () => {
             try {
+              console.log('Fetching institution for user:', session.user.id);
               const { data: inst, error } = await supabase
                 .from('admin_institutions')
                 .select('*')
                 .eq('user_id', session.user.id)
                 .maybeSingle();
+
+              console.log('Institution query result:', { inst, error });
 
               if (inst) {
                 // Check institution status
