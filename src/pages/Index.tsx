@@ -10,6 +10,7 @@ import Settings from "@/components/Settings";
 import NotificationToast from "@/components/NotificationToast";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import FloatingNotificationIndicator from "@/components/FloatingNotificationIndicator";
+import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
@@ -59,12 +60,14 @@ const Index = () => {
       <NotificationToast />
       <ImpersonationBanner />
       <Navigation currentView={currentView} onViewChange={setCurrentView} />
-      <FloatingNotificationIndicator 
-        onOpenNotifications={() => setShowNotifications(true)} 
-      />
+      
+      {/* Center Top Notification Button */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+        <NotificationBell />
+      </div>
       
       {/* Main Content Area */}
-      <div className="lg:ml-64 lg:pt-0 pt-16 pb-16 lg:pb-0">
+      <div className="lg:ml-64 lg:pt-16 pt-20 pb-16 lg:pb-0">
         {renderCurrentView()}
       </div>
     </div>
