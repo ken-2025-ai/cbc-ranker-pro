@@ -149,7 +149,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
     
     // Open user panel in new tab
-    const userPanelUrl = `${window.location.origin}/?impersonation=true`;
+    const userPanelUrl = `${window.location.origin}/`;
     window.open(userPanelUrl, '_blank');
     
     toast({

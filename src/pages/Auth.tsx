@@ -44,7 +44,11 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    console.log('Sign in attempt for:', email);
     const result = await signIn(email, password);
+    console.log('Sign in result:', result);
+    
     setLoading(false);
     
     // If login is successful, redirect will happen automatically via the useEffect check
@@ -52,6 +56,7 @@ const Auth = () => {
       // Clear form
       setEmail('');
       setPassword('');
+      console.log('Sign in successful, form cleared');
     }
   };
 
@@ -68,7 +73,9 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // First try to create account via institution signup
+      console.log('Attempting institution signup with:', { email, institutionCode: confirmPassword });
+      
+      // Use institution signup function which validates the institution exists
       const { data, error } = await supabase.functions.invoke('institution-signup', {
         body: { 
           email, 
@@ -77,7 +84,10 @@ const Auth = () => {
         }
       });
 
+      console.log('Institution signup response:', { data, error });
+
       if (error || data?.error) {
+        console.error('Institution signup failed:', data?.error || error?.message);
         toast({
           title: "Sign Up Error",
           description: data?.error || error?.message || 'Failed to create account',
@@ -88,14 +98,21 @@ const Auth = () => {
       }
 
       toast({
-        title: "Account Created",
-        description: "Your account has been created successfully. You can now sign in.",
+        title: "Account Created Successfully",
+        description: "Your institution account has been activated. You can now sign in with your credentials.",
       });
       
-      // Reset form
+      // Reset form and switch to sign in tab
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+      
+      // Optionally switch to sign in tab
+      const signInTab = document.querySelector('[data-state="inactive"][value="signin"]') as HTMLElement;
+      if (signInTab) {
+        signInTab.click();
+      }
+      
     } catch (err) {
       console.error('Sign up error:', err);
       toast({
