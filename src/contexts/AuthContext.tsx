@@ -55,6 +55,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check for admin impersonation session first
+    const checkImpersonation = () => {
+      const impersonationData = localStorage.getItem('admin_impersonation_session');
+      if (impersonationData) {
+        try {
+          const { session: impSession, institution: impInstitution } = JSON.parse(impersonationData);
+          console.log('Impersonation session found:', impSession, impInstitution);
+          
+          // Create mock user and session for impersonation
+          const mockUser = {
+            id: impSession.institution_id,
+            aud: 'authenticated',
+            email: impInstitution.email || `${impInstitution.username}@institution.local`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            confirmed_at: new Date().toISOString(),
+            email_confirmed_at: new Date().toISOString(),
+            last_sign_in_at: impSession.last_login,
+            app_metadata: {
+              provider: 'impersonation',
+              providers: ['impersonation']
+            },
+            user_metadata: {
+              institution_username: impInstitution.username,
+              institution_name: impInstitution.name
+            },
+            role: 'authenticated',
+            identities: []
+          } as User;
+
+          const mockSession = {
+            user: mockUser,
+            access_token: impSession.token,
+            expires_at: new Date(impSession.expires_at).getTime() / 1000
+          } as Session;
+
+          // Set impersonated state
+          setUser(mockUser);
+          setSession(mockSession);
+          setInstitution(impInstitution);
+          setInstitutionId(impInstitution.id);
+          setLoading(false);
+          
+          console.log('Impersonation state set successfully');
+          return true;
+        } catch (error) {
+          console.error('Error parsing impersonation data:', error);
+          localStorage.removeItem('admin_impersonation_session');
+        }
+      }
+      return false;
+    };
+
+    // If impersonation is active, skip normal auth flow
+    if (checkImpersonation()) {
+      return;
+    }
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -240,6 +298,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    // Check if we're in impersonation mode
+    const impersonationData = localStorage.getItem('admin_impersonation_session');
+    if (impersonationData) {
+      // Just clear impersonation data and reset state
+      localStorage.removeItem('admin_impersonation_session');
+      setInstitution(null);
+      setInstitutionId(null);
+      setUser(null);
+      setSession(null);
+      
+      toast({
+        title: "Impersonation ended",
+        description: "You have been signed out of the impersonated account.",
+      });
+      return;
+    }
+
+    // Normal sign out for regular users
     await supabase.auth.signOut();
     
     setInstitution(null);
