@@ -136,7 +136,14 @@ const InstitutionManagement = () => {
         // If email is provided, automatically create account and send confirmation
         if (formData.email) {
           try {
-            const { error: signupError } = await supabase.functions.invoke('create-institution-account', {
+            console.log('Attempting to create institution account with data:', {
+              email: formData.email,
+              username: formData.username,
+              institutionName: formData.name,
+              hasPassword: !!formData.password
+            });
+            
+            const { data, error: signupError } = await supabase.functions.invoke('create-institution-account', {
               body: {
                 email: formData.email,
                 password: formData.password,
@@ -145,6 +152,8 @@ const InstitutionManagement = () => {
               }
             });
 
+            console.log('Create institution account response:', { data, signupError });
+
             if (signupError) {
               console.warn('Failed to create account for institution:', signupError);
               toast({
@@ -152,9 +161,16 @@ const InstitutionManagement = () => {
                 description: "Institution created but failed to send confirmation email. Institution can still sign up manually.",
                 variant: "default",
               });
+            } else {
+              console.log('Institution account created successfully, confirmation email sent');
             }
           } catch (signupErr) {
             console.warn('Signup error (continuing with institution creation):', signupErr);
+            toast({
+              title: "Warning", 
+              description: "Institution created but failed to send confirmation email. Institution can still sign up manually.",
+              variant: "default",
+            });
           }
         }
 

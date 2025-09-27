@@ -3,8 +3,10 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
 Deno.serve(async (req) => {
   console.log('Create institution account request received');
@@ -18,14 +20,16 @@ Deno.serve(async (req) => {
     const { email, password, username, institutionName } = await req.json();
     console.log('Creating account for institution:', institutionName, 'with email:', email);
 
-    // Create Supabase auth user with email confirmation required
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Create Supabase auth user using signUp to trigger confirmation email
+    const { data: authData, error: authError } = await supabaseAuth.auth.signUp({
       email: email,
       password: password,
-      email_confirm: false, // Require email confirmation
-      user_metadata: {
-        institution_username: username,
-        institution_name: institutionName
+      options: {
+        emailRedirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('supabase.co', 'lovableproject.com')}/institution-auth`,
+        data: {
+          institution_username: username,
+          institution_name: institutionName
+        }
       }
     });
 

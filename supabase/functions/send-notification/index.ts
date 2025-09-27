@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { Resend } from "npm:resend@2.0.0";
+// import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +28,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    // const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
     const { notificationId, sessionToken }: NotificationRequest = await req.json();
     
@@ -169,6 +169,9 @@ serve(async (req) => {
 
     // Send emails if email delivery is enabled
     if (notification.delivery_method.includes('email')) {
+      console.log('Email delivery is disabled in this version');
+      // Email functionality temporarily disabled - Resend package not configured
+      /*
       for (const institution of institutions || []) {
         if (institution.email) {
           try {
@@ -198,6 +201,7 @@ serve(async (req) => {
           }
         }
       }
+      */
     }
 
     // Update notification as sent
@@ -241,7 +245,7 @@ serve(async (req) => {
       status: 200,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('=== Send notification error ===');
     console.error('Error details:', error);
     console.error('Error message:', error.message);
