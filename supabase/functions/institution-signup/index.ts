@@ -62,11 +62,29 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check subscription status for paid institutions
+    if (institution.subscription_status !== 'paid' && institution.subscription_status !== 'trial') {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Your institution subscription is not active. Please contact your administrator or make payment to activate your account.' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403 
+        }
+      );
+    }
+
     // Create Supabase auth user
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email,
       password: password,
-      email_confirm: true // Auto-confirm for institutions
+      email_confirm: true, // Auto-confirm for institutions that have paid
+      user_metadata: {
+        institution_id: institution.id,
+        institution_name: institution.name,
+        institution_username: institution.username
+      }
     });
 
     if (authError || !authData.user) {
@@ -105,6 +123,20 @@ Deno.serve(async (req) => {
           status: 500 
         }
       );
+    }
+
+    // Create a profile for the institution user
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: authData.user.id,
+        username: institution.username,
+        institution_id: institution.id,
+        role: 'admin' // Institution admin role
+      });
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
     }
 
     // Ensure a corresponding row exists in public.institutions for FK integrity

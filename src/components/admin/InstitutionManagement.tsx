@@ -133,9 +133,36 @@ const InstitutionManagement = () => {
 
         if (error) throw error;
 
+        // If email is provided, automatically create account and send confirmation
+        if (formData.email) {
+          try {
+            const { error: signupError } = await supabase.functions.invoke('create-institution-account', {
+              body: {
+                email: formData.email,
+                password: formData.password,
+                username: formData.username,
+                institutionName: formData.name
+              }
+            });
+
+            if (signupError) {
+              console.warn('Failed to create account for institution:', signupError);
+              toast({
+                title: "Warning",
+                description: "Institution created but failed to send confirmation email. Institution can still sign up manually.",
+                variant: "default",
+              });
+            }
+          } catch (signupErr) {
+            console.warn('Signup error (continuing with institution creation):', signupErr);
+          }
+        }
+
         toast({
           title: "Success",
-          description: "Institution created successfully",
+          description: formData.email ? 
+            "Institution created successfully! A confirmation email has been sent to the institution." :
+            "Institution created successfully",
         });
       }
 
@@ -148,6 +175,50 @@ const InstitutionManagement = () => {
       toast({
         title: "Error",
         description: "Failed to save institution",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteInstitution = async (institution: Institution) => {
+    if (!confirm(`Are you sure you want to delete "${institution.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('admin_institutions')
+        .delete()
+        .eq('id', institution.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Institution deleted successfully",
+      });
+
+      // Log the admin activity
+      try {
+        await supabase
+          .from('admin_activity_logs')
+          .insert({
+            admin_id: sessionToken,
+            action_type: 'delete',
+            description: `Deleted institution: ${institution.name}`,
+            target_type: 'institution',
+            target_id: institution.id,
+          });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+
+      fetchInstitutions();
+    } catch (error) {
+      console.error('Error deleting institution:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete institution",
         variant: "destructive",
       });
     }
@@ -500,6 +571,15 @@ const InstitutionManagement = () => {
                       : "text-red-400 border-red-500/50 hover:bg-red-600/20"}
                   >
                     {institution.is_blocked ? <Shield className="h-4 w-4" /> : <ShieldOff className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteInstitution(institution)}
+                    className="text-red-400 border-red-500/50 hover:bg-red-600/20"
+                    title="Delete institution"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

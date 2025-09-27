@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.institution-signup]
 verify_jwt = false
+
+[functions.create-institution-account]
+verify_jwt = false
