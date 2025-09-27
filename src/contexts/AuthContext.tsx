@@ -113,6 +113,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setInstitution(inst);
                 setInstitutionId(inst.id);
                 console.log('Institution set:', inst);
+              } else if (!inst && !error) {
+                // User is authenticated but has no institution record - create one
+                console.log('Creating institution record for user:', session.user.email);
+                
+                const newInstitution = {
+                  user_id: session.user.id,
+                  name: session.user.email?.split('@')[0] || 'Institution',
+                  username: session.user.email?.split('@')[0] || 'user',
+                  email: session.user.email,
+                  headteacher_name: session.user.user_metadata?.full_name || 'Head Teacher',
+                  phone: session.user.user_metadata?.phone_number || '',
+                  address: '',
+                  county: '',
+                  is_active: true,
+                  is_blocked: false,
+                  subscription_status: 'trial',
+                  subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days trial
+                  password_hash: 'auto_created'
+                };
+
+                const { data: createdInst, error: createError } = await supabase
+                  .from('admin_institutions')
+                  .insert(newInstitution)
+                  .select()
+                  .single();
+
+                if (createdInst && !createError) {
+                  setInstitution(createdInst);
+                  setInstitutionId(createdInst.id);
+                  console.log('Institution created and set:', createdInst);
+                  
+                  toast({
+                    title: "Welcome!",
+                    description: "Your institution account has been set up. You have a 30-day trial period.",
+                  });
+                } else {
+                  console.error('Error creating institution:', createError);
+                }
               } else if (error) {
                 console.error('Error fetching institution:', error);
               }
