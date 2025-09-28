@@ -116,8 +116,8 @@ const InstitutionManagement = () => {
           description: "Institution updated successfully",
         });
       } else {
-        // Add new institution
-        const { error } = await supabase
+        // Add new institution with automatic auth user creation
+        const { data: newInstitution, error } = await supabase
           .from('admin_institutions')
           .insert({
             name: formData.name,
@@ -129,21 +129,220 @@ const InstitutionManagement = () => {
             phone: formData.phone,
             address: formData.address,
             county: formData.county,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
-        // If email is provided, automatically create account and send confirmation
-        if (formData.email) {
+        // Automatically create Supabase auth user for the institution
+        if (formData.email && formData.password && newInstitution) {
           try {
-            console.log('Attempting to create institution account with data:', {
-              email: formData.email,
-              username: formData.username,
-              institutionName: formData.name,
-              hasPassword: !!formData.password
-            });
+            console.log('Creating auth user for institution:', formData.name);
             
-            const { data, error: signupError } = await supabase.functions.invoke('create-institution-account', {
+            // Create Supabase auth user
+            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+              email: formData.email,
+              password: formData.password,
+              email_confirm: true, // Auto-confirm for admin-created accounts
+              user_metadata: {
+                institution_id: newInstitution.id,
+                institution_name: formData.name,
+                institution_username: formData.username,
+                role: 'institution_admin'
+              }
+            });
+
+            if (authError || !authData.user) {
+              console.error('Error creating auth user:', authError);
+              throw new Error(authError?.message || 'Failed to create auth user');
+            }
+
+            // Link the institution to the auth user
+            const { error: linkError } = await supabase
+              .from('admin_institutions')
+              .update({ 
+                user_id: authData.user.id,
+                password_hash: formData.password // Store password for institution auth
+              })
+              .eq('id', newInstitution.id);
+
+            if (linkError) {
+              console.error('Error linking institution to user:', linkError);
+              // Clean up the created user if linking failed
+              await supabase.auth.admin.deleteUser(authData.user.id);
+              throw new Error('Failed to link institution to auth user');
+            }
+
+            // Create institution_users entry for proper access control
+            const { error: institutionUserError } = await supabase
+              .from('institution_users')
+              .insert({
+                user_id: authData.user.id,
+                institution_id: newInstitution.id,
+                role: 'admin'
+              });
+
+            if (institutionUserError) {
+              console.error('Error creating institution_users entry:', institutionUserError);
+            }
+
+            // Ensure corresponding row exists in public.institutions for FK integrity
+            const { error: publicInstError } = await supabase
+              .from('institutions')
+              .upsert({
+                id: newInstitution.id,
+                name: formData.name,
+                email: formData.email,
+                code: formData.username,
+                address: formData.address || null,
+                phone: formData.phone || null,
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'id' });
+
+            if (publicInstError) {
+              console.error('Error creating public institution record:', publicInstError);
+            }
+
+            // Create default subjects for the institution
+            const defaultSubjects = [
+              { name: 'English', code: 'ENG', level: 'upper_primary' },
+              { name: 'Kiswahili', code: 'KIS', level: 'upper_primary' },
+              { name: 'Mathematics', code: 'MAT', level: 'upper_primary' },
+              { name: 'Science and Technology', code: 'SCI', level: 'upper_primary' },
+              { name: 'Social Studies', code: 'SST', level: 'upper_primary' },
+              { name: 'Christian Religious Education', code: 'CRE', level: 'upper_primary' },
+              { name: 'Home Science', code: 'HMS', level: 'upper_primary' },
+              { name: 'Agriculture', code: 'AGR', level: 'upper_primary' },
+              { name: 'Creative Arts', code: 'CRA', level: 'upper_primary' },
+              { name: 'Physical and Health Education', code: 'PHE', level: 'upper_primary' },
+              // Junior Secondary subjects
+              { name: 'English', code: 'ENG_JS', level: 'junior_secondary' },
+              { name: 'Kiswahili', code: 'KIS_JS', level: 'junior_secondary' },
+              { name: 'Mathematics', code: 'MAT_JS', level: 'junior_secondary' },
+              { name: 'Integrated Science', code: 'ISC', level: 'junior_secondary' },
+              { name: 'Social Studies', code: 'SST_JS', level: 'junior_secondary' },
+              { name: 'Christian Religious Education', code: 'CRE_JS', level: 'junior_secondary' },
+              { name: 'Home Science', code: 'HMS_JS', level: 'junior_secondary' },
+              { name: 'Agriculture', code: 'AGR_JS', level: 'junior_secondary' },
+              { name: 'Creative Arts & Sports', code: 'CAS', level: 'junior_secondary' },
+              { name: 'Business Studies', code: 'BST', level: 'junior_secondary' },
+              { name: 'Computer Science', code: 'CSC', level: 'junior_secondary' },
+              { name: 'Physical and Health Education', code: 'PHE_JS', level: 'junior_secondary' }
+            ];
+
+            const subjectsToInsert = defaultSubjects.map(subject => ({
+              ...subject,
+              institution_id: newInstitution.id
+            }));
+
+            const { error: subjectsError } = await supabase
+              .from('subjects')
+              .insert(subjectsToInsert);
+
+            if (subjectsError) {
+              console.error('Error creating default subjects:', subjectsError);
+            }
+
+            // Log the admin activity
+            await supabase
+              .from('admin_activity_logs')
+              .insert({
+                admin_id: user?.id,
+                action_type: 'create',
+                description: `Created institution "${formData.name}" with auth user account`,
+                target_type: 'institution',
+                target_id: newInstitution.id,
+              });
+
+            console.log('Institution and auth user created successfully');
+            
+            toast({
+              title: "Institution Created Successfully",
+              description: `${formData.name} has been created with login credentials. They can now sign in directly using their email and password.`,
+            });
+
+          } catch (authError: any) {
+            console.error('Error creating auth user for institution:', authError);
+            
+            // If auth user creation fails, we should clean up the institution record
+            if (newInstitution) {
+              await supabase
+                .from('admin_institutions')
+                .delete()
+                .eq('id', newInstitution.id);
+            }
+            
+            toast({
+              title: "Error",
+              description: `Institution record created but failed to create login account: ${authError.message}`,
+              variant: "destructive",
+            });
+            return;
+          }
+        } else {
+          // If no email or password provided, just create the institution record
+          toast({
+            title: "Institution Created",
+            description: `${formData.name} has been created. Note: No login account was created because email or password was not provided.`,
+          });
+        }
+      }
+
+      setShowAddDialog(false);
+      setEditingInstitution(null);
+      resetForm();
+      fetchInstitutions();
+    } catch (error: any) {
+      console.error('Error saving institution:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save institution",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const extendSubscription = async (institution: Institution, months: number) => {
+    try {
+      let newExpiryDate = new Date();
+      
+      if (institution.subscription_expires_at) {
+        const currentExpiry = new Date(institution.subscription_expires_at);
+        if (currentExpiry > new Date()) {
+          newExpiryDate = currentExpiry;
+        }
+      }
+      
+      newExpiryDate.setMonth(newExpiryDate.getMonth() + months);
+
+      const { error } = await supabase
+        .from('admin_institutions')
+        .update({
+          subscription_status: 'paid',
+          subscription_expires_at: newExpiryDate.toISOString(),
+        })
+        .eq('id', institution.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Subscription extended by ${months} months for ${institution.name}`,
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error('Error extending subscription:', error);
+      toast({
+        title: "Error",
+        description: "Failed to extend subscription",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteInstitution = async (institution: Institution) => {
               body: {
                 email: formData.email,
                 password: formData.password,
@@ -202,6 +401,15 @@ const InstitutionManagement = () => {
     }
 
     try {
+      // If institution has a linked auth user, delete it first
+      if (institution.user_id) {
+        const { error: authDeleteError } = await supabase.auth.admin.deleteUser(institution.user_id);
+        if (authDeleteError) {
+          console.error('Error deleting auth user:', authDeleteError);
+          // Continue with institution deletion even if auth user deletion fails
+        }
+      }
+
       const { error } = await supabase
         .from('admin_institutions')
         .delete()
@@ -211,7 +419,7 @@ const InstitutionManagement = () => {
 
       toast({
         title: "Success",
-        description: "Institution deleted successfully",
+        description: "Institution and associated auth user deleted successfully",
       });
 
       // Log the admin activity
@@ -408,7 +616,11 @@ const InstitutionManagement = () => {
                     className="bg-slate-700 border-slate-600 text-white"
                     required
                     disabled={!!editingInstitution}
+                    placeholder="Unique institution code/username"
                   />
+                  <p className="text-xs text-slate-400">
+                    This will be used as the institution code for login
+                  </p>
                 </div>
                 {!editingInstitution && (
                   <div className="space-y-2">
@@ -420,7 +632,12 @@ const InstitutionManagement = () => {
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
                       className="bg-slate-700 border-slate-600 text-white"
                       required
+                      placeholder="Login password for institution"
+                      minLength={6}
                     />
+                    <p className="text-xs text-slate-400">
+                      Minimum 6 characters. Institution will use this to login.
+                    </p>
                   </div>
                 )}
                 <div className="space-y-2">
@@ -449,7 +666,14 @@ const InstitutionManagement = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     className="bg-slate-700 border-slate-600 text-white"
+                    required={!editingInstitution}
+                    placeholder="Institution email for login"
                   />
+                  {!editingInstitution && (
+                    <p className="text-xs text-slate-400">
+                      Required for creating login account. Institution will use this email to sign in.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-slate-300">Phone</Label>
@@ -545,6 +769,13 @@ const InstitutionManagement = () => {
                       <Calendar className="h-4 w-4" />
                       <span>{new Date(institution.registration_date).toLocaleDateString()}</span>
                     </div>
+                  </div>
+                  <div className="mt-2 text-xs text-slate-400">
+                    {institution.user_id ? (
+                      <span className="text-green-400">✓ Login account created - Institution can sign in directly</span>
+                    ) : (
+                      <span className="text-yellow-400">⚠ No login account - Institution cannot sign in</span>
+                    )}
                   </div>
                   {institution.headteacher_name && (
                     <div className="mt-2 text-sm text-slate-400">
