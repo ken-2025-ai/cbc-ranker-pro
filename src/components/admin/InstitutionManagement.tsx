@@ -23,7 +23,8 @@ import {
   Calendar,
   Search,
   Filter,
-  Eye
+  Eye,
+  CheckCircle
 } from 'lucide-react';
 
 interface Institution {
