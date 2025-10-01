@@ -90,11 +90,14 @@ const StudentRegistration = () => {
 
 
   const fetchRegistrationStats = async () => {
+    if (!institutionId) return;
+    
     try {
       const { data: studentsData, error } = await supabase
         .from('students')
         .select('grade')
-        .eq('year', parseInt(student.year));
+        .eq('year', parseInt(student.year))
+        .eq('institution_id', institutionId);
 
       if (error) throw error;
 
