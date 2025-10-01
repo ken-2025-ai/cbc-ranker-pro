@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import EmergencySupport from '@/components/EmergencySupport';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -398,6 +399,16 @@ const AdminSettings = () => {
               <Shield className="w-4 h-4 mr-2" />
               Update Security Settings
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Emergency AI Support */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardContent className="p-0">
+            <EmergencySupport 
+              institutionId="admin"
+              institutionName="Admin Panel"
+            />
           </CardContent>
         </Card>
 

@@ -534,7 +534,7 @@ const InstitutionManagement = () => {
                     <h3 className="text-lg font-semibold text-white">{institution.name}</h3>
                     {getStatusBadge(institution)}
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
                     <div className="flex items-center gap-2 text-slate-300">
                       <User className="h-4 w-4" />
                       <span>{institution.username}</span>
@@ -551,6 +551,34 @@ const InstitutionManagement = () => {
                       <Calendar className="h-4 w-4" />
                       <span>{new Date(institution.registration_date).toLocaleDateString()}</span>
                     </div>
+                  </div>
+                  
+                  {/* Institution Signup Code */}
+                  <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-3 mb-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-slate-400 text-xs mb-1 block">Institution Signup Code</Label>
+                        <code className="text-lg font-bold text-green-400">{institution.username}</code>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(institution.username);
+                          toast({
+                            title: "Copied!",
+                            description: "Institution code copied to clipboard",
+                          });
+                        }}
+                        className="border-green-500/50 text-green-400 hover:bg-green-600/20"
+                      >
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copy Code
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                      Share this code with the institution for signup
+                    </p>
                   </div>
                   {institution.headteacher_name && (
                     <div className="mt-2 text-sm text-slate-400">

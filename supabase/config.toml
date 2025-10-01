@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.create-institution-account]
 verify_jwt = false
+
+[functions.emergency-support]
+verify_jwt = true

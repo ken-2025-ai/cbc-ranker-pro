@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import EmergencySupport from "@/components/EmergencySupport";
 import { 
   Settings as SettingsIcon, 
   GraduationCap, 
@@ -690,6 +691,16 @@ const Settings = () => {
                   {isRemoving ? 'Removing...' : 'Remove Student'}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Emergency AI Support */}
+          <Card className="col-span-1 lg:col-span-2">
+            <CardContent className="p-0">
+              <EmergencySupport 
+                institutionId={institutionId || undefined}
+                institutionName={schoolName}
+              />
             </CardContent>
           </Card>
 
