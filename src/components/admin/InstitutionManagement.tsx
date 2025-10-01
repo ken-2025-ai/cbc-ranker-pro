@@ -23,7 +23,9 @@ import {
   Calendar,
   Search,
   Filter,
-  Eye
+  Eye,
+  Copy,
+  CheckCircle
 } from 'lucide-react';
 
 interface Institution {
@@ -65,6 +67,8 @@ const InstitutionManagement = () => {
     address: '',
     county: '',
   });
+  const [showCodeDialog, setShowCodeDialog] = useState(false);
+  const [newInstitutionCode, setNewInstitutionCode] = useState('');
 
   useEffect(() => {
     fetchInstitutions();
@@ -174,11 +178,13 @@ const InstitutionManagement = () => {
           }
         }
 
+        // Show institution code for new institutions
+        setNewInstitutionCode(formData.username);
+        setShowCodeDialog(true);
+        
         toast({
           title: "Success",
-          description: formData.email ? 
-            "Institution created successfully! A confirmation email has been sent to the institution." :
-            "Institution created successfully",
+          description: "Institution created successfully!",
         });
       }
 
@@ -611,6 +617,62 @@ const InstitutionManagement = () => {
           </Card>
         )}
       </div>
+
+      {/* Institution Code Dialog */}
+      <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              Institution Created Successfully!
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Share this institution code with the institution so they can sign up
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-6">
+              <Label className="text-slate-400 text-sm mb-2 block">Institution Code</Label>
+              <div className="flex items-center justify-between bg-slate-950 border border-slate-600 rounded-lg p-4">
+                <code className="text-2xl font-bold text-green-400">{newInstitutionCode}</code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(newInstitutionCode);
+                    toast({
+                      title: "Copied!",
+                      description: "Institution code copied to clipboard",
+                    });
+                  }}
+                  className="ml-4 border-green-500/50 text-green-400 hover:bg-green-600/20"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="bg-blue-950/30 border border-blue-500/30 rounded-lg p-4">
+              <p className="text-sm text-blue-300">
+                <strong>Instructions:</strong>
+              </p>
+              <ol className="text-sm text-slate-300 mt-2 space-y-1 list-decimal list-inside">
+                <li>Share this code with the institution</li>
+                <li>They should visit the institution signup page</li>
+                <li>Enter this code along with their email and password</li>
+                <li>Their account will be created automatically</li>
+              </ol>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button 
+              onClick={() => setShowCodeDialog(false)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
