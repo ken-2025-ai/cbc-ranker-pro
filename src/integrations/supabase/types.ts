@@ -451,6 +451,95 @@ export type Database = {
         }
         Relationships: []
       }
+      assessment_competencies: {
+        Row: {
+          assessment_id: string | null
+          competency_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          assessment_id?: string | null
+          competency_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          assessment_id?: string | null
+          competency_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_competencies_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_competencies_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "competencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessments: {
+        Row: {
+          assessment_type: string | null
+          class_id: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          instructions: string | null
+          max_marks: number | null
+          status: string | null
+          teacher_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assessment_type?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          instructions?: string | null
+          max_marks?: number | null
+          status?: string | null
+          teacher_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assessment_type?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          instructions?: string | null
+          max_marks?: number | null
+          status?: string | null
+          teacher_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           assignment_type: string | null
@@ -671,6 +760,47 @@ export type Database = {
           },
         ]
       }
+      competencies: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string
+          id: string
+          level: number
+          strand: string
+          subject_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description: string
+          id?: string
+          level: number
+          strand: string
+          subject_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          level?: number
+          strand?: string
+          subject_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competencies_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_messages: {
         Row: {
           created_at: string
@@ -865,6 +995,54 @@ export type Database = {
         }
         Relationships: []
       }
+      evidence: {
+        Row: {
+          assessment_id: string | null
+          comments: string | null
+          created_at: string | null
+          evidence_type: string | null
+          file_url: string | null
+          id: string
+          student_id: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          assessment_id?: string | null
+          comments?: string | null
+          created_at?: string | null
+          evidence_type?: string | null
+          file_url?: string | null
+          id?: string
+          student_id?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          assessment_id?: string | null
+          comments?: string | null
+          created_at?: string | null
+          evidence_type?: string | null
+          file_url?: string | null
+          id?: string
+          student_id?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_periods: {
         Row: {
           created_at: string
@@ -1048,6 +1226,54 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grades: {
+        Row: {
+          comments: string | null
+          competency_id: string | null
+          evidence_id: string | null
+          graded_at: string | null
+          graded_by: string
+          id: string
+          mastery_level: string
+          score: number
+        }
+        Insert: {
+          comments?: string | null
+          competency_id?: string | null
+          evidence_id?: string | null
+          graded_at?: string | null
+          graded_by: string
+          id?: string
+          mastery_level: string
+          score: number
+        }
+        Update: {
+          comments?: string | null
+          competency_id?: string | null
+          evidence_id?: string | null
+          graded_at?: string | null
+          graded_by?: string
+          id?: string
+          mastery_level?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "competencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "evidence"
             referencedColumns: ["id"]
           },
         ]
@@ -1866,6 +2092,36 @@ export type Database = {
           },
         ]
       }
+      student_audit_log: {
+        Row: {
+          action: string
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          student_id: string
+        }
+        Insert: {
+          action: string
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          student_id: string
+        }
+        Update: {
+          action?: string
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       student_classes: {
         Row: {
           academic_year: number | null
@@ -1898,6 +2154,54 @@ export type Database = {
           },
           {
             foreignKeyName: "student_classes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_competency_progress: {
+        Row: {
+          assessment_count: number | null
+          competency_id: string | null
+          current_score: number | null
+          id: string
+          last_assessed: string | null
+          mastery_status: string | null
+          student_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assessment_count?: number | null
+          competency_id?: string | null
+          current_score?: number | null
+          id?: string
+          last_assessed?: string | null
+          mastery_status?: string | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assessment_count?: number | null
+          competency_id?: string | null
+          current_score?: number | null
+          id?: string
+          last_assessed?: string | null
+          mastery_status?: string | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_competency_progress_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "competencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_competency_progress_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -1960,7 +2264,7 @@ export type Database = {
           full_name: string
           grade: string
           id: string
-          institution_id: string | null
+          institution_id: string
           stream: string | null
           updated_at: string
           year: number
@@ -1971,7 +2275,7 @@ export type Database = {
           full_name: string
           grade: string
           id?: string
-          institution_id?: string | null
+          institution_id: string
           stream?: string | null
           updated_at?: string
           year?: number
@@ -1982,7 +2286,7 @@ export type Database = {
           full_name?: string
           grade?: string
           id?: string
-          institution_id?: string | null
+          institution_id?: string
           stream?: string | null
           updated_at?: string
           year?: number
@@ -2236,6 +2540,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vaccinations: {
         Row: {
           administered_date: string | null
@@ -2288,6 +2613,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_student_progress: {
+        Args: { competency_uuid: string; student_uuid: string }
+        Returns: undefined
+      }
+      create_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       create_ai_symptom_checker_function: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2300,13 +2633,35 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_profile: {
+        Args: { _user_id: string }
+        Returns: Json
+      }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       mark_notification_read: {
         Args: { notification_id: string }
         Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "super_admin"
+        | "school_admin"
+        | "teacher"
+        | "student"
+        | "parent"
+        | "admin"
+        | "principal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2433,6 +2788,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "super_admin",
+        "school_admin",
+        "teacher",
+        "student",
+        "parent",
+        "admin",
+        "principal",
+      ],
+    },
   },
 } as const
