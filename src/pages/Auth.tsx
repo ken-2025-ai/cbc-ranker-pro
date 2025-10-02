@@ -99,19 +99,23 @@ const Auth = () => {
 
       toast({
         title: "Account Created Successfully",
-        description: "Your institution account has been activated. You can now sign in with your credentials.",
+        description: "Signing you in now...",
       });
       
-      // Reset form and switch to sign in tab
+      // Auto sign in with the credentials
+      const signInEmail = email;
+      const signInPassword = password;
+      
+      // Reset signup form
       setEmail('');
       setPassword('');
       setConfirmPassword('');
       
-      // Optionally switch to sign in tab
-      const signInTab = document.querySelector('[data-state="inactive"][value="signin"]') as HTMLElement;
-      if (signInTab) {
-        signInTab.click();
-      }
+      // Wait a moment for the auth system to process
+      setTimeout(async () => {
+        console.log('Auto-signing in after registration...');
+        await signIn(signInEmail, signInPassword);
+      }, 1000);
       
     } catch (err) {
       console.error('Sign up error:', err);

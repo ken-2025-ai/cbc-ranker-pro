@@ -19,19 +19,32 @@ Deno.serve(async (req) => {
     const { email, password, institutionCode } = await req.json();
     console.log('Institution signup request for:', email, 'with code:', institutionCode);
 
-    // First, find the institution by email or username
+    // First, find the institution by username (institution code)
     const { data: institution, error: instError } = await supabase
       .from('admin_institutions')
       .select('*')
-      .or(`email.eq."${email}",username.eq."${institutionCode}"`)
-      .eq('user_id', null) // Only institutions not linked to a user yet
+      .eq('username', institutionCode)
+      .is('user_id', null) // Only institutions not linked to a user yet - FIXED: use .is() instead of .eq()
       .maybeSingle();
 
-    if (instError || !institution) {
-      console.log('Institution not found or already linked:', instError);
+    if (instError) {
+      console.log('Database error fetching institution:', instError);
       return new Response(
         JSON.stringify({ 
-          error: 'Institution not found or already has an account. Please contact your administrator.' 
+          error: 'Database error. Please try again.' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500 
+        }
+      );
+    }
+
+    if (!institution) {
+      console.log('Institution not found or already linked for code:', institutionCode);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Institution code not found or already has an account. Please verify your institution code with your administrator.' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
