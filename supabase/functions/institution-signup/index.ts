@@ -88,36 +88,59 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create Supabase auth user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: email,
-      password: password,
-      email_confirm: true, // Auto-confirm for institutions that have paid
-      user_metadata: {
-        institution_id: institution.id,
-        institution_name: institution.name,
-        institution_username: institution.username
-      }
-    });
-
-    if (authError || !authData.user) {
-      console.error('Error creating auth user:', authError);
-      return new Response(
-        JSON.stringify({ 
-          error: authError?.message || 'Failed to create user account' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
+    // Check if user already exists
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(u => u.email === email);
+    
+    let authUserId: string;
+    
+    if (existingUser) {
+      // User already exists - just link them to the institution
+      console.log('Existing user found, linking to institution:', email);
+      authUserId = existingUser.id;
+      
+      // Update user metadata
+      await supabase.auth.admin.updateUserById(authUserId, {
+        user_metadata: {
+          institution_id: institution.id,
+          institution_name: institution.name,
+          institution_username: institution.username
         }
-      );
+      });
+    } else {
+      // Create new Supabase auth user
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: email,
+        password: password,
+        email_confirm: true, // Auto-confirm for institutions that have paid
+        user_metadata: {
+          institution_id: institution.id,
+          institution_name: institution.name,
+          institution_username: institution.username
+        }
+      });
+
+      if (authError || !authData.user) {
+        console.error('Error creating auth user:', authError);
+        return new Response(
+          JSON.stringify({ 
+            error: authError?.message || 'Failed to create user account' 
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400 
+          }
+        );
+      }
+      
+      authUserId = authData.user.id;
     }
 
     // Link the institution to the auth user
     const { error: updateError } = await supabase
       .from('admin_institutions')
       .update({ 
-        user_id: authData.user.id,
+        user_id: authUserId,
         email: email, // Update email if it wasn't set
         last_login: new Date().toISOString()
       })
@@ -126,8 +149,10 @@ Deno.serve(async (req) => {
     if (updateError) {
       console.error('Error linking institution to user:', updateError);
       
-      // Clean up the created user if linking failed
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      // Clean up the created user if linking failed (only if we just created them)
+      if (!existingUser) {
+        await supabase.auth.admin.deleteUser(authUserId);
+      }
       
       return new Response(
         JSON.stringify({ error: 'Failed to link institution account' }),
@@ -138,18 +163,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create a profile for the institution user
+    // Create or update profile for the institution user
     const { error: profileError } = await supabase
       .from('profiles')
-      .insert({
-        user_id: authData.user.id,
+      .upsert({
+        user_id: authUserId,
         username: institution.username,
         institution_id: institution.id,
         role: 'admin' // Institution admin role
+      }, {
+        onConflict: 'user_id'
       });
 
     if (profileError) {
-      console.error('Error creating profile:', profileError);
+      console.error('Error creating/updating profile:', profileError);
     }
 
     // Ensure a corresponding row exists in public.institutions for FK integrity
@@ -170,8 +197,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'Account created successfully. You can now sign in.',
-        user: authData.user,
+        message: existingUser ? 'Institution linked successfully. You can now sign in.' : 'Account created successfully. You can now sign in.',
         institution: {
           id: institution.id,
           name: institution.name,
