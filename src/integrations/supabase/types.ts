@@ -2648,6 +2648,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_institution_owner: {
+        Args: { institution_uuid: string }
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       mark_notification_read: {
         Args: { notification_id: string }
         Returns: undefined
