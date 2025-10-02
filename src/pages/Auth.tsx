@@ -102,7 +102,7 @@ const Auth = () => {
         description: "Signing you in now...",
       });
       
-      // Auto sign in with the credentials
+      // Auto sign in with the credentials immediately
       const signInEmail = email;
       const signInPassword = password;
       
@@ -111,11 +111,20 @@ const Auth = () => {
       setPassword('');
       setConfirmPassword('');
       
-      // Wait a moment for the auth system to process
-      setTimeout(async () => {
-        console.log('Auto-signing in after registration...');
-        await signIn(signInEmail, signInPassword);
-      }, 1000);
+      // Sign in immediately - the auth context will handle the redirect
+      console.log('Auto-signing in after registration...');
+      const signInResult = await signIn(signInEmail, signInPassword);
+      
+      if (signInResult.error) {
+        toast({
+          title: "Sign In Required",
+          description: "Account created successfully. Please sign in manually.",
+          variant: "default",
+        });
+      } else {
+        // Successful sign in - redirect will happen automatically via AuthContext
+        console.log('Auto sign-in successful, waiting for redirect...');
+      }
       
     } catch (err) {
       console.error('Sign up error:', err);
