@@ -10,11 +10,13 @@ import { Bell, AlertCircle, Info } from 'lucide-react';
  * at the app level to ensure all notifications are received.
  */
 const NotificationToast = () => {
-  const { institution, institutionId } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!institution) return;
+    if (!user?.id) return;
+
+    console.log('Setting up notification subscription for user:', user.id);
 
     // Set up realtime subscription for new notifications
     const subscription = supabase
@@ -25,7 +27,7 @@ const NotificationToast = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'user_notifications',
-          filter: `user_id=eq.${institutionId}`
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
           const notification = payload.new as any;
@@ -51,7 +53,7 @@ const NotificationToast = () => {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [institution, institutionId, toast]);
+  }, [user, toast]);
 
   // This component doesn't render anything visible
   return null;

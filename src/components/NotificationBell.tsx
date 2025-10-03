@@ -21,14 +21,14 @@ interface UserNotification {
 }
 
 const NotificationBell = () => {
-  const { institution, institutionId } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (institution) {
+    if (user?.id) {
       fetchNotifications();
       
       // Set up realtime subscription for new notifications
@@ -40,7 +40,7 @@ const NotificationBell = () => {
             event: 'INSERT',
             schema: 'public',
             table: 'user_notifications',
-            filter: `user_id=eq.${institutionId}`
+            filter: `user_id=eq.${user.id}`
           },
           (payload) => {
             console.log('New notification received:', payload);
@@ -61,16 +61,16 @@ const NotificationBell = () => {
         supabase.removeChannel(subscription);
       };
     }
-  }, [institution, institutionId, toast]);
+  }, [user, toast]);
 
   const fetchNotifications = async () => {
-    if (!institutionId) return;
+    if (!user?.id) return;
 
     try {
       const { data, error } = await supabase
         .from('user_notifications')
         .select('*')
-        .eq('user_id', institutionId)
+        .eq('user_id', user.id)
         .or('expires_at.is.null,expires_at.gt.now()')
         .order('created_at', { ascending: false })
         .limit(20);
@@ -148,7 +148,7 @@ const NotificationBell = () => {
     }
   };
 
-  if (!institution) return null;
+  if (!user) return null;
 
   return (
     <div className="relative">
