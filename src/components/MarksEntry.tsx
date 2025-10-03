@@ -110,13 +110,20 @@ const MarksEntry = () => {
     { value: "9", label: "Grade 9" },
   ];
 
+  // Fetch initial data when institutionId is available
   useEffect(() => {
     if (institutionId) {
-      fetchInstitutionStreams();
       fetchSubjects();
       fetchExamPeriods();
     }
   }, [institutionId]);
+
+  // Always refetch streams on mount to ensure they're up-to-date
+  useEffect(() => {
+    if (institutionId) {
+      fetchInstitutionStreams();
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedClass && institutionId) {
