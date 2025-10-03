@@ -36,12 +36,41 @@ serve(async (req) => {
 
     console.log('Verifying admin session with token:', sessionToken);
     
-    // Verify admin session using session token from admin_sessions or admin_users table
-    // For now, we'll check if the sessionToken is a valid admin user ID
+    // First, verify the session token in admin_sessions table
+    const { data: session, error: sessionError } = await supabaseClient
+      .from('admin_sessions')
+      .select('admin_id, expires_at')
+      .eq('session_token', sessionToken)
+      .single();
+
+    if (sessionError || !session) {
+      console.error('Session verification failed:', sessionError);
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized',
+        details: 'Invalid session token'
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    // Check if session is expired
+    if (new Date(session.expires_at) < new Date()) {
+      console.error('Session expired');
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized',
+        details: 'Session expired'
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    // Now get the admin user details
     const { data: adminUser, error: adminError } = await supabaseClient
       .from('admin_users')
       .select('id, email, full_name, is_active')
-      .eq('id', sessionToken)
+      .eq('id', session.admin_id)
       .single();
 
     if (adminError || !adminUser || !adminUser.is_active) {
