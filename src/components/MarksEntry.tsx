@@ -84,6 +84,7 @@ const MarksEntry = () => {
   const [students, setStudents] = useState<StudentMark[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [examPeriods, setExamPeriods] = useState<ExamPeriod[]>([]);
+  const [streams, setStreams] = useState<string[]>(["A", "B", "C", "D"]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showNewExamForm, setShowNewExamForm] = useState(false);
@@ -109,10 +110,9 @@ const MarksEntry = () => {
     { value: "9", label: "Grade 9" },
   ];
 
-  const streams = ["A", "B", "C", "D"];
-
   useEffect(() => {
     if (institutionId) {
+      fetchInstitutionStreams();
       fetchSubjects();
       fetchExamPeriods();
     }
@@ -137,6 +137,27 @@ const MarksEntry = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const fetchInstitutionStreams = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_institutions')
+        .select('streams')
+        .eq('id', institutionId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data?.streams && Array.isArray(data.streams) && data.streams.length > 0) {
+        setStreams(data.streams);
+      } else {
+        setStreams(["A", "B", "C", "D"]);
+      }
+    } catch (error) {
+      console.error('Error fetching streams:', error);
+      setStreams(["A", "B", "C", "D"]);
+    }
+  };
 
   const fetchSubjects = async () => {
     try {
