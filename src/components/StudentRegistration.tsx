@@ -70,9 +70,11 @@ const StudentRegistration = () => {
   const [autoSaveTriggered, setAutoSaveTriggered] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [streams, setStreams] = useState<string[]>([]);
 
   useEffect(() => {
     fetchRegistrationStats();
+    fetchInstitutionStreams();
   }, []);
 
   const classes = [
@@ -87,10 +89,32 @@ const StudentRegistration = () => {
     { value: "9", label: "Grade 9" }
   ];
 
-  const streams = ["A", "B", "C", "D"];
   const currentYear = new Date().getFullYear();
   const years = [currentYear.toString(), (currentYear + 1).toString()];
 
+
+  const fetchInstitutionStreams = async () => {
+    if (!institutionId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('admin_institutions')
+        .select('streams')
+        .eq('id', institutionId)
+        .single();
+
+      if (error) throw error;
+
+      if (data && data.streams && data.streams.length > 0) {
+        setStreams(data.streams);
+      } else {
+        setStreams(["A", "B", "C", "D"]); // Default streams if none configured
+      }
+    } catch (error) {
+      console.error('Error fetching institution streams:', error);
+      setStreams(["A", "B", "C", "D"]); // Fallback to defaults
+    }
+  };
 
   const fetchRegistrationStats = async () => {
     if (!institutionId) return;
