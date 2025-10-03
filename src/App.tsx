@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AdminAuth from "./pages/AdminAuth";
@@ -29,6 +30,7 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <PWAInstallPrompt />
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
