@@ -46,6 +46,17 @@ interface ExamPeriod {
 
 // CBC Subjects - Standard across all schools
 const CBC_SUBJECTS = {
+  'lower_primary': [
+    { id: 'lit_lp', name: 'Literacy Activities', code: 'LIT' },
+    { id: 'eng_lp', name: 'English Language Activities', code: 'ENG' },
+    { id: 'kis_lp', name: 'Kiswahili Language Activities', code: 'KIS' },
+    { id: 'ind_lp', name: 'Indigenous Language Activities', code: 'IND' },
+    { id: 'mat_lp', name: 'Mathematical Activities', code: 'MATH' },
+    { id: 'env_lp', name: 'Environmental Activities', code: 'ENV' },
+    { id: 'hyg_lp', name: 'Hygiene and Nutrition Activities', code: 'HYG' },
+    { id: 'cre_lp', name: 'Religious Education Activities', code: 'CRE' },
+    { id: 'mca_lp', name: 'Movement and Creative Activities', code: 'MCA' },
+  ],
   'upper_primary': [
     { id: 'eng_up', name: 'English', code: 'ENG' },
     { id: 'kis_up', name: 'Kiswahili', code: 'KIS' },
@@ -316,10 +327,16 @@ const MarksEntry = () => {
     }
   };
 
-  const getCBCGrade = (score: number, level: 'upper_primary' | 'junior_secondary' = 'upper_primary') => {
+  const getCBCGrade = (score: number, level: 'lower_primary' | 'upper_primary' | 'junior_secondary' = 'upper_primary') => {
     if (score < 0 || score > 100) return { label: "Invalid", color: "destructive" };
     
     const gradeBands = {
+      lower_primary: [
+        { min: 0, max: 29, label: "Below Expectation", color: "destructive" },
+        { min: 30, max: 45, label: "Approaching Expectation", color: "warning" },
+        { min: 46, max: 69, label: "Meeting Expectations", color: "secondary" },
+        { min: 70, max: 100, label: "Exceeding Expectations", color: "success" }
+      ],
       upper_primary: [
         { min: 0, max: 29, label: "Below Expectation", color: "destructive" },
         { min: 30, max: 45, label: "Approaching Expectation", color: "warning" },
@@ -487,7 +504,9 @@ const MarksEntry = () => {
     if (!selectedClass) return [];
     
     const classNum = parseInt(selectedClass);
-    if (classNum >= 4 && classNum <= 6) {
+    if (classNum >= 1 && classNum <= 3) {
+      return CBC_SUBJECTS.lower_primary;
+    } else if (classNum >= 4 && classNum <= 6) {
       return CBC_SUBJECTS.upper_primary;
     } else if (classNum >= 7 && classNum <= 9) {
       return CBC_SUBJECTS.junior_secondary;
@@ -495,9 +514,14 @@ const MarksEntry = () => {
     return [];
   };
 
-  const getSubjectLevel = (subjectId: string): 'upper_primary' | 'junior_secondary' => {
+  const getSubjectLevel = (subjectId: string): 'lower_primary' | 'upper_primary' | 'junior_secondary' => {
     const classNum = parseInt(selectedClass);
-    return (classNum >= 7 && classNum <= 9) ? 'junior_secondary' : 'upper_primary';
+    if (classNum >= 1 && classNum <= 3) {
+      return 'lower_primary';
+    } else if (classNum >= 7 && classNum <= 9) {
+      return 'junior_secondary';
+    }
+    return 'upper_primary';
   };
 
   return (
