@@ -39,7 +39,7 @@ const studentSchema = z.object({
     .transform(val => val.trim().toUpperCase()),
   class: z.string()
     .min(1, "Class is required")
-    .regex(/^[4-9]$/, "Class must be between 4 and 9"),
+    .regex(/^[1-9]$/, "Class must be between 1 and 9"),
   stream: z.string().optional(),
   year: z.string()
     .regex(/^\d{4}$/, "Invalid year format")
