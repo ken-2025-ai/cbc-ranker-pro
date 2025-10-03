@@ -65,7 +65,7 @@ const Settings = () => {
     try {
       const { data, error } = await supabase
         .from('admin_institutions')
-        .select('name')
+        .select('name, streams')
         .eq('id', institutionId)
         .single();
 
@@ -74,6 +74,7 @@ const Settings = () => {
       if (data) {
         setSchoolName(data.name || "");
         setOriginalSchoolName(data.name || "");
+        setStreams(data.streams || []);
       }
     } catch (error) {
       console.error('Error fetching institution data:', error);
@@ -138,6 +139,14 @@ const Settings = () => {
     setIsAddingStream(true);
     try {
       const updatedStreams = [...streams, newStream.trim()];
+      
+      const { error } = await supabase
+        .from('admin_institutions')
+        .update({ streams: updatedStreams })
+        .eq('id', institutionId);
+
+      if (error) throw error;
+
       setStreams(updatedStreams);
       setNewStream("");
       
@@ -160,6 +169,14 @@ const Settings = () => {
   const handleRemoveStream = async (streamToRemove: string) => {
     try {
       const updatedStreams = streams.filter(stream => stream !== streamToRemove);
+      
+      const { error } = await supabase
+        .from('admin_institutions')
+        .update({ streams: updatedStreams })
+        .eq('id', institutionId);
+
+      if (error) throw error;
+
       setStreams(updatedStreams);
       
       toast({

@@ -186,6 +186,7 @@ export type Database = {
           payment_reference: string | null
           phone: string | null
           registration_date: string
+          streams: string[] | null
           subscription_expires_at: string | null
           subscription_status: string | null
           updated_at: string
@@ -208,6 +209,7 @@ export type Database = {
           payment_reference?: string | null
           phone?: string | null
           registration_date?: string
+          streams?: string[] | null
           subscription_expires_at?: string | null
           subscription_status?: string | null
           updated_at?: string
@@ -230,6 +232,7 @@ export type Database = {
           payment_reference?: string | null
           phone?: string | null
           registration_date?: string
+          streams?: string[] | null
           subscription_expires_at?: string | null
           subscription_status?: string | null
           updated_at?: string
