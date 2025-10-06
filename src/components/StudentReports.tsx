@@ -61,11 +61,15 @@ interface ClassReportData {
   students: {
     student: Student;
     marks: Mark[];
+    subjectScores: Record<string, number | 'X'>;
     average: number;
+    totalMarks: number;
+    subjectCount: number;
     rank: number;
   }[];
   classAverage: number;
   subjectAverages: { subject: string; average: number }[];
+  allSubjects: string[];
   examPeriod?: string;
 }
 
@@ -579,6 +583,9 @@ const StudentReports = () => {
         throw new Error('No students found in selected class');
       }
 
+      // Get all unique subjects for this class
+      let allSubjects: string[] = [];
+      
       const studentsWithMarks = await Promise.all(
         classStudents.map(async (student) => {
           // Fetch marks for each student
@@ -601,15 +608,44 @@ const StudentReports = () => {
           const { data: marks, error } = await marksQuery;
           if (error) throw error;
 
-          const average = calculateOverallAverage(marks || []);
+          // Create subject scores map
+          const subjectScores: Record<string, number | 'X'> = {};
+          (marks || []).forEach(mark => {
+            if (mark.subject && mark.subject.name) {
+              subjectScores[mark.subject.name] = mark.score;
+              if (!allSubjects.includes(mark.subject.name)) {
+                allSubjects.push(mark.subject.name);
+              }
+            }
+          });
+
+          const totalMarks = (marks || []).reduce((sum, mark) => sum + Number(mark.score), 0);
+          const validMarks = marks || [];
+          const average = validMarks.length > 0 ? totalMarks / validMarks.length : 0;
+          
           return {
             student,
-            marks: marks || [],
+            marks: validMarks,
+            subjectScores,
             average,
-            rank: 0 // Will be calculated later
+            totalMarks,
+            subjectCount: validMarks.length,
+            rank: 0
           };
         })
       );
+
+      // Sort subjects alphabetically
+      allSubjects.sort();
+
+      // Mark incomplete exams with X
+      studentsWithMarks.forEach(studentData => {
+        allSubjects.forEach(subject => {
+          if (!(subject in studentData.subjectScores)) {
+            studentData.subjectScores[subject] = 'X';
+          }
+        });
+      });
 
       // Sort by average and assign ranks
       studentsWithMarks.sort((a, b) => b.average - a.average);
@@ -621,21 +657,17 @@ const StudentReports = () => {
       const classAverage = studentsWithMarks.reduce((sum, s) => sum + s.average, 0) / studentsWithMarks.length;
 
       // Calculate subject averages
-      const subjectMap = new Map();
-      studentsWithMarks.forEach(studentData => {
-        studentData.marks.forEach(mark => {
-          const subjectName = mark.subject.name;
-          if (!subjectMap.has(subjectName)) {
-            subjectMap.set(subjectName, []);
-          }
-          subjectMap.get(subjectName).push(mark.score);
-        });
-      });
-
-      const subjectAverages = Array.from(subjectMap.entries()).map(([subject, scores]) => ({
-        subject,
-        average: scores.reduce((a: number, b: number) => a + b, 0) / scores.length
-      })).sort((a, b) => b.average - a.average);
+      const subjectAverages = allSubjects.map(subject => {
+        const scores = studentsWithMarks
+          .map(s => s.subjectScores[subject])
+          .filter(score => typeof score === 'number') as number[];
+        
+        const average = scores.length > 0 
+          ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+          : 0;
+        
+        return { subject, average };
+      }).sort((a, b) => b.average - a.average);
 
       const selectedPeriodName = periodId 
         ? examPeriods.find(p => p.id === periodId)?.name 
@@ -646,7 +678,8 @@ const StudentReports = () => {
         students: studentsWithMarks,
         classAverage,
         subjectAverages,
-        examPeriod: selectedPeriodName
+        examPeriod: selectedPeriodName,
+        allSubjects
       });
 
     } catch (error) {
@@ -1146,27 +1179,42 @@ const StudentReports = () => {
             </div>
             
             <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">Student Rankings</h2>
-              <table className="w-full border-collapse border">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border p-2 text-left">Rank</th>
-                    <th className="border p-2 text-left">Student Name</th>
-                    <th className="border p-2 text-left">Admission No.</th>
-                    <th className="border p-2 text-left">Average (%)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {classReportData.students.map((studentData, index) => (
-                    <tr key={studentData.student.id}>
-                      <td className="border p-2">{studentData.rank}</td>
-                      <td className="border p-2">{studentData.student.full_name}</td>
-                      <td className="border p-2">{studentData.student.admission_number}</td>
-                      <td className="border p-2">{studentData.average.toFixed(1)}%</td>
+              <h2 className="text-xl font-semibold mb-4">Detailed Student Performance</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border p-2 text-left">Rank</th>
+                      <th className="border p-2 text-left">Student Name</th>
+                      <th className="border p-2 text-left">Adm. No.</th>
+                      {(classReportData.allSubjects || []).map(subject => (
+                        <th key={subject} className="border p-2 text-center">{subject}</th>
+                      ))}
+                      <th className="border p-2 text-center">Total</th>
+                      <th className="border p-2 text-center">Mean</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {classReportData.students.map((studentData) => (
+                      <tr key={studentData.student.id}>
+                        <td className="border p-2 font-bold text-center">{studentData.rank}</td>
+                        <td className="border p-2">{studentData.student.full_name}</td>
+                        <td className="border p-2">{studentData.student.admission_number}</td>
+                        {(classReportData.allSubjects || []).map(subject => (
+                          <td key={subject} className="border p-2 text-center">
+                            {studentData.subjectScores[subject] === 'X' 
+                              ? <span className="text-red-600 font-bold">X</span>
+                              : studentData.subjectScores[subject]
+                            }
+                          </td>
+                        ))}
+                        <td className="border p-2 text-center font-semibold">{studentData.totalMarks}</td>
+                        <td className="border p-2 text-center font-semibold">{studentData.average.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
             
             <div>
@@ -1206,33 +1254,52 @@ const StudentReports = () => {
             </div>
             
             <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">Stream Rankings</h2>
-              <table className="w-full border-collapse border">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border p-2 text-left">Stream Rank</th>
-                    <th className="border p-2 text-left">Class Rank</th>
-                    <th className="border p-2 text-left">Student Name</th>
-                    <th className="border p-2 text-left">Class</th>
-                    <th className="border p-2 text-left">Admission No.</th>
-                    <th className="border p-2 text-left">Average (%)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(streamReportData.classes || []).flatMap(classData =>
-                    (classData.students || []).map((studentData) => (
-                      <tr key={studentData.student.id}>
-                        <td className="border p-2 font-bold">{studentData.streamRank}</td>
-                        <td className="border p-2">{studentData.classRank}</td>
-                        <td className="border p-2">{studentData.student.full_name}</td>
-                        <td className="border p-2">{classData.className}</td>
-                        <td className="border p-2">{studentData.student.admission_number}</td>
-                        <td className="border p-2">{studentData.average.toFixed(1)}%</td>
-                      </tr>
-                    ))
-                  ).sort((a, b) => parseInt(a.props.children[0].props.children) - parseInt(b.props.children[0].props.children))}
-                </tbody>
-              </table>
+              <h2 className="text-xl font-semibold mb-4">Detailed Student Performance</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border p-2 text-left">Rank</th>
+                      <th className="border p-2 text-left">Student Name</th>
+                      <th className="border p-2 text-left">Class</th>
+                      {(streamReportData.allSubjects || []).map(subject => (
+                        <th key={subject} className="border p-2 text-center">{subject}</th>
+                      ))}
+                      <th className="border p-2 text-center">Total</th>
+                      <th className="border p-2 text-center">Mean</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(streamReportData.classes || [])
+                      .flatMap(classData => 
+                        (classData.students || []).map(studentData => ({
+                          ...studentData,
+                          className: classData.className
+                        }))
+                      )
+                      .sort((a, b) => (a.overallRank || 0) - (b.overallRank || 0))
+                      .map((studentData) => (
+                        <tr key={studentData.student.id}>
+                          <td className="border p-2 font-bold text-center">{studentData.overallRank || studentData.classRank}</td>
+                          <td className="border p-2">{studentData.student.full_name}</td>
+                          <td className="border p-2">{studentData.className}</td>
+                          {(streamReportData.allSubjects || []).map(subject => (
+                            <td key={subject} className="border p-2 text-center">
+                              {studentData.subjectScores?.[subject] !== undefined && studentData.subjectScores[subject] !== null
+                                ? studentData.subjectScores[subject]
+                                : <span className="text-red-600 font-bold">X</span>
+                              }
+                            </td>
+                          ))}
+                          <td className="border p-2 text-center font-semibold">
+                            {studentData.totalMarks || Math.round(studentData.average * (studentData.subjectCount || 0))}
+                          </td>
+                          <td className="border p-2 text-center font-semibold">{studentData.average.toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="mb-8">

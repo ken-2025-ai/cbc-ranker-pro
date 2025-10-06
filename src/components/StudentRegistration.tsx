@@ -40,7 +40,7 @@ const studentSchema = z.object({
   class: z.string()
     .min(1, "Class is required")
     .regex(/^[1-9]$/, "Class must be between 1 and 9"),
-  stream: z.string().optional(),
+  stream: z.string(),
   year: z.string()
     .regex(/^\d{4}$/, "Invalid year format")
     .refine(val => {
@@ -158,10 +158,14 @@ const StudentRegistration = () => {
 
   const checkFormCompleteness = useCallback(() => {
     const required = ['fullName', 'admissionNumber', 'class'];
+    // Add stream to required if streams are configured
+    if (streams.length > 0) {
+      required.push('stream');
+    }
     const isComplete = required.every(field => student[field as keyof Student].trim() !== '');
     setIsFormComplete(isComplete);
     return isComplete;
-  }, [student]);
+  }, [student, streams]);
 
   // ACID-compliant validation function
   const validateStudentData = useCallback(async (): Promise<boolean> => {
@@ -172,10 +176,22 @@ const StudentRegistration = () => {
         fullName: student.fullName,
         admissionNumber: student.admissionNumber,
         class: student.class,
-        stream: student.stream,
+        stream: streams.length > 0 && !student.stream ? '' : student.stream, // Force validation if streams exist
         year: student.year,
         institutionId: institutionId || ''
       };
+
+      // Validate stream is required if streams are configured
+      if (streams.length > 0 && !student.stream) {
+        const errors: Record<string, string> = { stream: 'Stream is required when configured' };
+        setValidationErrors(errors);
+        toast({
+          title: "Validation Failed",
+          description: "Stream is required for this institution",
+          variant: "destructive"
+        });
+        return false;
+      }
 
       await studentSchema.parseAsync(validationData);
       return true;
@@ -525,10 +541,10 @@ const StudentRegistration = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="stream">Stream</Label>
+                      <Label htmlFor="stream">Stream {streams.length > 0 && '*'}</Label>
                       <Select value={student.stream || undefined} onValueChange={(value) => handleInputChange("stream", value || "")}>
-                        <SelectTrigger className="transition-smooth focus:shadow-glow">
-                          <SelectValue placeholder="Select stream (optional)" />
+                        <SelectTrigger className={`transition-smooth focus:shadow-glow ${validationErrors.stream ? 'border-destructive' : ''}`}>
+                          <SelectValue placeholder={streams.length > 0 ? "Select stream" : "Select stream (optional)"} />
                         </SelectTrigger>
                         <SelectContent>
                           {streams.map((stream) => (
@@ -538,6 +554,9 @@ const StudentRegistration = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {validationErrors.stream && (
+                        <p className="text-xs text-destructive">{validationErrors.stream}</p>
+                      )}
                     </div>
                   </div>
 

@@ -39,8 +39,9 @@ const Index = () => {
   const renderCurrentView = () => {
     switch (currentView) {
       case "dashboard":
-        return <Dashboard />;
+        return <Dashboard onViewChange={setCurrentView} />;
       case "students":
+      case "register":
         return <StudentRegistration />;
       case "marks":
         return <MarksEntry />;
@@ -51,7 +52,7 @@ const Index = () => {
       case "settings":
         return <Settings />;
       default:
-        return <Dashboard />;
+        return <Dashboard onViewChange={setCurrentView} />;
     }
   };
 

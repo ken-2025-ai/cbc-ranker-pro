@@ -6,7 +6,11 @@ import cbcHeaderImage from "@/assets/cbc-header.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-const Dashboard = () => {
+interface DashboardProps {
+  onViewChange?: (view: string) => void;
+}
+
+const Dashboard = ({ onViewChange }: DashboardProps = {}) => {
   const { institutionId } = useAuth();
   const [stats, setStats] = useState([
     { title: "Total Students", value: "0", icon: Users, change: "0%" },
@@ -91,10 +95,10 @@ const Dashboard = () => {
   };
 
   const quickActions = [
-    { title: "Add New Student", description: "Register a new student to the system", icon: Users },
-    { title: "Enter Marks", description: "Input subject marks for students", icon: BookOpen },
-    { title: "Generate Reports", description: "Create student report cards", icon: FileText },
-    { title: "View Rankings", description: "Check class and stream rankings", icon: Award },
+    { title: "Add New Student", description: "Register a new student to the system", icon: Users, view: "register" },
+    { title: "Enter Marks", description: "Input subject marks for students", icon: BookOpen, view: "marks" },
+    { title: "Generate Reports", description: "Create student report cards", icon: FileText, view: "reports" },
+    { title: "View Rankings", description: "Check class and stream rankings", icon: Award, view: "rankings" },
   ];
 
   return (
@@ -143,7 +147,12 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {quickActions.map((action, index) => (
-            <Card key={action.title} className="group cursor-pointer hover:shadow-elevated transition-bounce shadow-card" style={{ animationDelay: `${(index + 4) * 0.1}s` }}>
+            <Card 
+              key={action.title} 
+              className="group cursor-pointer hover:shadow-elevated transition-bounce shadow-card" 
+              style={{ animationDelay: `${(index + 4) * 0.1}s` }}
+              onClick={() => onViewChange?.(action.view)}
+            >
               <CardHeader className="text-center">
                 <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-smooth">
                   <action.icon className="h-6 w-6 text-primary" />
@@ -195,17 +204,17 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => onViewChange?.('reports')}>
                 <FileText className="h-4 w-4 mr-2" />
-                Term 3 Performance Report
+                Generate Performance Reports
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => onViewChange?.('rankings')}>
                 <Award className="h-4 w-4 mr-2" />
-                Top Performers Summary
+                View Top Performers
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => onViewChange?.('register')}>
                 <Users className="h-4 w-4 mr-2" />
-                Class Attendance Report
+                Student Management
               </Button>
             </CardContent>
           </Card>
