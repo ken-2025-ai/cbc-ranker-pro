@@ -31,6 +31,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
     { id: "marks", label: "Marks Entry", icon: BookOpen },
     { id: "rankings", label: "Rankings", icon: TrendingUp },
     { id: "reports", label: "Reports", icon: FileText },
+    { id: "staff", label: "Staff", icon: Users },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -149,7 +150,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
 
       {/* Bottom Navigation for Mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t shadow-elevated z-40">
-        <div className="grid grid-cols-6 gap-1 p-2">
+        <div className="grid grid-cols-7 gap-1 p-2">
           {navItems.map((item) => (
             <Button
               key={item.id}
