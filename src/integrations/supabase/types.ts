@@ -87,7 +87,7 @@ export type Database = {
           created_at: string
           description: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           target_id: string | null
           target_type: string | null
           user_agent: string | null
@@ -98,7 +98,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           target_id?: string | null
           target_type?: string | null
           user_agent?: string | null
@@ -109,7 +109,7 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           target_id?: string | null
           target_type?: string | null
           user_agent?: string | null
@@ -712,6 +712,116 @@ export type Database = {
           },
         ]
       }
+      call_queue: {
+        Row: {
+          assigned_doctor_id: string | null
+          completed_at: string | null
+          created_at: string
+          estimated_wait_time: number | null
+          id: string
+          patient_id: string
+          patient_name: string
+          patient_phone: string | null
+          position_in_queue: number | null
+          priority: string
+          started_at: string | null
+          status: string
+          symptoms: string | null
+        }
+        Insert: {
+          assigned_doctor_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          estimated_wait_time?: number | null
+          id?: string
+          patient_id: string
+          patient_name: string
+          patient_phone?: string | null
+          position_in_queue?: number | null
+          priority?: string
+          started_at?: string | null
+          status?: string
+          symptoms?: string | null
+        }
+        Update: {
+          assigned_doctor_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          estimated_wait_time?: number | null
+          id?: string
+          patient_id?: string
+          patient_name?: string
+          patient_phone?: string | null
+          position_in_queue?: number | null
+          priority?: string
+          started_at?: string | null
+          status?: string
+          symptoms?: string | null
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          room_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          room_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          room_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_rooms: {
+        Row: {
+          created_at: string
+          doctor_id: string | null
+          id: string
+          patient_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id?: string | null
+          id?: string
+          patient_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string | null
+          id?: string
+          patient_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           academic_year: number | null
@@ -998,6 +1108,42 @@ export type Database = {
         }
         Relationships: []
       }
+      doctor_availability: {
+        Row: {
+          created_at: string
+          current_call_count: number
+          doctor_id: string
+          id: string
+          is_available: boolean
+          last_activity: string | null
+          max_concurrent_calls: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_call_count?: number
+          doctor_id: string
+          id?: string
+          is_available?: boolean
+          last_activity?: string | null
+          max_concurrent_calls?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_call_count?: number
+          doctor_id?: string
+          id?: string
+          is_available?: boolean
+          last_activity?: string | null
+          max_concurrent_calls?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evidence: {
         Row: {
           assessment_id: string | null
@@ -1277,6 +1423,59 @@ export type Database = {
             columns: ["evidence_id"]
             isOneToOne: false
             referencedRelation: "evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institution_staff: {
+        Row: {
+          assigned_classes: string[] | null
+          created_at: string | null
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          institution_id: string
+          is_active: boolean | null
+          phone_number: string | null
+          role: Database["public"]["Enums"]["institution_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_classes?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          institution_id: string
+          is_active?: boolean | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["institution_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_classes?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          institution_id?: string
+          is_active?: boolean | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["institution_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_staff_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
             referencedColumns: ["id"]
           },
         ]
@@ -2331,6 +2530,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          priority: string
+          read_at: string | null
+          related_user_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          priority?: string
+          read_at?: string | null
+          related_user_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          priority?: string
+          read_at?: string | null
+          related_user_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       table_name: {
         Row: {
           data: Json | null
@@ -2611,6 +2846,63 @@ export type Database = {
           },
         ]
       }
+      video_consultations: {
+        Row: {
+          created_at: string
+          doctor_id: string | null
+          doctor_name: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          patient_id: string
+          patient_name: string
+          patient_phone: string | null
+          recording_url: string | null
+          room_name: string
+          room_url: string
+          started_at: string | null
+          status: string
+          symptoms: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id?: string | null
+          doctor_name?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          patient_id: string
+          patient_name: string
+          patient_phone?: string | null
+          recording_url?: string | null
+          room_name: string
+          room_url: string
+          started_at?: string | null
+          status?: string
+          symptoms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string | null
+          doctor_name?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          patient_id?: string
+          patient_name?: string
+          patient_phone?: string | null
+          recording_url?: string | null
+          room_name?: string
+          room_url?: string
+          started_at?: string | null
+          status?: string
+          symptoms?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2620,26 +2912,16 @@ export type Database = {
         Args: { competency_uuid: string; student_uuid: string }
         Returns: undefined
       }
-      create_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: string
+      create_admin_user: { Args: never; Returns: string }
+      create_ai_symptom_checker_function: { Args: never; Returns: undefined }
+      generate_result_code: { Args: never; Returns: string }
+      get_institution_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["institution_role"]
       }
-      create_ai_symptom_checker_function: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_result_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_user_institution_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_user_profile: {
-        Args: { _user_id: string }
-        Returns: Json
-      }
+      get_user_institution: { Args: never; Returns: string }
+      get_user_institution_id: { Args: never; Returns: string }
+      get_user_profile: { Args: { _user_id: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -2655,10 +2937,7 @@ export type Database = {
         Args: { institution_uuid: string }
         Returns: boolean
       }
-      is_super_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_super_admin: { Args: never; Returns: boolean }
       mark_notification_read: {
         Args: { notification_id: string }
         Returns: undefined
@@ -2673,6 +2952,9 @@ export type Database = {
         | "parent"
         | "admin"
         | "principal"
+        | "doctor"
+        | "patient"
+      institution_role: "admin" | "principal" | "teacher" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2808,7 +3090,10 @@ export const Constants = {
         "parent",
         "admin",
         "principal",
+        "doctor",
+        "patient",
       ],
+      institution_role: ["admin", "principal", "teacher", "staff"],
     },
   },
 } as const
