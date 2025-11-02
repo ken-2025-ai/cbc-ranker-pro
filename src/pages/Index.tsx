@@ -9,6 +9,7 @@ import Rankings from "@/components/Rankings";
 import Settings from "@/components/Settings";
 import StaffManagement from "@/components/StaffManagement";
 import SchoolAnalytics from "@/components/admin/SchoolAnalytics";
+import { TeacherAnalytics } from "@/components/TeacherAnalytics";
 import NotificationToast from "@/components/NotificationToast";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import FloatingNotificationIndicator from "@/components/FloatingNotificationIndicator";
@@ -19,7 +20,7 @@ import { Loader2 } from "lucide-react";
 const Index = () => {
   const [currentView, setCurrentView] = useState("dashboard");
   const [showNotifications, setShowNotifications] = useState(false);
-  const { institution, loading } = useAuth();
+  const { institution, loading, userRole } = useAuth();
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -39,12 +40,17 @@ const Index = () => {
   }
 
   const renderCurrentView = () => {
+    // Check role-based access
+    const hasAccess = (requiredRoles: string[]) => {
+      return userRole && requiredRoles.includes(userRole);
+    };
+
     switch (currentView) {
       case "dashboard":
         return <Dashboard onViewChange={setCurrentView} />;
       case "students":
       case "register":
-        return <StudentRegistration />;
+        return hasAccess(['admin', 'principal']) ? <StudentRegistration /> : <Dashboard onViewChange={setCurrentView} />;
       case "marks":
         return <MarksEntry />;
       case "reports":
@@ -52,9 +58,11 @@ const Index = () => {
       case "rankings":
         return <Rankings />;
       case "staff":
-        return <StaffManagement />;
+        return hasAccess(['admin', 'principal']) ? <StaffManagement /> : <Dashboard onViewChange={setCurrentView} />;
       case "analytics":
-        return <SchoolAnalytics />;
+        return hasAccess(['admin', 'principal']) ? <SchoolAnalytics /> : <Dashboard onViewChange={setCurrentView} />;
+      case "teacher-analytics":
+        return hasAccess(['teacher']) ? <TeacherAnalytics /> : <Dashboard onViewChange={setCurrentView} />;
       case "settings":
         return <Settings />;
       default:

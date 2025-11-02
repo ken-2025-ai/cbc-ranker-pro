@@ -24,18 +24,25 @@ interface NavigationProps {
 
 const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { signOut, institution } = useAuth();
+  const { signOut, institution, userRole } = useAuth();
 
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "students", label: "Students", icon: Users },
-    { id: "marks", label: "Marks Entry", icon: BookOpen },
-    { id: "rankings", label: "Rankings", icon: TrendingUp },
-    { id: "reports", label: "Reports", icon: FileText },
-    { id: "staff", label: "Staff", icon: Users },
-    { id: "analytics", label: "Analytics", icon: BarChart3 },
-    { id: "settings", label: "Settings", icon: Settings },
+  // Define all navigation items with role restrictions
+  const allNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'principal', 'teacher', 'staff'] },
+    { id: 'students', label: 'Students', icon: Users, roles: ['admin', 'principal'] },
+    { id: 'marks', label: 'Marks Entry', icon: BookOpen, roles: ['admin', 'principal', 'teacher', 'staff'] },
+    { id: 'rankings', label: 'Rankings', icon: TrendingUp, roles: ['admin', 'principal', 'teacher', 'staff'] },
+    { id: 'reports', label: 'Reports', icon: FileText, roles: ['admin', 'principal', 'teacher', 'staff'] },
+    { id: 'staff', label: 'Staff', icon: Users, roles: ['admin', 'principal'] },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['admin', 'principal'] },
+    { id: 'teacher-analytics', label: 'My Analytics', icon: BarChart3, roles: ['teacher'] },
+    { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'principal', 'teacher', 'staff'] },
   ];
+
+  // Filter navigation items based on user role
+  const navItems = allNavItems.filter(item => 
+    userRole && item.roles.includes(userRole)
+  );
 
   const handleNavClick = (viewId: string) => {
     onViewChange(viewId);

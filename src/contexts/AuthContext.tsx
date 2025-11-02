@@ -34,6 +34,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   institutionId: string | null;
+  userRole: 'admin' | 'principal' | 'teacher' | 'staff' | null;
+  staffData: any | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,6 +54,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [institutionId, setInstitutionId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'principal' | 'teacher' | 'staff' | null>(null);
+  const [staffData, setStaffData] = useState<any | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -125,15 +129,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const fetchInstitution = async () => {
             try {
               console.log('Fetching institution for user:', session.user.id);
-              const { data: inst, error } = await supabase
+              
+              // First check if user is an institution owner
+              const { data: inst, error: instError } = await supabase
                 .from('admin_institutions')
                 .select('*')
                 .eq('user_id', session.user.id)
                 .maybeSingle();
 
-              console.log('Institution query result:', { inst, error });
-
               if (inst) {
+                console.log('User is institution owner:', inst);
+                
                 // Check institution status
                 if (inst.is_blocked) {
                   toast({
@@ -170,24 +176,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 setInstitution(inst);
                 setInstitutionId(inst.id);
-                console.log('Institution set:', inst);
-              } else if (!inst && !error) {
-                // User is authenticated but has no institution record
-                // This means either:
-                // 1. They signed up directly (not through institution signup) - should not have access
-                // 2. Their institution record was deleted - should not have access
-                console.log('User authenticated but no institution record found:', session.user.email);
-                
-                toast({
-                  title: "Access Denied",
-                  description: "Your account is not linked to any institution. Please contact your administrator or use an institution code to sign up.",
-                  variant: "destructive",
-                });
-                
-                await supabase.auth.signOut();
-                return;
-              } else if (error) {
-                console.error('Error fetching institution:', error);
+                setUserRole('admin');
+                setStaffData(null);
+                console.log('Institution owner authenticated');
+              } else {
+                // Check if user is staff member
+                console.log('Not institution owner, checking staff membership...');
+                const { data: staffMember, error: staffError } = await supabase
+                  .from('institution_staff')
+                  .select(`
+                    *,
+                    institution:admin_institutions(*)
+                  `)
+                  .eq('user_id', session.user.id)
+                  .eq('is_active', true)
+                  .maybeSingle();
+
+                if (staffMember && staffMember.institution) {
+                  console.log('User is staff member:', staffMember);
+                  const staffInstitution = Array.isArray(staffMember.institution) 
+                    ? staffMember.institution[0] 
+                    : staffMember.institution;
+                  
+                  // Check institution status
+                  if (staffInstitution.is_blocked) {
+                    toast({
+                      title: "Institution Blocked",
+                      description: "This institution has been blocked. Please contact support.",
+                      variant: "destructive",
+                    });
+                    await supabase.auth.signOut();
+                    return;
+                  }
+
+                  if (!staffInstitution.is_active) {
+                    toast({
+                      title: "Institution Deactivated",
+                      description: "This institution has been deactivated. Please contact support.",
+                      variant: "destructive",
+                    });
+                    await supabase.auth.signOut();
+                    return;
+                  }
+
+                  setInstitution(staffInstitution);
+                  setInstitutionId(staffInstitution.id);
+                  setUserRole(staffMember.role);
+                  setStaffData(staffMember);
+                  console.log('Staff member authenticated with role:', staffMember.role);
+                } else {
+                  // User is authenticated but has no institution record
+                  console.log('User authenticated but no institution or staff record found:', session.user.email);
+                  
+                  toast({
+                    title: "Access Denied",
+                    description: "Your account is not linked to any institution. Please contact your administrator.",
+                    variant: "destructive",
+                  });
+                  
+                  await supabase.auth.signOut();
+                  return;
+                }
               }
             } catch (err) {
               console.error('Error in auth state change:', err);
@@ -313,6 +362,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     institutionId,
+    userRole,
+    staffData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
