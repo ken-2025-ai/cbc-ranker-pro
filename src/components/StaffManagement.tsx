@@ -24,22 +24,23 @@ interface StaffMember {
   created_at: string;
 }
 
-interface InstitutionClass {
-  id: string;
-  name: string;
+interface ClassSelection {
   grade: string;
-  stream?: string;
+  stream: string;
+  combined: string;
 }
 
 const StaffManagement = () => {
   const { toast } = useToast();
   const { institutionId } = useAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [classes, setClasses] = useState<InstitutionClass[]>([]);
+  const [streams, setStreams] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<ClassSelection[]>([]);
+  const [currentGrade, setCurrentGrade] = useState('');
+  const [currentStream, setCurrentStream] = useState('');
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -48,31 +49,45 @@ const StaffManagement = () => {
     password: '',
   });
 
+  const grades = [
+    { value: "1", label: "Grade 1" },
+    { value: "2", label: "Grade 2" },
+    { value: "3", label: "Grade 3" },
+    { value: "4", label: "Grade 4" },
+    { value: "5", label: "Grade 5" },
+    { value: "6", label: "Grade 6" },
+    { value: "7", label: "Grade 7" },
+    { value: "8", label: "Grade 8" },
+    { value: "9", label: "Grade 9" }
+  ];
+
   useEffect(() => {
     if (institutionId) {
       fetchStaff();
-      fetchClasses();
+      fetchInstitutionStreams();
     }
   }, [institutionId]);
 
-  const fetchClasses = async () => {
+  const fetchInstitutionStreams = async () => {
+    if (!institutionId) return;
+    
     try {
       const { data, error } = await supabase
-        .from('classes')
-        .select('id, name, grade, stream')
-        .eq('institution_id', institutionId)
-        .order('grade', { ascending: true })
-        .order('stream', { ascending: true });
+        .from('admin_institutions')
+        .select('streams')
+        .eq('id', institutionId)
+        .single();
 
       if (error) throw error;
-      setClasses(data || []);
-    } catch (error: any) {
-      console.error('Error fetching classes:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load classes',
-        variant: 'destructive',
-      });
+
+      if (data && data.streams && data.streams.length > 0) {
+        setStreams(data.streams);
+      } else {
+        setStreams(["A", "B", "C", "D"]); // Default streams if none configured
+      }
+    } catch (error) {
+      console.error('Error fetching institution streams:', error);
+      setStreams(["A", "B", "C", "D"]); // Fallback to defaults
     }
   };
 
@@ -138,6 +153,9 @@ const StaffManagement = () => {
       return;
     }
 
+    // Prepare assigned classes as array of combined strings
+    const assignedClassNames = selectedClasses.map(cls => cls.combined);
+
     setSubmitting(true);
 
     try {
@@ -161,7 +179,7 @@ const StaffManagement = () => {
           email: formData.email.trim(),
           phone_number: formData.phone_number?.trim() || null,
           role: formData.role,
-          assigned_classes: selectedClasses.length > 0 ? selectedClasses : null,
+          assigned_classes: assignedClassNames.length > 0 ? assignedClassNames : null,
           created_by: institutionId,
         });
 
@@ -186,6 +204,8 @@ const StaffManagement = () => {
         password: '',
       });
       setSelectedClasses([]);
+      setCurrentGrade('');
+      setCurrentStream('');
       
       // Refresh staff list
       await fetchStaff();
@@ -201,12 +221,36 @@ const StaffManagement = () => {
     }
   };
 
-  const toggleClassSelection = (className: string) => {
-    setSelectedClasses(prev =>
-      prev.includes(className)
-        ? prev.filter(c => c !== className)
-        : [...prev, className]
-    );
+  const addClassSelection = () => {
+    if (!currentGrade || !currentStream) {
+      toast({
+        title: 'Selection Required',
+        description: 'Please select both grade and stream',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const gradeLabel = grades.find(g => g.value === currentGrade)?.label || `Grade ${currentGrade}`;
+    const combined = `${gradeLabel} - ${currentStream}`;
+
+    // Check if already selected
+    if (selectedClasses.some(cls => cls.combined === combined)) {
+      toast({
+        title: 'Already Selected',
+        description: 'This class is already assigned',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectedClasses(prev => [...prev, { grade: currentGrade, stream: currentStream, combined }]);
+    setCurrentGrade('');
+    setCurrentStream('');
+  };
+
+  const removeClassSelection = (combined: string) => {
+    setSelectedClasses(prev => prev.filter(cls => cls.combined !== combined));
   };
 
   const toggleStaffStatus = async (staffId: string, currentStatus: boolean) => {
@@ -323,32 +367,84 @@ const StaffManagement = () => {
                   </Select>
                 </div>
                 {formData.role === 'teacher' && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label>Assigned Classes *</Label>
-                    <div className="border rounded-md p-4 max-h-48 overflow-y-auto space-y-2">
-                      {classes.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No classes available. Please create classes first.</p>
-                      ) : (
-                        classes.map((cls) => (
-                          <div key={cls.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={cls.id}
-                              checked={selectedClasses.includes(cls.name)}
-                              onCheckedChange={() => toggleClassSelection(cls.name)}
-                            />
-                            <Label
-                              htmlFor={cls.id}
-                              className="text-sm font-normal cursor-pointer"
-                            >
-                              {cls.name} {cls.stream ? `- ${cls.stream}` : ''}
-                            </Label>
-                          </div>
-                        ))
-                      )}
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="grade">Grade</Label>
+                          <Select
+                            value={currentGrade}
+                            onValueChange={setCurrentGrade}
+                          >
+                            <SelectTrigger id="grade">
+                              <SelectValue placeholder="Select grade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {grades.map((grade) => (
+                                <SelectItem key={grade.value} value={grade.value}>
+                                  {grade.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="stream">Stream</Label>
+                          <Select
+                            value={currentStream}
+                            onValueChange={setCurrentStream}
+                            disabled={!currentGrade}
+                          >
+                            <SelectTrigger id="stream">
+                              <SelectValue placeholder="Select stream" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {streams.map((stream) => (
+                                <SelectItem key={stream} value={stream}>
+                                  {stream}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addClassSelection}
+                        disabled={!currentGrade || !currentStream}
+                        className="w-full"
+                      >
+                        Add Class
+                      </Button>
                     </div>
+                    
                     {selectedClasses.length > 0 && (
+                      <div className="border rounded-md p-3 space-y-2">
+                        <Label className="text-xs text-muted-foreground">Selected Classes:</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedClasses.map((cls) => (
+                            <Badge
+                              key={cls.combined}
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              {cls.combined}
+                              <X
+                                className="h-3 w-3 cursor-pointer hover:text-destructive"
+                                onClick={() => removeClassSelection(cls.combined)}
+                              />
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {streams.length === 0 && (
                       <p className="text-xs text-muted-foreground">
-                        Selected: {selectedClasses.join(', ')}
+                        No streams configured. Using default streams (A, B, C, D).
                       </p>
                     )}
                   </div>
@@ -361,6 +457,8 @@ const StaffManagement = () => {
                   onClick={() => {
                     setDialogOpen(false);
                     setSelectedClasses([]);
+                    setCurrentGrade('');
+                    setCurrentStream('');
                   }}
                   disabled={submitting}
                 >
