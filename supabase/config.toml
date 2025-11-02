@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.emergency-support]
 verify_jwt = true
+
+[functions.create-staff-member]
+verify_jwt = true

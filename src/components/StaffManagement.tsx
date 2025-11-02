@@ -159,34 +159,36 @@ const StaffManagement = () => {
     setSubmitting(true);
 
     try {
-      // ACID: Use transaction-like approach - create auth user first
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email.trim(),
-        password: formData.password,
-        email_confirm: true,
-      });
+      // Call edge function to create staff member with proper ACID properties
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No active session');
+      }
 
-      if (authError) throw authError;
+      const response = await fetch(
+        `https://tzdpqwkbkuqypzzuphmt.supabase.co/functions/v1/create-staff-member`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            email: formData.email.trim(),
+            password: formData.password,
+            full_name: formData.full_name.trim(),
+            phone_number: formData.phone_number?.trim() || null,
+            role: formData.role,
+            assigned_classes: assignedClassNames.length > 0 ? assignedClassNames : null,
+          }),
+        }
+      );
 
-      // ACID: Then create staff record - if this fails, we should ideally rollback auth user
-      // but Supabase doesn't support cross-schema transactions, so we handle cleanup on error
-      const { error: staffError } = await supabase
-        .from('institution_staff' as any)
-        .insert({
-          institution_id: institutionId,
-          user_id: authData.user.id,
-          full_name: formData.full_name.trim(),
-          email: formData.email.trim(),
-          phone_number: formData.phone_number?.trim() || null,
-          role: formData.role,
-          assigned_classes: assignedClassNames.length > 0 ? assignedClassNames : null,
-          created_by: institutionId,
-        });
+      const result = await response.json();
 
-      if (staffError) {
-        // Attempt to cleanup auth user if staff creation failed
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw staffError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create staff member');
       }
 
       toast({
