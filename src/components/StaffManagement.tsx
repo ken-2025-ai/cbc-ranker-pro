@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserPlus, Trash2, Edit, Check, X } from 'lucide-react';
+import { UserPlus, Trash2, Edit, Check, X, Loader2 } from 'lucide-react';
 
 interface StaffMember {
   id: string;
@@ -23,26 +24,57 @@ interface StaffMember {
   created_at: string;
 }
 
+interface InstitutionClass {
+  id: string;
+  name: string;
+  grade: string;
+  stream?: string;
+}
+
 const StaffManagement = () => {
   const { toast } = useToast();
   const { institutionId } = useAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [classes, setClasses] = useState<InstitutionClass[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     phone_number: '',
     role: 'teacher' as 'admin' | 'principal' | 'teacher' | 'staff',
-    assigned_classes: '',
     password: '',
   });
 
   useEffect(() => {
     if (institutionId) {
       fetchStaff();
+      fetchClasses();
     }
   }, [institutionId]);
+
+  const fetchClasses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name, grade, stream')
+        .eq('institution_id', institutionId)
+        .order('grade', { ascending: true })
+        .order('stream', { ascending: true });
+
+      if (error) throw error;
+      setClasses(data || []);
+    } catch (error: any) {
+      console.error('Error fetching classes:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load classes',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const fetchStaff = async () => {
     try {
@@ -68,48 +100,95 @@ const StaffManagement = () => {
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // Validation
+    if (!formData.full_name.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Full name is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Valid email is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast({
+        title: 'Validation Error',
+        description: 'Password must be at least 6 characters',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (formData.role === 'teacher' && selectedClasses.length === 0) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please assign at least one class to the teacher',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSubmitting(true);
 
     try {
-      // First create auth user
+      // ACID: Use transaction-like approach - create auth user first
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
         email_confirm: true,
       });
 
       if (authError) throw authError;
 
-      // Then create staff record
+      // ACID: Then create staff record - if this fails, we should ideally rollback auth user
+      // but Supabase doesn't support cross-schema transactions, so we handle cleanup on error
       const { error: staffError } = await supabase
         .from('institution_staff' as any)
         .insert({
           institution_id: institutionId,
           user_id: authData.user.id,
-          full_name: formData.full_name,
-          email: formData.email,
-          phone_number: formData.phone_number || null,
+          full_name: formData.full_name.trim(),
+          email: formData.email.trim(),
+          phone_number: formData.phone_number?.trim() || null,
           role: formData.role,
-          assigned_classes: formData.assigned_classes ? formData.assigned_classes.split(',').map(c => c.trim()) : null,
+          assigned_classes: selectedClasses.length > 0 ? selectedClasses : null,
+          created_by: institutionId,
         });
 
-      if (staffError) throw staffError;
+      if (staffError) {
+        // Attempt to cleanup auth user if staff creation failed
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        throw staffError;
+      }
 
       toast({
         title: 'Success',
         description: 'Staff member added successfully',
       });
 
+      // Reset form
       setDialogOpen(false);
       setFormData({
         full_name: '',
         email: '',
         phone_number: '',
         role: 'teacher',
-        assigned_classes: '',
         password: '',
       });
-      fetchStaff();
+      setSelectedClasses([]);
+      
+      // Refresh staff list
+      await fetchStaff();
     } catch (error: any) {
       console.error('Error adding staff:', error);
       toast({
@@ -118,8 +197,16 @@ const StaffManagement = () => {
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
+  };
+
+  const toggleClassSelection = (className: string) => {
+    setSelectedClasses(prev =>
+      prev.includes(className)
+        ? prev.filter(c => c !== className)
+        : [...prev, className]
+    );
   };
 
   const toggleStaffStatus = async (staffId: string, currentStatus: boolean) => {
@@ -235,22 +322,59 @@ const StaffManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="assigned_classes">Assigned Classes (comma-separated)</Label>
-                  <Input
-                    id="assigned_classes"
-                    value={formData.assigned_classes}
-                    onChange={(e) => setFormData({ ...formData, assigned_classes: e.target.value })}
-                    placeholder="e.g. Grade 7A, Grade 8B"
-                  />
-                </div>
+                {formData.role === 'teacher' && (
+                  <div className="space-y-2">
+                    <Label>Assigned Classes *</Label>
+                    <div className="border rounded-md p-4 max-h-48 overflow-y-auto space-y-2">
+                      {classes.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No classes available. Please create classes first.</p>
+                      ) : (
+                        classes.map((cls) => (
+                          <div key={cls.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={cls.id}
+                              checked={selectedClasses.includes(cls.name)}
+                              onCheckedChange={() => toggleClassSelection(cls.name)}
+                            />
+                            <Label
+                              htmlFor={cls.id}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {cls.name} {cls.stream ? `- ${cls.stream}` : ''}
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {selectedClasses.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {selectedClasses.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setDialogOpen(false);
+                    setSelectedClasses([]);
+                  }}
+                  disabled={submitting}
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Adding...' : 'Add Staff'}
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add Staff'
+                  )}
                 </Button>
               </DialogFooter>
             </form>
