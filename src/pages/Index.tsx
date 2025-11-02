@@ -8,6 +8,7 @@ import StudentReports from "@/components/StudentReports";
 import Rankings from "@/components/Rankings";
 import Settings from "@/components/Settings";
 import StaffManagement from "@/components/StaffManagement";
+import SchoolAnalytics from "@/components/admin/SchoolAnalytics";
 import NotificationToast from "@/components/NotificationToast";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import FloatingNotificationIndicator from "@/components/FloatingNotificationIndicator";
@@ -52,6 +53,8 @@ const Index = () => {
         return <Rankings />;
       case "staff":
         return <StaffManagement />;
+      case "analytics":
+        return <SchoolAnalytics />;
       case "settings":
         return <Settings />;
       default:
