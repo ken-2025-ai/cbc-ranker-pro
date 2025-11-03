@@ -43,6 +43,7 @@ export const TeacherAnalytics = () => {
               .from('classes')
               .select('name, grade, stream')
               .eq('id', classId)
+              .eq('institution_id', institutionId)
               .single();
 
             if (classError || !classInfo) {
@@ -56,7 +57,8 @@ export const TeacherAnalytics = () => {
             const { data: studentsData, error: studentsError } = await supabase
               .from('students')
               .select('id, full_name')
-              .match({ class_id: classId, institution_id: institutionId });
+              .eq('grade', classInfo.grade)
+              .eq('institution_id', institutionId);
 
             if (studentsError || !studentsData || studentsData.length === 0) {
               continue;
@@ -66,8 +68,9 @@ export const TeacherAnalytics = () => {
             const studentIds = studentsData.map(s => s.id);
             const { data: marksData, error: marksError } = await supabase
               .from('marks')
-              .select('student_id, score')
-              .in('student_id', studentIds);
+              .select('student_id, score, student:students!inner(institution_id)')
+              .in('student_id', studentIds)
+              .eq('student.institution_id', institutionId);
 
             if (marksError) {
               console.error('Error fetching marks:', marksError);

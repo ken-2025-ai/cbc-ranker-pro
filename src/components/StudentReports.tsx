@@ -265,6 +265,7 @@ const StudentReports = () => {
         .from('students')
         .select('*')
         .eq('id', studentId)
+        .eq('institution_id', institutionId)
         .single();
 
       if (studentError) throw studentError;
@@ -278,9 +279,11 @@ const StudentReports = () => {
           grade,
           remarks,
           subject:subjects(id, name, code, level),
-          exam_period:exam_periods(id, name, term, start_date, end_date)
+          exam_period:exam_periods(id, name, term, start_date, end_date),
+          student:students!inner(institution_id)
         `)
-        .eq('student_id', studentId);
+        .eq('student_id', studentId)
+        .eq('student.institution_id', institutionId);
 
       // Filter by exam period if specified
       if (periodId) {
@@ -388,8 +391,9 @@ const StudentReports = () => {
         (classStudents || []).map(async (classStudent) => {
           const { data: studentMarks } = await supabase
             .from('marks')
-            .select('score, subject_id')
-            .eq('student_id', classStudent.id);
+            .select('score, subject_id, student:students!inner(institution_id)')
+            .eq('student_id', classStudent.id)
+            .eq('student.institution_id', institutionId);
           
           return {
             studentId: classStudent.id,
@@ -597,9 +601,11 @@ const StudentReports = () => {
               grade,
               remarks,
               subject:subjects(id, name, code, level),
-              exam_period:exam_periods(id, name, term, start_date, end_date)
+              exam_period:exam_periods(id, name, term, start_date, end_date),
+              student:students!inner(institution_id)
             `)
-            .eq('student_id', student.id);
+            .eq('student_id', student.id)
+            .eq('student.institution_id', institutionId);
 
           if (periodId) {
             marksQuery = marksQuery.eq('exam_period_id', periodId);
@@ -882,9 +888,11 @@ const StudentReports = () => {
                 grade,
                 remarks,
                 subject:subjects(id, name, code, level),
-                exam_period:exam_periods(id, name, term, start_date, end_date)
+                exam_period:exam_periods(id, name, term, start_date, end_date),
+                student:students!inner(institution_id)
               `)
-              .eq('student_id', student.id);
+              .eq('student_id', student.id)
+              .eq('student.institution_id', institutionId);
 
             if (periodId) {
               marksQuery = marksQuery.eq('exam_period_id', periodId);

@@ -171,14 +171,15 @@ const SchoolAnalytics = () => {
           .from('students')
           .select('id')
           .eq('grade', cls.grade)
-          .eq('stream', cls.stream || '');
+          .eq('institution_id', institutionId);
 
         const studentIds = students?.map(s => s.id) || [];
 
         const { data: marks } = await supabase
           .from('marks')
-          .select('score, subject_id')
+          .select('score, subject_id, student:students!inner(institution_id)')
           .in('student_id', studentIds)
+          .eq('student.institution_id', institutionId)
           .eq('exam_period_id', selectedExamPeriod);
 
         const markValues = marks?.map(m => Number(m.score)) || [];
@@ -245,8 +246,9 @@ const SchoolAnalytics = () => {
       students.map(async (student) => {
         const { data: currentMarks } = await supabase
           .from('marks')
-          .select('score')
+          .select('score, student:students!inner(institution_id)')
           .eq('student_id', student.id)
+          .eq('student.institution_id', institutionId)
           .eq('exam_period_id', selectedExamPeriod);
 
         const { data: previousMarks } = await supabase
@@ -317,7 +319,7 @@ const SchoolAnalytics = () => {
             .from('students')
             .select('id')
             .eq('grade', grade.replace('Grade ', ''))
-            .eq('stream', stream || '');
+            .eq('institution_id', institutionId);
           
           if (students) {
             classStudents.push(...students.map(s => s.id));
@@ -327,8 +329,9 @@ const SchoolAnalytics = () => {
         // Get marks for these students
         const { data: marks } = await supabase
           .from('marks')
-          .select('score, subject_id')
+          .select('score, subject_id, student:students!inner(institution_id)')
           .in('student_id', classStudents)
+          .eq('student.institution_id', institutionId)
           .eq('exam_period_id', selectedExamPeriod);
 
         const markValues = marks?.map(m => Number(m.score)) || [];
