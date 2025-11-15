@@ -12,7 +12,8 @@ import {
   LogOut,
   Shield,
   Eye,
-  X
+  X,
+  GraduationCap
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -27,6 +28,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ currentView, onViewChange }
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'institutions', label: 'Institutions', icon: Building },
     { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
+    { id: 'promotion', label: 'Yearly Promotion', icon: GraduationCap },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'logs', label: 'Activity Logs', icon: FileText },
     { id: 'reports', label: 'Reports', icon: BarChart3 },

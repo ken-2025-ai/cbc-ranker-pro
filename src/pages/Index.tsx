@@ -15,15 +15,17 @@ import ImpersonationBanner from "@/components/ImpersonationBanner";
 import FloatingNotificationIndicator from "@/components/FloatingNotificationIndicator";
 import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscriptionCheck } from "@/hooks/useSubscriptionCheck";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState("dashboard");
   const [showNotifications, setShowNotifications] = useState(false);
   const { institution, loading, userRole } = useAuth();
+  const subscriptionStatus = useSubscriptionCheck();
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  // Show loading spinner while checking authentication or subscription
+  if (loading || subscriptionStatus.loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
         <div className="text-center">
