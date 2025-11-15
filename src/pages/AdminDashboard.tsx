@@ -5,6 +5,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminOverview from '@/components/admin/AdminOverview';
 import InstitutionManagement from '@/components/admin/InstitutionManagement';
 import SubscriptionControl from '@/components/admin/SubscriptionControl';
+import YearlyPromotion from '@/components/admin/YearlyPromotion';
 import NotificationCenter from '@/components/admin/NotificationCenter';
 import ActivityLogs from '@/components/admin/ActivityLogs';
 import ReportsAnalytics from '@/components/admin/ReportsAnalytics';
@@ -40,6 +41,8 @@ const AdminDashboard = () => {
         return <InstitutionManagement />;
       case 'subscriptions':
         return <SubscriptionControl />;
+      case 'promotion':
+        return <YearlyPromotion />;
       case 'notifications':
         return <NotificationCenter />;
       case 'logs':
