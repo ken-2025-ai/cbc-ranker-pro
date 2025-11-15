@@ -2084,6 +2084,41 @@ export type Database = {
         }
         Relationships: []
       }
+      promotion_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          institution_id: string | null
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          institution_id?: string | null
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          institution_id?: string | null
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_logs_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_results: {
         Row: {
           career_profile: Json | null
@@ -2530,6 +2565,132 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          meta: Json | null
+          performed_by: string | null
+          subscription_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          meta?: Json | null
+          performed_by?: string | null
+          subscription_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          meta?: Json | null
+          performed_by?: string | null
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_logs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_requests: {
+        Row: {
+          contact_person: string
+          created_at: string | null
+          email: string
+          id: string
+          institution_id: string | null
+          institution_name: string
+          mpesa_code: string
+          notes: string | null
+          phone: string
+          status: string | null
+          term: string | null
+        }
+        Insert: {
+          contact_person: string
+          created_at?: string | null
+          email: string
+          id?: string
+          institution_id?: string | null
+          institution_name: string
+          mpesa_code: string
+          notes?: string | null
+          phone: string
+          status?: string | null
+          term?: string | null
+        }
+        Update: {
+          contact_person?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string
+          mpesa_code?: string
+          notes?: string | null
+          phone?: string
+          status?: string | null
+          term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_requests_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          expiry_date: string
+          id: string
+          institution_id: string
+          payment_reference: string | null
+          start_date: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expiry_date: string
+          id?: string
+          institution_id: string
+          payment_reference?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expiry_date?: string
+          id?: string
+          institution_id?: string
+          payment_reference?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_notifications: {
         Row: {
           created_at: string
@@ -2912,8 +3073,17 @@ export type Database = {
         Args: { competency_uuid: string; student_uuid: string }
         Returns: undefined
       }
+      check_subscription_status: {
+        Args: { p_institution_id: string }
+        Returns: {
+          days_remaining: number
+          expiry_date: string
+          is_active: boolean
+        }[]
+      }
       create_admin_user: { Args: never; Returns: string }
       create_ai_symptom_checker_function: { Args: never; Returns: undefined }
+      expire_old_subscriptions: { Args: never; Returns: number }
       generate_result_code: { Args: never; Returns: string }
       get_institution_role: {
         Args: { user_uuid: string }
@@ -2941,6 +3111,15 @@ export type Database = {
       mark_notification_read: {
         Args: { notification_id: string }
         Returns: undefined
+      }
+      promote_students: {
+        Args: { apply_changes?: boolean; p_institution_id: string }
+        Returns: {
+          action: string
+          grade: number
+          stream: string
+          student_count: number
+        }[]
       }
     }
     Enums: {
