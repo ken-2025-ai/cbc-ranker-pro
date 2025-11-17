@@ -122,8 +122,9 @@ const Auth = () => {
           variant: "default",
         });
       } else {
-        // Successful sign in - redirect will happen automatically via AuthContext
-        console.log('Auto sign-in successful, waiting for redirect...');
+        // Successful sign in - navigate immediately
+        console.log('Auto sign-in successful, redirecting...');
+        navigate('/', { replace: true });
       }
       
     } catch (err) {

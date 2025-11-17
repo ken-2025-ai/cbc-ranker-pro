@@ -80,11 +80,26 @@ const InstitutionAuth = () => {
 
       toast({
         title: "Account Created!",
-        description: "Your institution account has been activated. You can now sign in.",
+        description: "Signing you in...",
       });
 
-      // Switch to sign in form
-      setIsSignIn(true);
+      // Auto sign in after successful signup
+      const signInResult = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      });
+
+      if (signInResult.error) {
+        toast({
+          title: "Please Sign In",
+          description: "Account created. Please sign in manually.",
+        });
+        setIsSignIn(true);
+      } else {
+        // Redirect to dashboard
+        window.location.href = '/';
+      }
+      
       setFormData({ email: '', password: '', institutionCode: '' });
       
     } catch (error: any) {
