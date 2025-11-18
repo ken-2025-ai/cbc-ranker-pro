@@ -542,7 +542,7 @@ const StudentRegistration = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="stream">Stream {streams.length > 0 && '*'}</Label>
-                      <Select value={student.stream || undefined} onValueChange={(value) => handleInputChange("stream", value || "")}>
+                      <Select value={student.stream} onValueChange={(value) => handleInputChange("stream", value)}>
                         <SelectTrigger className={`transition-smooth focus:shadow-glow ${validationErrors.stream ? 'border-destructive' : ''}`}>
                           <SelectValue placeholder={streams.length > 0 ? "Select stream" : "Select stream (optional)"} />
                         </SelectTrigger>
