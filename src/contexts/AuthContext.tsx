@@ -100,6 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(mockSession);
           setInstitution(impInstitution);
           setInstitutionId(impInstitution.id);
+          setUserRole('admin'); // Grant admin role during impersonation
+          setStaffData(null);
           setLoading(false);
           
           console.log('Impersonation state set successfully');
