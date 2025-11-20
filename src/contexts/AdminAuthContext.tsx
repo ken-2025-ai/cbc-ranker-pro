@@ -131,12 +131,15 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsImpersonating(true);
     setImpersonatedInstitution(institution);
     
+    // Clear any existing impersonation session first to prevent caching
+    localStorage.removeItem('admin_impersonation_session');
+    
     // Create impersonation session for user panel
     const impersonationSession = {
       institution_id: institution.id,
       username: institution.username,
       name: institution.name,
-      token: `impersonate_${Date.now()}`,
+      token: `impersonate_${institution.id}_${Date.now()}`, // Include institution ID in token
       expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours
       last_login: new Date().toISOString()
     };
@@ -145,11 +148,12 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.setItem('admin_impersonation_session', JSON.stringify({
       session: impersonationSession,
       institution: institution,
-      admin_id: sessionToken
+      admin_id: sessionToken,
+      timestamp: Date.now() // Add timestamp for uniqueness
     }));
     
-    // Open user panel in new tab
-    const userPanelUrl = `${window.location.origin}/`;
+    // Open user panel in new tab with cache-busting parameter
+    const userPanelUrl = `${window.location.origin}/?impersonate=${institution.id}&t=${Date.now()}`;
     window.open(userPanelUrl, '_blank');
     
     toast({

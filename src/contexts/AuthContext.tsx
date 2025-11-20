@@ -64,8 +64,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const impersonationData = localStorage.getItem('admin_impersonation_session');
       if (impersonationData) {
         try {
-          const { session: impSession, institution: impInstitution } = JSON.parse(impersonationData);
-          console.log('Impersonation session found:', impSession, impInstitution);
+          const { session: impSession, institution: impInstitution, timestamp } = JSON.parse(impersonationData);
+          console.log('Impersonation session found:', { impSession, impInstitution, timestamp });
+          
+          // Verify the session hasn't expired
+          const expiryDate = new Date(impSession.expires_at);
+          if (expiryDate < new Date()) {
+            console.log('Impersonation session expired');
+            localStorage.removeItem('admin_impersonation_session');
+            return false;
+          }
           
           // Create mock user and session for impersonation
           const mockUser = {
@@ -83,7 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             },
             user_metadata: {
               institution_username: impInstitution.username,
-              institution_name: impInstitution.name
+              institution_name: impInstitution.name,
+              institution_id: impInstitution.id
             },
             role: 'authenticated',
             identities: []
@@ -95,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             expires_at: new Date(impSession.expires_at).getTime() / 1000
           } as Session;
 
-          // Set impersonated state
+          // Set impersonated state with fresh data
           setUser(mockUser);
           setSession(mockSession);
           setInstitution(impInstitution);
@@ -104,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setStaffData(null);
           setLoading(false);
           
-          console.log('Impersonation state set successfully');
+          console.log('Impersonation state set successfully for institution:', impInstitution.name, impInstitution.id);
           return true;
         } catch (error) {
           console.error('Error parsing impersonation data:', error);
