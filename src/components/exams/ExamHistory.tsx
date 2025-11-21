@@ -36,12 +36,21 @@ const ExamHistory = () => {
 
   const loadExams = async () => {
     try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        throw new Error('User not authenticated');
+      }
+
       const { data, error } = await supabase
         .from('exams')
         .select('*')
+        .eq('owner_id', userData.user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      console.log(`Loaded ${data?.length || 0} exams for user`);
       
       // Parse JSON fields and ensure proper types
       const parsedExams = (data || []).map(exam => ({
@@ -57,7 +66,7 @@ const ExamHistory = () => {
       console.error('Error loading exams:', error);
       toast({
         title: "Error",
-        description: "Failed to load exam history",
+        description: "Failed to load exam history. Please refresh the page.",
         variant: "destructive"
       });
     } finally {
