@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, GraduationCap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import HelpButton from '@/components/HelpButton';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -176,6 +177,11 @@ const Auth = () => {
           <p className="text-muted-foreground">
             Competency-Based Curriculum Management
           </p>
+        </div>
+
+        {/* Help Button */}
+        <div className="flex justify-end">
+          <HelpButton />
         </div>
 
         <Card className="border-2 border-primary/20 shadow-xl">

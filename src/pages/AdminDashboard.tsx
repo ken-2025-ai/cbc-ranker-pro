@@ -7,6 +7,7 @@ import InstitutionManagement from '@/components/admin/InstitutionManagement';
 import SubscriptionControl from '@/components/admin/SubscriptionControl';
 import YearlyPromotion from '@/components/admin/YearlyPromotion';
 import NotificationCenter from '@/components/admin/NotificationCenter';
+import HelpDesk from '@/components/admin/HelpDesk';
 import ActivityLogs from '@/components/admin/ActivityLogs';
 import ReportsAnalytics from '@/components/admin/ReportsAnalytics';
 import AdminSettings from '@/components/admin/AdminSettings';
@@ -45,6 +46,8 @@ const AdminDashboard = () => {
         return <YearlyPromotion />;
       case 'notifications':
         return <NotificationCenter />;
+      case 'helpdesk':
+        return <HelpDesk />;
       case 'logs':
         return <ActivityLogs />;
       case 'reports':
