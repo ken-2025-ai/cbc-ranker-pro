@@ -12,7 +12,8 @@ import {
   X,
   GraduationCap,
   LogOut,
-  BarChart3
+  BarChart3,
+  FileStack
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -31,6 +32,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'principal', 'teacher', 'staff'] },
     { id: 'students', label: 'Students', icon: Users, roles: ['admin', 'principal'] },
     { id: 'marks', label: 'Marks Entry', icon: BookOpen, roles: ['admin', 'principal', 'teacher', 'staff'] },
+    { id: 'exams-kenya', label: 'Exams Kenya', icon: FileStack, roles: ['admin', 'principal', 'teacher', 'staff'] },
     { id: 'rankings', label: 'Rankings', icon: TrendingUp, roles: ['admin', 'principal', 'teacher', 'staff'] },
     { id: 'reports', label: 'Reports', icon: FileText, roles: ['admin', 'principal', 'teacher', 'staff'] },
     { id: 'staff', label: 'Staff', icon: Users, roles: ['admin', 'principal'] },
