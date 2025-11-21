@@ -280,18 +280,51 @@ const ExamGenerator = () => {
       return;
     }
 
+    // Prepare strands array from covered topics
+    const strandsArray = Object.keys(formData.covered_topics).filter(
+      strand => formData.covered_topics[strand].length > 0
+    );
+
     setIsGenerating(true);
     
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to generate exams",
+          variant: "destructive"
+        });
+        setIsGenerating(false);
+        return;
+      }
       
       const payload = {
         ...formData,
-        owner_id: userData.user?.id,
-        institution_id: institution?.id
+        strands: strandsArray,
+        owner_id: userData.user.id,
+        institution_id: institutionId || institution?.id
       };
 
+      console.log('Generating exam with payload:', {
+        subject: payload.subject,
+        class_level: payload.class_level,
+        covered_topics: payload.covered_topics,
+        strands: payload.strands
+      });
+
       const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        toast({
+          title: "Session Error",
+          description: "Your session has expired. Please refresh and try again.",
+          variant: "destructive"
+        });
+        setIsGenerating(false);
+        return;
+      }
       
       const response = await fetch(
         `https://tzdpqwkbkuqypzzuphmt.supabase.co/functions/v1/generate-exam`,
@@ -695,13 +728,13 @@ const ExamGenerator = () => {
 
         <Button
           onClick={handleGenerate}
-          disabled={isGenerating || !formData.class_level || !formData.subject || formData.strands.length === 0}
+          disabled={isGenerating || !formData.class_level || !formData.subject || Object.keys(formData.covered_topics).length === 0}
           className="w-full"
           size="lg"
         >
           {isGenerating ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-4 h-4 w-4 animate-spin" />
               Generating Exam...
             </>
           ) : (
@@ -711,6 +744,12 @@ const ExamGenerator = () => {
             </>
           )}
         </Button>
+        
+        {Object.keys(formData.covered_topics).length === 0 && formData.subject && (
+          <p className="text-sm text-muted-foreground text-center mt-2">
+            Please select at least one topic you have covered
+          </p>
+        )}
       </CardContent>
     </Card>
   );
