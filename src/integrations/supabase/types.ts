@@ -1427,6 +1427,59 @@ export type Database = {
           },
         ]
       }
+      help_tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          description: string
+          email: string
+          id: string
+          issue_type: string
+          phone_number: string
+          priority: string | null
+          resolved_at: string | null
+          status: string | null
+          ticket_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description: string
+          email: string
+          id?: string
+          issue_type: string
+          phone_number: string
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          ticket_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string
+          email?: string
+          id?: string
+          issue_type?: string
+          phone_number?: string
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          ticket_number?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       institution_staff: {
         Row: {
           assigned_classes: string[] | null
@@ -3085,6 +3138,7 @@ export type Database = {
       create_ai_symptom_checker_function: { Args: never; Returns: undefined }
       expire_old_subscriptions: { Args: never; Returns: number }
       generate_result_code: { Args: never; Returns: string }
+      generate_ticket_number: { Args: never; Returns: string }
       get_institution_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["institution_role"]
