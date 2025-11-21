@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // PP1/PP2 specific subjects
 const PP_SUBJECTS = [
@@ -32,19 +33,83 @@ const EXAM_TYPES = [
   "KPSEA", "KJSEA", "End Term", "Mid Term", "Mock", "Opener", "CAT"
 ];
 
-const STRANDS_BY_SUBJECT: Record<string, string[]> = {
-  Mathematics: ["Numbers", "Algebra", "Geometry", "Measurement", "Data Handling", "Patterns"],
-  "Mathematical Activities": ["Numbers", "Patterns", "Shapes", "Measurement"],
-  English: ["Listening and Speaking", "Reading", "Writing", "Grammar", "Comprehension"],
-  "Literacy Activities": ["Listening", "Speaking", "Pre-reading", "Pre-writing"],
-  Kiswahili: ["Kusoma", "Kuandika", "Kusikiliza", "Kusema", "Sarufi"],
-  Science: ["Living Things", "Materials", "Energy", "Forces", "Earth and Space"],
-  "Environmental Activities": ["Living Things", "Weather", "Safety", "Community"],
-  "Social Studies": ["Geography", "History", "Citizenship", "Economics"],
-  "Hygiene and Nutrition Activities": ["Personal Hygiene", "Nutrition", "Health Habits"],
-  "Religious Education Activities": ["Values", "Stories", "Prayer"],
-  "Movement and Creative Activities": ["Physical Play", "Art", "Music", "Drama"],
+// Detailed topics by strand for each subject
+const TOPICS_BY_STRAND: Record<string, Record<string, string[]>> = {
+  Mathematics: {
+    "Numbers": ["Counting", "Addition", "Subtraction", "Multiplication", "Division", "Fractions", "Decimals", "Percentages", "Place Value", "Number Patterns"],
+    "Algebra": ["Variables", "Expressions", "Equations", "Inequalities", "Functions", "Linear Equations"],
+    "Geometry": ["Shapes", "Angles", "Lines", "Symmetry", "Transformations", "3D Shapes", "Constructions"],
+    "Measurement": ["Length", "Mass", "Capacity", "Time", "Money", "Temperature", "Area", "Perimeter", "Volume"],
+    "Data Handling": ["Data Collection", "Tables", "Graphs", "Charts", "Mean", "Median", "Mode", "Probability"],
+    "Patterns": ["Number Patterns", "Shape Patterns", "Sequences"]
+  },
+  "Mathematical Activities": {
+    "Numbers": ["Counting 1-10", "Counting 1-20", "Number Recognition", "More/Less", "Before/After"],
+    "Patterns": ["Color Patterns", "Shape Patterns", "Sound Patterns", "Movement Patterns"],
+    "Shapes": ["Circle", "Square", "Triangle", "Rectangle", "Oval"],
+    "Measurement": ["Big/Small", "Long/Short", "Heavy/Light", "Full/Empty"]
+  },
+  English: {
+    "Listening and Speaking": ["Oral Communication", "Conversations", "Storytelling", "Pronunciation", "Vocabulary"],
+    "Reading": ["Phonics", "Word Recognition", "Comprehension", "Reading Fluency", "Story Reading"],
+    "Writing": ["Letter Formation", "Sentence Writing", "Paragraph Writing", "Composition", "Creative Writing"],
+    "Grammar": ["Nouns", "Verbs", "Adjectives", "Pronouns", "Tenses", "Punctuation", "Sentence Structure"],
+    "Comprehension": ["Main Ideas", "Details", "Inference", "Summary", "Critical Reading"]
+  },
+  "Literacy Activities": {
+    "Listening": ["Listen to Stories", "Follow Instructions", "Sound Recognition"],
+    "Speaking": ["Name Objects", "Simple Sentences", "Describe Pictures", "Tell Stories"],
+    "Pre-reading": ["Letter Recognition", "Letter Sounds", "Picture Reading"],
+    "Pre-writing": ["Tracing", "Coloring", "Drawing Lines", "Holding Pencil"]
+  },
+  Kiswahili: {
+    "Kusoma": ["Sauti za Herufi", "Maneno", "Sentensi", "Hadithi", "Mashairi"],
+    "Kuandika": ["Herufi", "Maneno", "Sentensi", "Insha", "Barua"],
+    "Kusikiliza": ["Mazungumzo", "Maagizo", "Hadithi"],
+    "Kusema": ["Mazungumzo", "Hadithi", "Maelezo"],
+    "Sarufi": ["Nomino", "Vitenzi", "Vivumishi", "Wakati", "Alama za Uandishi"]
+  },
+  Science: {
+    "Living Things": ["Plants", "Animals", "Human Body", "Life Processes", "Classification", "Habitats", "Food Chains"],
+    "Materials": ["Properties", "States of Matter", "Changes", "Mixtures", "Separation"],
+    "Energy": ["Light", "Heat", "Sound", "Electricity", "Magnetism", "Energy Sources"],
+    "Forces": ["Push and Pull", "Friction", "Gravity", "Motion", "Simple Machines"],
+    "Earth and Space": ["Weather", "Seasons", "Day and Night", "Solar System", "Earth Features"]
+  },
+  "Environmental Activities": {
+    "Living Things": ["Plants Around Us", "Animals Around Us", "Caring for Plants", "Caring for Animals"],
+    "Weather": ["Sunny Days", "Rainy Days", "Windy Days", "Cloudy Days"],
+    "Safety": ["Road Safety", "Water Safety", "Fire Safety", "Stranger Danger"],
+    "Community": ["My Home", "My School", "My Neighborhood", "Helpers in Community"]
+  },
+  "Social Studies": {
+    "Geography": ["Maps", "Directions", "Continents", "Countries", "Physical Features", "Climate", "Resources"],
+    "History": ["Timeline", "Early People", "Historical Events", "National Heroes", "Traditions"],
+    "Citizenship": ["Rights", "Responsibilities", "Government", "National Symbols", "Values"],
+    "Economics": ["Needs and Wants", "Trade", "Money", "Production", "Business"]
+  },
+  "Hygiene and Nutrition Activities": {
+    "Personal Hygiene": ["Hand Washing", "Teeth Brushing", "Bathing", "Clean Clothes"],
+    "Nutrition": ["Healthy Foods", "Food Groups", "Balanced Diet", "Eating Habits"],
+    "Health Habits": ["Exercise", "Sleep", "Cleanliness", "Safety"]
+  },
+  "Religious Education Activities": {
+    "Values": ["Kindness", "Honesty", "Respect", "Sharing", "Love"],
+    "Stories": ["Bible Stories", "Moral Stories", "Faith Stories"],
+    "Prayer": ["Types of Prayer", "When to Pray", "Prayer Songs"]
+  },
+  "Movement and Creative Activities": {
+    "Physical Play": ["Running", "Jumping", "Dancing", "Ball Games", "Balance"],
+    "Art": ["Drawing", "Coloring", "Cutting", "Pasting", "Painting"],
+    "Music": ["Singing", "Rhythm", "Musical Instruments", "Songs"],
+    "Drama": ["Role Play", "Acting", "Storytelling", "Puppets"]
+  }
 };
+
+const STRANDS_BY_SUBJECT: Record<string, string[]> = Object.keys(TOPICS_BY_STRAND).reduce((acc, subject) => {
+  acc[subject] = Object.keys(TOPICS_BY_STRAND[subject]);
+  return acc;
+}, {} as Record<string, string[]>);
 
 interface Subject {
   id: string;
@@ -70,6 +135,7 @@ const ExamGenerator = () => {
     time_allowed_minutes: 60,
     question_count: 10,
     strands: [] as string[],
+    covered_topics: {} as Record<string, string[]>, // Topics teacher has covered
     include_omr: false,
     include_diagrams: false,
     extra_instructions: "",
@@ -78,8 +144,71 @@ const ExamGenerator = () => {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedExamId, setGeneratedExamId] = useState<string | null>(null);
+  const [expandedStrands, setExpandedStrands] = useState<Set<string>>(new Set());
 
   const availableStrands = STRANDS_BY_SUBJECT[formData.subject] || [];
+  const availableTopics = TOPICS_BY_STRAND[formData.subject] || {};
+
+  const toggleStrand = (strand: string) => {
+    const newExpanded = new Set(expandedStrands);
+    if (newExpanded.has(strand)) {
+      newExpanded.delete(strand);
+    } else {
+      newExpanded.add(strand);
+    }
+    setExpandedStrands(newExpanded);
+  };
+
+  const handleStrandToggle = (strand: string, checked: boolean) => {
+    if (checked) {
+      // Select all topics in this strand
+      const topics = availableTopics[strand] || [];
+      setFormData({
+        ...formData,
+        strands: [...formData.strands, strand],
+        covered_topics: {
+          ...formData.covered_topics,
+          [strand]: topics
+        }
+      });
+    } else {
+      // Deselect strand and all its topics
+      const newCoveredTopics = { ...formData.covered_topics };
+      delete newCoveredTopics[strand];
+      setFormData({
+        ...formData,
+        strands: formData.strands.filter(s => s !== strand),
+        covered_topics: newCoveredTopics
+      });
+    }
+  };
+
+  const handleTopicToggle = (strand: string, topic: string, checked: boolean) => {
+    const currentTopics = formData.covered_topics[strand] || [];
+    let newTopics: string[];
+    
+    if (checked) {
+      newTopics = [...currentTopics, topic];
+    } else {
+      newTopics = currentTopics.filter(t => t !== topic);
+    }
+
+    const newCoveredTopics = {
+      ...formData.covered_topics,
+      [strand]: newTopics
+    };
+
+    // If no topics left in strand, remove strand from strands array
+    const newStrands = newTopics.length > 0 
+      ? (formData.strands.includes(strand) ? formData.strands : [...formData.strands, strand])
+      : formData.strands.filter(s => s !== strand);
+
+    setFormData({
+      ...formData,
+      strands: newStrands,
+      covered_topics: newCoveredTopics
+    });
+  };
 
   // Map class level to subject level
   const getSubjectLevel = (classLevel: string): string => {
@@ -139,10 +268,13 @@ const ExamGenerator = () => {
   }, [formData.class_level, institutionId]);
 
   const handleGenerate = async () => {
-    if (!formData.class_level || !formData.exam_type || !formData.subject || formData.strands.length === 0) {
+    // Check if any topics are selected
+    const hasTopics = Object.values(formData.covered_topics).some(topics => topics.length > 0);
+    
+    if (!formData.class_level || !formData.exam_type || !formData.subject || !hasTopics) {
       toast({
         title: "Missing Fields",
-        description: "Please fill in class level, exam type, subject, and select at least one strand",
+        description: "Please fill in class level, exam type, subject, and select at least one topic you have covered",
         variant: "destructive"
       });
       return;
@@ -371,30 +503,80 @@ const ExamGenerator = () => {
         </div>
 
         {availableStrands.length > 0 && (
-          <div className="space-y-3">
-            <Label>Strands to Include *</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {availableStrands.map((strand) => (
-                <div key={strand} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={strand}
-                    checked={formData.strands.includes(strand)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFormData({ ...formData, strands: [...formData.strands, strand] });
-                      } else {
-                        setFormData({ ...formData, strands: formData.strands.filter(s => s !== strand) });
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <Label htmlFor={strand} className="text-sm font-normal cursor-pointer">
-                    {strand}
-                  </Label>
-                </div>
-              ))}
+          <div className="space-y-4">
+            <div>
+              <Label className="text-base">Topics Covered *</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Select the topics you have taught. The exam will only include questions from these topics.
+              </p>
             </div>
+            <div className="space-y-3 border rounded-lg p-4 max-h-96 overflow-y-auto">
+              {availableStrands.map((strand) => {
+                const topics = availableTopics[strand] || [];
+                const isExpanded = expandedStrands.has(strand);
+                const selectedTopics = formData.covered_topics[strand] || [];
+                const allSelected = topics.length > 0 && selectedTopics.length === topics.length;
+                const someSelected = selectedTopics.length > 0 && selectedTopics.length < topics.length;
+
+                return (
+                  <div key={strand} className="space-y-2">
+                    <div className="flex items-start gap-2 p-2 hover:bg-accent/50 rounded-md">
+                      <Checkbox
+                        id={`strand-${strand}`}
+                        checked={allSelected}
+                        onCheckedChange={(checked) => handleStrandToggle(strand, checked as boolean)}
+                        className={someSelected ? "data-[state=checked]:bg-primary/50" : ""}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => toggleStrand(strand)}
+                        className="flex items-center gap-2 flex-1 text-left"
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <Label htmlFor={`strand-${strand}`} className="font-medium cursor-pointer flex-1">
+                          {strand}
+                          {selectedTopics.length > 0 && (
+                            <span className="ml-2 text-xs text-primary">
+                              ({selectedTopics.length}/{topics.length} topics)
+                            </span>
+                          )}
+                        </Label>
+                      </button>
+                    </div>
+                    
+                    {isExpanded && topics.length > 0 && (
+                      <div className="ml-8 grid grid-cols-1 md:grid-cols-2 gap-2 pl-4 border-l-2 border-border">
+                        {topics.map((topic) => (
+                          <div key={topic} className="flex items-center space-x-2 p-1.5 hover:bg-accent/30 rounded">
+                            <Checkbox
+                              id={`topic-${strand}-${topic}`}
+                              checked={selectedTopics.includes(topic)}
+                              onCheckedChange={(checked) => handleTopicToggle(strand, topic, checked as boolean)}
+                            />
+                            <Label 
+                              htmlFor={`topic-${strand}-${topic}`}
+                              className="text-sm font-normal cursor-pointer flex-1"
+                            >
+                              {topic}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {Object.keys(formData.covered_topics).length > 0 && (
+              <div className="text-sm text-muted-foreground bg-accent/50 p-3 rounded-md">
+                <strong>Selected:</strong> {Object.values(formData.covered_topics).flat().length} topics across {Object.keys(formData.covered_topics).length} strands
+              </div>
+            )}
           </div>
         )}
 
