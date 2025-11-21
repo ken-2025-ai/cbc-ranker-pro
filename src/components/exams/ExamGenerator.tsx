@@ -150,6 +150,131 @@ const TOPICS_BY_STRAND: Record<string, Record<string, string[]>> = {
     "Finance": ["Money Management", "Banking", "Saving", "Budgeting"],
     "Records": ["Record Keeping", "Receipts", "Invoices", "Financial Statements"]
   },
+  "Business Studies": {
+    "Introduction to Business": ["Types of Business", "Business Environment", "Entrepreneurship", "Business Opportunities"],
+    "Trade": ["Buying and Selling", "Markets", "Pricing", "Marketing", "E-commerce"],
+    "Finance": ["Money Management", "Banking", "Saving", "Budgeting", "Investment"],
+    "Records": ["Record Keeping", "Receipts", "Invoices", "Financial Statements", "Accounting Basics"]
+  },
+  "Arabic": {
+    "Reading": ["Arabic Alphabet", "Vowels", "Word Recognition", "Sentence Reading", "Comprehension"],
+    "Writing": ["Letter Formation", "Word Writing", "Sentence Writing", "Composition"],
+    "Grammar": ["Nouns", "Verbs", "Adjectives", "Sentence Structure", "Tenses"],
+    "Conversation": ["Greetings", "Introductions", "Daily Conversations", "Vocabulary"]
+  },
+  "Arabic (JS)": {
+    "Reading and Comprehension": ["Advanced Reading", "Text Analysis", "Literary Texts", "Comprehension Skills"],
+    "Writing Skills": ["Essay Writing", "Creative Writing", "Formal Writing", "Letter Writing"],
+    "Grammar": ["Advanced Grammar", "Syntax", "Morphology", "Rhetoric"],
+    "Conversation": ["Formal Communication", "Presentations", "Debates", "Cultural Topics"]
+  },
+  "Christian Religious Education": {
+    "Old Testament": ["Creation", "Abraham", "Moses", "Kings", "Prophets"],
+    "New Testament": ["Birth of Jesus", "Ministry of Jesus", "Miracles", "Teachings", "Death and Resurrection"],
+    "Christian Living": ["Prayer", "Worship", "Values", "Morals", "Community Service"]
+  },
+  "Computer Science": {
+    "Computer Basics": ["Parts of Computer", "Input/Output Devices", "Storage", "Operating System"],
+    "Internet": ["Web Browsing", "Email", "Online Safety", "Search Engines"],
+    "Applications": ["Word Processing", "Spreadsheets", "Presentations", "Graphics"],
+    "Programming": ["Coding Basics", "Algorithms", "Debugging", "Problem Solving"]
+  },
+  "Computer Science (JS)": {
+    "Computer Systems": ["Hardware Components", "Software Types", "Operating Systems", "Computer Networks"],
+    "Internet and Web": ["Web Technologies", "Online Safety", "Digital Citizenship", "Cloud Computing"],
+    "Applications": ["Advanced Word Processing", "Spreadsheets and Formulas", "Database Basics", "Multimedia"],
+    "Programming": ["Programming Concepts", "Algorithms", "Data Structures", "Problem Solving", "Scratch/Python"]
+  },
+  "English (JS)": {
+    "Listening and Speaking": ["Oral Communication", "Presentations", "Discussions", "Public Speaking", "Pronunciation"],
+    "Reading": ["Reading Strategies", "Literary Texts", "Non-fiction", "Critical Reading", "Vocabulary"],
+    "Writing": ["Essay Writing", "Creative Writing", "Report Writing", "Business Writing", "Research"],
+    "Grammar": ["Parts of Speech", "Tenses", "Sentence Structure", "Punctuation", "Language Use"],
+    "Literature": ["Poetry", "Prose", "Drama", "Literary Devices", "Text Analysis"]
+  },
+  "Agriculture (JS)": {
+    "Crop Production": ["Land Preparation", "Planting Techniques", "Crop Management", "Harvesting", "Storage", "Value Addition"],
+    "Animal Husbandry": ["Types of Livestock", "Feeding Systems", "Housing", "Animal Health", "Products", "Marketing"],
+    "Farm Management": ["Farm Planning", "Record Keeping", "Budgeting", "Marketing", "Agribusiness"],
+    "Soil and Water": ["Soil Types", "Soil Conservation", "Fertilizers", "Irrigation Systems", "Water Management"]
+  },
+  "French (JS)": {
+    "Reading and Comprehension": ["Text Reading", "Comprehension", "Vocabulary", "Literary Texts"],
+    "Writing": ["Sentence Writing", "Composition", "Letter Writing", "Essay Writing"],
+    "Grammar": ["Nouns", "Verbs", "Adjectives", "Tenses", "Sentence Structure"],
+    "Conversation": ["Greetings", "Introductions", "Daily Life", "Cultural Topics"]
+  },
+  "German (JS)": {
+    "Reading and Comprehension": ["Text Reading", "Comprehension", "Vocabulary", "Literary Texts"],
+    "Writing": ["Sentence Writing", "Composition", "Letter Writing", "Essay Writing"],
+    "Grammar": ["Nouns", "Verbs", "Adjectives", "Cases", "Sentence Structure"],
+    "Conversation": ["Greetings", "Introductions", "Daily Life", "Cultural Topics"]
+  },
+  "Home Science (JS)": {
+    "Food and Nutrition": ["Nutrition Principles", "Meal Planning", "Food Preparation", "Food Preservation", "Kitchen Management"],
+    "Clothing and Textiles": ["Fabrics", "Clothing Construction", "Clothing Care", "Fashion Design", "Sewing Techniques"],
+    "Home Management": ["Home Planning", "Resource Management", "Interior Design", "Family Dynamics", "Consumer Education"]
+  },
+  "Kiswahili (JS)": {
+    "Kusoma na Kuelewa": ["Kusoma kwa Sauti", "Uelewa wa Maandishi", "Uchambuzi wa Maandishi", "Fasihi"],
+    "Kuandika": ["Insha", "Barua", "Ripoti", "Uandishi wa Kibiashara"],
+    "Sarufi": ["Vitenzi", "Nomino", "Vivumishi", "Sentensi", "Matumizi ya Lugha"],
+    "Mazungumzo": ["Mawasiliano", "Hotuba", "Majadiliano", "Utamaduni"]
+  },
+  "Life Skills Education (JS)": {
+    "Personal Development": ["Self Awareness", "Self Esteem", "Goal Setting", "Decision Making"],
+    "Health and Wellness": ["Nutrition", "Physical Fitness", "Mental Health", "Substance Abuse Prevention"],
+    "Relationships": ["Communication", "Conflict Resolution", "Peer Pressure", "Family Relationships"],
+    "Safety and Security": ["Personal Safety", "Digital Safety", "Emergency Preparedness", "First Aid"]
+  },
+  "Mandarin (JS)": {
+    "Reading and Comprehension": ["Character Reading", "Text Comprehension", "Vocabulary", "Pinyin"],
+    "Writing": ["Character Writing", "Sentence Writing", "Composition", "Stroke Order"],
+    "Grammar": ["Sentence Structure", "Grammar Patterns", "Tenses", "Particles"],
+    "Conversation": ["Greetings", "Daily Conversations", "Cultural Topics", "Pronunciation"]
+  },
+  "Mathematics (JS)": {
+    "Numbers": ["Integers", "Rational Numbers", "Real Numbers", "Number Operations", "HCF and LCM", "Exponents"],
+    "Algebra": ["Algebraic Expressions", "Linear Equations", "Inequalities", "Simultaneous Equations", "Quadratic Equations"],
+    "Geometry": ["Angles", "Triangles", "Quadrilaterals", "Circles", "Constructions", "Transformations", "Pythagoras Theorem"],
+    "Measurement": ["Length", "Area", "Volume", "Time", "Speed", "Density"],
+    "Statistics": ["Data Collection", "Frequency Tables", "Graphs", "Mean, Median, Mode", "Probability"],
+    "Commercial Arithmetic": ["Profit and Loss", "Simple Interest", "Compound Interest", "Discount", "Commission"]
+  },
+  "Performing Arts (JS)": {
+    "Music": ["Music Theory", "Vocal Techniques", "Instrumental Skills", "Music Composition", "Music History"],
+    "Dance": ["Dance Techniques", "Choreography", "Dance Styles", "Performance", "Dance History"],
+    "Drama": ["Acting Techniques", "Script Writing", "Stage Management", "Performance", "Drama History"]
+  },
+  "Physical and Health Education (JS)": {
+    "Athletics": ["Track Events", "Field Events", "Combined Events", "Training Principles"],
+    "Ball Games": ["Football", "Basketball", "Volleyball", "Handball", "Rugby", "Game Rules"],
+    "Gymnastics": ["Floor Exercises", "Apparatus Work", "Balance", "Flexibility"],
+    "Health Education": ["Nutrition", "First Aid", "Disease Prevention", "Mental Health", "Substance Abuse"]
+  },
+  "Religious Education CRE (JS)": {
+    "Old Testament": ["Patriarchs", "Exodus", "Prophets", "Kings", "Covenant"],
+    "New Testament": ["Life of Jesus", "Early Church", "Paul's Letters", "Teachings", "Miracles"],
+    "Christian Living": ["Christian Ethics", "Prayer Life", "Church", "Sacraments", "Social Issues"]
+  },
+  "Religious Education IRE (JS)": {
+    "Quran": ["Selected Surahs", "Tafsir", "Tajweed", "Themes", "Application"],
+    "Hadith": ["Selected Hadiths", "Interpretation", "Classification", "Application"],
+    "Islamic Practices": ["Ibadah", "Fiqh", "Islamic Calendar", "Pillars of Islam"],
+    "Islamic Living": ["Akhlaq", "Social Relations", "Family", "Contemporary Issues"]
+  },
+  "Religious Education HRE (JS)": {
+    "Hindu Scriptures": ["Vedas", "Upanishads", "Bhagavad Gita", "Puranas"],
+    "Hindu Practices": ["Worship", "Festivals", "Samskaras", "Yoga", "Meditation"],
+    "Hindu Philosophy": ["Dharma", "Karma", "Moksha", "Reincarnation"],
+    "Hindu Living": ["Values", "Ethics", "Family Life", "Social Duties"]
+  },
+  "Visual Arts (JS)": {
+    "Drawing": ["Drawing Techniques", "Perspective", "Shading", "Composition", "Still Life"],
+    "Painting": ["Color Theory", "Painting Techniques", "Mixed Media", "Artistic Styles"],
+    "Sculpture": ["Modeling", "Carving", "Casting", "3D Design"],
+    "Design": ["Graphic Design", "Layout", "Typography", "Digital Art", "Portfolio Development"]
+  },
   "Hygiene and Nutrition Activities": {
     "Personal Hygiene": ["Hand Washing", "Teeth Brushing", "Bathing", "Clean Clothes"],
     "Nutrition": ["Healthy Foods", "Food Groups", "Balanced Diet", "Eating Habits"],
