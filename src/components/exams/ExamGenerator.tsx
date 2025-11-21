@@ -64,6 +64,9 @@ const ExamGenerator = () => {
     exam_type: "",
     subject: "",
     paper_number: 1,
+    term: 1,
+    year: new Date().getFullYear(),
+    teacher_name: "",
     time_allowed_minutes: 60,
     question_count: 10,
     strands: [] as string[],
@@ -274,6 +277,42 @@ const ExamGenerator = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="term">Term *</Label>
+            <Select value={formData.term.toString()} onValueChange={(value) => setFormData({ ...formData, term: parseInt(value) })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select term" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Term 1</SelectItem>
+                <SelectItem value="2">Term 2</SelectItem>
+                <SelectItem value="3">Term 3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="year">Year</Label>
+            <Input
+              id="year"
+              type="number"
+              min="2020"
+              max="2030"
+              value={formData.year}
+              onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) || new Date().getFullYear() })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="teacher_name">Teacher Name (Optional)</Label>
+            <Input
+              id="teacher_name"
+              value={formData.teacher_name}
+              onChange={(e) => setFormData({ ...formData, teacher_name: e.target.value })}
+              placeholder="Enter teacher name"
+            />
           </div>
 
           <div className="space-y-2">
