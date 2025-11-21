@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-const SUBJECTS = [
-  "Mathematics", "English", "Kiswahili", "Science", 
-  "Social Studies", "Religious Education", "Creative Arts"
+// PP1/PP2 specific subjects
+const PP_SUBJECTS = [
+  { name: "Literacy Activities", code: "LIT" },
+  { name: "Mathematical Activities", code: "MATH" },
+  { name: "Environmental Activities", code: "ENV" },
+  { name: "Hygiene and Nutrition Activities", code: "HYG" },
+  { name: "Religious Education Activities", code: "CRE" },
+  { name: "Movement and Creative Activities", code: "MCA" },
 ];
 
 const CLASS_LEVELS = [
@@ -29,15 +34,29 @@ const EXAM_TYPES = [
 
 const STRANDS_BY_SUBJECT: Record<string, string[]> = {
   Mathematics: ["Numbers", "Algebra", "Geometry", "Measurement", "Data Handling", "Patterns"],
+  "Mathematical Activities": ["Numbers", "Patterns", "Shapes", "Measurement"],
   English: ["Listening and Speaking", "Reading", "Writing", "Grammar", "Comprehension"],
+  "Literacy Activities": ["Listening", "Speaking", "Pre-reading", "Pre-writing"],
   Kiswahili: ["Kusoma", "Kuandika", "Kusikiliza", "Kusema", "Sarufi"],
   Science: ["Living Things", "Materials", "Energy", "Forces", "Earth and Space"],
+  "Environmental Activities": ["Living Things", "Weather", "Safety", "Community"],
   "Social Studies": ["Geography", "History", "Citizenship", "Economics"],
+  "Hygiene and Nutrition Activities": ["Personal Hygiene", "Nutrition", "Health Habits"],
+  "Religious Education Activities": ["Values", "Stories", "Prayer"],
+  "Movement and Creative Activities": ["Physical Play", "Art", "Music", "Drama"],
 };
+
+interface Subject {
+  id: string;
+  name: string;
+  code: string;
+  level: string;
+}
 
 const ExamGenerator = () => {
   const { toast } = useToast();
-  const { institution } = useAuth();
+  const { institution, institutionId } = useAuth();
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
   
   const [formData, setFormData] = useState({
     school_name: institution?.name || "",
@@ -58,6 +77,63 @@ const ExamGenerator = () => {
   const [generatedExamId, setGeneratedExamId] = useState<string | null>(null);
 
   const availableStrands = STRANDS_BY_SUBJECT[formData.subject] || [];
+
+  // Map class level to subject level
+  const getSubjectLevel = (classLevel: string): string => {
+    if (classLevel === "PP1" || classLevel === "PP2") return "pre_primary";
+    const grade = parseInt(classLevel.replace(/\D/g, ""));
+    if (!isNaN(grade)) {
+      if (grade <= 3) return "lower_primary";
+      if (grade <= 6) return "upper_primary";
+      if (grade <= 9) return "junior_secondary";
+    }
+    if (classLevel.startsWith("Form")) return "secondary";
+    return "upper_primary";
+  };
+
+  // Fetch subjects when class level changes
+  useEffect(() => {
+    if (!formData.class_level) {
+      setAvailableSubjects([]);
+      return;
+    }
+
+    const fetchSubjects = async () => {
+      const level = getSubjectLevel(formData.class_level);
+      
+      // For PP1/PP2, use dedicated subjects
+      if (level === "pre_primary") {
+        setAvailableSubjects(PP_SUBJECTS.map((s, idx) => ({
+          id: s.code,
+          name: s.name,
+          code: s.code,
+          level: "pre_primary"
+        })));
+        return;
+      }
+
+      // Fetch from database for other levels
+      try {
+        const { data, error } = await supabase
+          .from('subjects')
+          .select('*')
+          .eq('level', level)
+          .order('name');
+        
+        if (error) throw error;
+        setAvailableSubjects(data || []);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load subjects for this class level",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchSubjects();
+  }, [formData.class_level, institutionId]);
 
   const handleGenerate = async () => {
     if (!formData.class_level || !formData.exam_type || !formData.subject || formData.strands.length === 0) {
@@ -80,13 +156,15 @@ const ExamGenerator = () => {
         institution_id: institution?.id
       };
 
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-exam`,
+        `https://tzdpqwkbkuqypzzuphmt.supabase.co/functions/v1/generate-exam`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            'Authorization': `Bearer ${session?.access_token || ''}`
           },
           body: JSON.stringify(payload)
         }
@@ -200,13 +278,17 @@ const ExamGenerator = () => {
 
           <div className="space-y-2">
             <Label htmlFor="subject">Subject *</Label>
-            <Select value={formData.subject} onValueChange={(value) => setFormData({ ...formData, subject: value, strands: [] })}>
+            <Select 
+              value={formData.subject} 
+              onValueChange={(value) => setFormData({ ...formData, subject: value, strands: [] })}
+              disabled={!formData.class_level}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select subject" />
+                <SelectValue placeholder={formData.class_level ? "Select subject" : "Select class first"} />
               </SelectTrigger>
               <SelectContent>
-                {SUBJECTS.map((subject) => (
-                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                {availableSubjects.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
