@@ -13,11 +13,12 @@ Your job is to generate PERFECT, curriculum-aligned CBC exams with correct forma
 Return ONLY valid JSON. No explanations, no markdown, no extra text. Just the JSON object.
 
 === TOPIC FILTERING (VERY IMPORTANT) ===
-1. Use ONLY the strands/topics provided in the input strands array
-2. DO NOT generate questions on topics not in the strands array
-3. Include 20% spiral progression from previous grade ONLY if directly related to selected topics
-   Example: Grade 6 Fractions may include Grade 5 Fractions, but NOT shapes or algebra
-4. If a topic is not in strands, DO NOT use it
+1. Use ONLY the topics explicitly listed in "covered_topics" - these are topics the teacher has taught
+2. DO NOT generate questions on ANY topic not in the covered_topics list
+3. You may include up to 20% spiral progression from previous grade, BUT ONLY for topics directly related to covered topics
+   Example: If teacher covered "Grade 6 Fractions", you can reference "Grade 5 Fractions" but NOT shapes or algebra
+4. If a sub-topic is not in covered_topics, DO NOT use it - even if it's in the same strand
+5. Prioritize depth over breadth - test the covered topics thoroughly
 
 === QUESTION DISTRIBUTION (MUST FOLLOW) ===
 Distribute questions according to Bloom's taxonomy:
@@ -202,12 +203,19 @@ serve(async (req) => {
     });
 
     // Validate required fields
-    if (!body.subject || !body.class_level || !Array.isArray(body.strands) || body.strands.length === 0) {
+    if (!body.subject || !body.class_level || !body.covered_topics || Object.keys(body.covered_topics).length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Missing required inputs: subject, class_level, strands' }),
+        JSON.stringify({ error: 'Missing required inputs: subject, class_level, and covered_topics (topics teacher has taught)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Format covered topics for logging and storage
+    const coveredTopicsList = Object.entries(body.covered_topics)
+      .map(([strand, topics]: [string, any]) => `${strand}: ${topics.join(", ")}`)
+      .join("; ");
+    
+    console.log('Covered topics:', coveredTopicsList);
 
     // Create draft exam row
     const { data: examRow, error: examError } = await supabase
@@ -238,12 +246,43 @@ serve(async (req) => {
     const examId = examRow.id;
     console.log('Created exam draft:', examId);
 
-    // Prepare AI request
+    // Prepare AI request with detailed topic information
+    const userPrompt = `Generate a ${body.exam_type || 'End Term'} exam.
+
+**COVERED TOPICS (ONLY USE THESE - Teacher has taught these specific topics):**
+${Object.entries(body.covered_topics).map(([strand, topics]: [string, any]) => 
+  `\n${strand}:\n${topics.map((t: string) => `  - ${t}`).join('\n')}`
+).join('\n')}
+
+**EXAM DETAILS:**
+- Subject: ${body.subject}
+- Class Level: ${body.class_level}
+- School: ${body.school_name || 'School'}
+- Term: ${body.term || 1}, Year: ${body.year || new Date().getFullYear()}
+- Teacher: ${body.teacher_name || 'Not specified'}
+- Time: ${body.time_allowed_minutes || 60} minutes
+- Questions: ${body.question_count || 10}
+- Difficulty: Easy ${body.difficulty?.easy || 40}%, Medium ${body.difficulty?.medium || 40}%, Hard ${body.difficulty?.hard || 20}%
+- Include Diagrams: ${body.include_diagrams ? 'Yes' : 'No'}
+- Include OMR: ${body.include_omr ? 'Yes (for MCQs)' : 'No'}
+${body.extra_instructions ? `- Additional Instructions: ${body.extra_instructions}` : ''}
+
+**CRITICAL REQUIREMENTS:**
+1. Generate questions ONLY from the covered topics listed above
+2. Do NOT include ANY topic not in the covered list
+3. Test each covered topic thoroughly with appropriate question types
+4. Ensure age-appropriate difficulty for ${body.class_level}
+5. Follow proper CBC/KNEC format
+6. Include detailed marking scheme for each question
+7. Provide adequate answer spacing
+
+Generate the complete exam JSON now.`;
+
     const aiPayload = {
       model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: JSON.stringify(body) }
+        { role: "user", content: userPrompt }
       ],
       stream: true,
       max_tokens: 16000,
