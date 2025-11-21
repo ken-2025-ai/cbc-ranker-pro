@@ -290,6 +290,7 @@ Generate the complete exam JSON now.`;
     };
 
     // Call Lovable AI
+    console.log('Calling Lovable AI with model: google/gemini-2.5-flash');
     const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -299,26 +300,36 @@ Generate the complete exam JSON now.`;
       body: JSON.stringify(aiPayload)
     });
 
+    console.log('AI Response status:', aiResp.status);
+
     if (aiResp.status === 402) {
+      console.error('Payment required error');
       await supabase.from('exams').update({
         status: 'error',
-        ai_metadata: { error: '402_PAYMENT_REQUIRED' }
+        ai_metadata: { error: '402_PAYMENT_REQUIRED', message: 'Add credits to Lovable AI workspace' }
       }).eq('id', examId);
       
       return new Response(
-        JSON.stringify({ error: 'Payment required to access AI model. Please add credits to your Lovable workspace.' }),
+        JSON.stringify({ 
+          error: 'Payment required to access AI model. Please add credits to your Lovable workspace.',
+          exam_id: examId
+        }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (aiResp.status === 429) {
+      console.error('Rate limit exceeded');
       await supabase.from('exams').update({
         status: 'error',
-        ai_metadata: { error: '429_RATE_LIMITED' }
+        ai_metadata: { error: '429_RATE_LIMITED', message: 'Too many requests' }
       }).eq('id', examId);
       
       return new Response(
-        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        JSON.stringify({ 
+          error: 'Rate limit exceeded. Please try again later.',
+          exam_id: examId
+        }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -326,7 +337,12 @@ Generate the complete exam JSON now.`;
     if (!aiResp.ok) {
       const errorText = await aiResp.text();
       console.error('AI API error:', aiResp.status, errorText);
-      throw new Error(`AI API error: ${aiResp.status}`);
+      await supabase.from('exams').update({
+        status: 'error',
+        ai_metadata: { error: 'AI_API_ERROR', status: aiResp.status, details: errorText }
+      }).eq('id', examId);
+      
+      throw new Error(`AI API error: ${aiResp.status} - ${errorText}`);
     }
 
     // Stream response back to client and collect full response

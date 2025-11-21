@@ -341,23 +341,29 @@ const ExamGenerator = () => {
       if (response.status === 402) {
         toast({
           title: "Payment Required",
-          description: "Please add credits to your Lovable AI workspace to use this feature",
-          variant: "destructive"
+          description: "Please add credits to your Lovable AI workspace to use this feature. Visit Settings → Workspace → Usage to add credits.",
+          variant: "destructive",
+          duration: 10000
         });
+        setIsGenerating(false);
         return;
       }
 
       if (response.status === 429) {
         toast({
           title: "Rate Limited",
-          description: "Too many requests. Please wait a moment and try again",
-          variant: "destructive"
+          description: "Too many exam generation requests. Please wait a moment and try again, or upgrade your plan for higher limits.",
+          variant: "destructive",
+          duration: 8000
         });
+        setIsGenerating(false);
         return;
       }
 
       if (!response.ok) {
-        throw new Error('Failed to generate exam');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API Error:', response.status, errorData);
+        throw new Error(errorData.error || `API error: ${response.status}`);
       }
 
       // Stream the response
@@ -378,15 +384,37 @@ const ExamGenerator = () => {
         description: "Your exam has been generated successfully. Check Exam History to view and download it.",
       });
 
+      console.log('Exam generation completed successfully');
+      
+      // Reset form but keep school info
+      setFormData(prev => ({
+        ...prev,
+        covered_topics: {},
+        strands: [],
+        extra_instructions: ""
+      }));
+      setExpandedStrands(new Set());
+
       // Refresh to show in history
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
 
     } catch (error) {
       console.error('Error generating exam:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate exam";
+      
       toast({
         title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate exam",
-        variant: "destructive"
+        description: errorMessage.includes("Payment") 
+          ? "Please add credits to your Lovable AI workspace"
+          : errorMessage.includes("Rate limit")
+          ? "Too many requests. Please try again in a few minutes"
+          : errorMessage.includes("Authentication")
+          ? "Please log in again to continue"
+          : "An error occurred while generating the exam. Please try again.",
+        variant: "destructive",
+        duration: 8000
       });
     } finally {
       setIsGenerating(false);
@@ -398,13 +426,25 @@ const ExamGenerator = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          Generate KNEC/CBC Exam
+          Generate KNEC/CBC Exam with Lovable AI
         </CardTitle>
         <CardDescription>
-          Configure your exam parameters and generate AI-powered KNEC-compliant exams
+          Configure your exam parameters and generate AI-powered KNEC-compliant exams using advanced AI
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* AI Info Banner */}
+        <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 p-4 rounded-lg border border-primary/20">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Powered by Lovable AI</p>
+              <p className="text-xs text-muted-foreground">
+                Our AI generates curriculum-aligned exams based on the specific topics you've covered, ensuring questions match your teaching progression and follow official CBC/KNEC guidelines.
+              </p>
+            </div>
+          </div>
+        </div>
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="school_name">School Name</Label>
@@ -734,21 +774,42 @@ const ExamGenerator = () => {
         >
           {isGenerating ? (
             <>
-              <Loader2 className="mr-4 h-4 w-4 animate-spin" />
-              Generating Exam...
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Generating Exam with AI...
             </>
           ) : (
             <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate Exam
+              <Sparkles className="mr-2 h-5 w-5" />
+              Generate Exam with Lovable AI
             </>
           )}
         </Button>
+        
+        {isGenerating && (
+          <div className="mt-4 p-4 bg-accent/50 rounded-lg border border-border">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <p className="text-sm font-medium">AI is generating your exam...</p>
+            </div>
+            <p className="text-xs text-muted-foreground ml-8">
+              This may take 30-60 seconds. Creating questions from your selected topics.
+            </p>
+          </div>
+        )}
         
         {Object.keys(formData.covered_topics).length === 0 && formData.subject && (
           <p className="text-sm text-muted-foreground text-center mt-2">
             Please select at least one topic you have covered
           </p>
+        )}
+        
+        {!isGenerating && Object.keys(formData.covered_topics).length > 0 && (
+          <div className="mt-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+            <p className="text-sm text-center">
+              <strong>{Object.values(formData.covered_topics).flat().length} topics</strong> selected across{" "}
+              <strong>{Object.keys(formData.covered_topics).length} strands</strong>
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
