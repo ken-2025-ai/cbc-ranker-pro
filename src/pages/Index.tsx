@@ -36,8 +36,23 @@ const Index = () => {
     );
   }
 
-  // Redirect to auth if not authenticated
-  if (!institution) {
+  // Check for impersonation session - don't redirect if present
+  const impersonationData = localStorage.getItem('admin_impersonation_session');
+  
+  // If impersonation is active but institution isn't set yet, keep loading
+  if (impersonationData && !institution) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Setting up impersonation...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Redirect to auth if not authenticated (unless impersonation is being set up)
+  if (!institution && !impersonationData) {
     return <Navigate to="/auth" replace />;
   }
 

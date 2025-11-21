@@ -140,6 +140,13 @@ const Auth = () => {
     setLoading(false);
   };
 
+  // Check for impersonation and redirect immediately
+  const impersonationData = localStorage.getItem('admin_impersonation_session');
+  if (impersonationData && !authLoading) {
+    console.log('Impersonation detected, redirecting to dashboard');
+    return <Navigate to="/" replace />;
+  }
+
   const handleTap = () => {
     const newTapCount = tapCount + 1;
     setTapCount(newTapCount);
