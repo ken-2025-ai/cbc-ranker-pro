@@ -10,6 +10,7 @@ import Settings from "@/components/Settings";
 import StaffManagement from "@/components/StaffManagement";
 import SchoolAnalytics from "@/components/admin/SchoolAnalytics";
 import { TeacherAnalytics } from "@/components/TeacherAnalytics";
+import ExamsKenya from "@/components/ExamsKenya";
 import NotificationToast from "@/components/NotificationToast";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import FloatingNotificationIndicator from "@/components/FloatingNotificationIndicator";
@@ -80,6 +81,8 @@ const Index = () => {
         return hasAccess(['admin', 'principal']) ? <SchoolAnalytics /> : <Dashboard onViewChange={setCurrentView} />;
       case "teacher-analytics":
         return hasAccess(['teacher']) ? <TeacherAnalytics /> : <Dashboard onViewChange={setCurrentView} />;
+      case "exams-kenya":
+        return <ExamsKenya />;
       case "settings":
         return <Settings />;
       default:

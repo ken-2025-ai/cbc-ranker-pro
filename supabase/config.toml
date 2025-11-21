@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.create-staff-member]
 verify_jwt = true
+
+[functions.generate-exam]
+verify_jwt = true
