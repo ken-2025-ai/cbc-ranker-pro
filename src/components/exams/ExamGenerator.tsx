@@ -88,6 +88,68 @@ const TOPICS_BY_STRAND: Record<string, Record<string, string[]>> = {
     "Citizenship": ["Rights", "Responsibilities", "Government", "National Symbols", "Values"],
     "Economics": ["Needs and Wants", "Trade", "Money", "Production", "Business"]
   },
+  "Integrated Science": {
+    "Living Things": ["Plants", "Animals", "Human Body", "Life Processes", "Classification", "Habitats"],
+    "Materials": ["Properties", "States of Matter", "Changes", "Mixtures"],
+    "Energy": ["Light", "Heat", "Sound", "Electricity", "Magnetism"],
+    "Forces": ["Push and Pull", "Friction", "Motion"],
+    "Earth and Space": ["Weather", "Seasons", "Solar System"]
+  },
+  "Pre-Technical Studies": {
+    "Technology": ["Tools", "Materials", "Processes", "Design"],
+    "Safety": ["Workshop Safety", "Tool Handling", "First Aid"],
+    "Projects": ["Planning", "Construction", "Testing", "Evaluation"]
+  },
+  Agriculture: {
+    "Crop Production": ["Land Preparation", "Planting", "Weeding", "Harvesting", "Storage"],
+    "Animal Husbandry": ["Types of Animals", "Feeding", "Housing", "Animal Health", "Products"],
+    "Tools and Equipment": ["Farm Tools", "Tool Maintenance", "Safety"],
+    "Soil and Water": ["Soil Types", "Soil Conservation", "Water Sources", "Irrigation"]
+  },
+  "Home Science": {
+    "Food and Nutrition": ["Food Groups", "Balanced Diet", "Food Preparation", "Food Storage", "Kitchen Safety"],
+    "Clothing": ["Types of Clothing", "Clothing Care", "Basic Sewing", "Fabric Types"],
+    "Home Management": ["Cleaning", "Organization", "Safety at Home", "Family Care"]
+  },
+  "Creative Arts": {
+    "Visual Arts": ["Drawing", "Painting", "Collage", "Sculpture", "Craft"],
+    "Music": ["Singing", "Rhythm", "Musical Instruments", "Composition", "Performance"],
+    "Drama": ["Acting", "Role Play", "Storytelling", "Movement", "Performance"]
+  },
+  "Physical Education": {
+    "Athletics": ["Running", "Jumping", "Throwing", "Relay"],
+    "Ball Games": ["Football", "Netball", "Volleyball", "Basketball", "Handball"],
+    "Gymnastics": ["Balance", "Flexibility", "Coordination", "Tumbling"],
+    "Health": ["Physical Fitness", "Warm-up", "Cool-down", "Safety", "First Aid"]
+  },
+  CRE: {
+    "Old Testament": ["Creation", "Abraham", "Moses", "Kings", "Prophets"],
+    "New Testament": ["Birth of Jesus", "Ministry of Jesus", "Miracles", "Teachings", "Death and Resurrection"],
+    "Christian Living": ["Prayer", "Worship", "Values", "Morals", "Community Service"]
+  },
+  IRE: {
+    "Quran": ["Surahs", "Recitation", "Meaning", "Application"],
+    "Hadith": ["Prophetic Traditions", "Interpretation", "Application"],
+    "Islamic Practices": ["Prayer", "Fasting", "Charity", "Pilgrimage"],
+    "Islamic Living": ["Values", "Morals", "Family", "Community"]
+  },
+  HRE: {
+    "Hindu Scriptures": ["Vedas", "Upanishads", "Bhagavad Gita"],
+    "Hindu Practices": ["Worship", "Festivals", "Rituals", "Meditation"],
+    "Hindu Living": ["Values", "Dharma", "Karma", "Family", "Community"]
+  },
+  ICT: {
+    "Computer Basics": ["Parts of Computer", "Input/Output Devices", "Storage", "Operating System"],
+    "Internet": ["Web Browsing", "Email", "Online Safety", "Search Engines"],
+    "Applications": ["Word Processing", "Spreadsheets", "Presentations", "Graphics"],
+    "Programming": ["Coding Basics", "Algorithms", "Debugging", "Problem Solving"]
+  },
+  Business: {
+    "Introduction to Business": ["Types of Business", "Business Environment", "Entrepreneurship"],
+    "Trade": ["Buying and Selling", "Markets", "Pricing", "Marketing"],
+    "Finance": ["Money Management", "Banking", "Saving", "Budgeting"],
+    "Records": ["Record Keeping", "Receipts", "Invoices", "Financial Statements"]
+  },
   "Hygiene and Nutrition Activities": {
     "Personal Hygiene": ["Hand Washing", "Teeth Brushing", "Bathing", "Clean Clothes"],
     "Nutrition": ["Healthy Foods", "Food Groups", "Balanced Diet", "Eating Habits"],
@@ -253,7 +315,13 @@ const ExamGenerator = () => {
           .order('name');
         
         if (error) throw error;
-        setAvailableSubjects(data || []);
+        
+        // Remove duplicates by subject name
+        const uniqueSubjects = Array.from(
+          new Map((data || []).map(subject => [subject.name, subject])).values()
+        );
+        
+        setAvailableSubjects(uniqueSubjects);
       } catch (error) {
         console.error('Error fetching subjects:', error);
         toast({
