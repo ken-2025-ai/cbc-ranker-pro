@@ -219,6 +219,30 @@ const Dashboard = ({ onViewChange }: DashboardProps = {}) => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Exams Kenya Quick Access */}
+        <Card className="mt-6 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Exams Kenya
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  AI-powered KNEC/CBC exam generation - KPSEA & KJSEA compliant
+                </p>
+              </div>
+              <Button 
+                onClick={() => onViewChange?.('exams-kenya')}
+                className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Generate Exam
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

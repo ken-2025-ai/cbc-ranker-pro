@@ -1066,6 +1066,39 @@ export type Database = {
         }
         Relationships: []
       }
+      curriculum_embeddings: {
+        Row: {
+          class_level: string
+          created_at: string | null
+          id: string
+          learning_outcomes: string[] | null
+          passage: string
+          strand: string
+          sub_strand: string | null
+          subject: string
+        }
+        Insert: {
+          class_level: string
+          created_at?: string | null
+          id?: string
+          learning_outcomes?: string[] | null
+          passage: string
+          strand: string
+          sub_strand?: string | null
+          subject: string
+        }
+        Update: {
+          class_level?: string
+          created_at?: string | null
+          id?: string
+          learning_outcomes?: string[] | null
+          passage?: string
+          strand?: string
+          sub_strand?: string | null
+          subject?: string
+        }
+        Relationships: []
+      }
       disciplinary_records: {
         Row: {
           action_taken: string | null
@@ -1229,6 +1262,181 @@ export type Database = {
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_questions: {
+        Row: {
+          answer_space_lines: number
+          bloom_level: string | null
+          created_at: string | null
+          diagram_instructions: Json | null
+          difficulty_score: number | null
+          exam_id: string | null
+          expected_answer: string
+          id: string
+          marking_rubric: Json
+          marks: number
+          math_work_area: Json | null
+          metadata: Json | null
+          number: number
+          options: Json | null
+          question_text: string
+          strand: string
+          sub_strand: string | null
+          type: string
+        }
+        Insert: {
+          answer_space_lines?: number
+          bloom_level?: string | null
+          created_at?: string | null
+          diagram_instructions?: Json | null
+          difficulty_score?: number | null
+          exam_id?: string | null
+          expected_answer: string
+          id?: string
+          marking_rubric: Json
+          marks: number
+          math_work_area?: Json | null
+          metadata?: Json | null
+          number: number
+          options?: Json | null
+          question_text: string
+          strand: string
+          sub_strand?: string | null
+          type: string
+        }
+        Update: {
+          answer_space_lines?: number
+          bloom_level?: string | null
+          created_at?: string | null
+          diagram_instructions?: Json | null
+          difficulty_score?: number | null
+          exam_id?: string | null
+          expected_answer?: string
+          id?: string
+          marking_rubric?: Json
+          marks?: number
+          math_work_area?: Json | null
+          metadata?: Json | null
+          number?: number
+          options?: Json | null
+          question_text?: string
+          strand?: string
+          sub_strand?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exams: {
+        Row: {
+          ai_metadata: Json | null
+          class_level: string
+          cover_html: string | null
+          created_at: string | null
+          difficulty: Json | null
+          exam_type: string
+          extra_instructions: string | null
+          generated_at: string | null
+          id: string
+          include_diagrams: boolean | null
+          include_omr: boolean | null
+          institution_id: string | null
+          marking_scheme_text: string | null
+          omr_sheet: Json | null
+          owner_id: string | null
+          paper_number: number | null
+          pdf_url: string | null
+          print_html: string | null
+          question_count: number
+          school_code: string | null
+          school_name: string
+          status: string | null
+          strands: Json
+          subject: string
+          time_allowed_minutes: number
+          total_marks: number
+          updated_at: string | null
+          validation_errors: Json | null
+          warnings: Json | null
+        }
+        Insert: {
+          ai_metadata?: Json | null
+          class_level: string
+          cover_html?: string | null
+          created_at?: string | null
+          difficulty?: Json | null
+          exam_type: string
+          extra_instructions?: string | null
+          generated_at?: string | null
+          id?: string
+          include_diagrams?: boolean | null
+          include_omr?: boolean | null
+          institution_id?: string | null
+          marking_scheme_text?: string | null
+          omr_sheet?: Json | null
+          owner_id?: string | null
+          paper_number?: number | null
+          pdf_url?: string | null
+          print_html?: string | null
+          question_count?: number
+          school_code?: string | null
+          school_name: string
+          status?: string | null
+          strands: Json
+          subject: string
+          time_allowed_minutes?: number
+          total_marks?: number
+          updated_at?: string | null
+          validation_errors?: Json | null
+          warnings?: Json | null
+        }
+        Update: {
+          ai_metadata?: Json | null
+          class_level?: string
+          cover_html?: string | null
+          created_at?: string | null
+          difficulty?: Json | null
+          exam_type?: string
+          extra_instructions?: string | null
+          generated_at?: string | null
+          id?: string
+          include_diagrams?: boolean | null
+          include_omr?: boolean | null
+          institution_id?: string | null
+          marking_scheme_text?: string | null
+          omr_sheet?: Json | null
+          owner_id?: string | null
+          paper_number?: number | null
+          pdf_url?: string | null
+          print_html?: string | null
+          question_count?: number
+          school_code?: string | null
+          school_name?: string
+          status?: string | null
+          strands?: Json
+          subject?: string
+          time_allowed_minutes?: number
+          total_marks?: number
+          updated_at?: string | null
+          validation_errors?: Json | null
+          warnings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
             referencedColumns: ["id"]
           },
         ]
