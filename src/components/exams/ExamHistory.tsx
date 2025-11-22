@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Eye, Loader2, FileText, AlertCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Download, Eye, Loader2, FileText, AlertCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -28,6 +29,8 @@ const ExamHistory = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [examToDelete, setExamToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -112,6 +115,44 @@ const ExamHistory = () => {
       });
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const handleDeleteExam = async () => {
+    if (!examToDelete) return;
+
+    try {
+      // First delete associated exam questions
+      const { error: questionsError } = await supabase
+        .from('exam_questions')
+        .delete()
+        .eq('exam_id', examToDelete);
+
+      if (questionsError) throw questionsError;
+
+      // Then delete the exam
+      const { error: examError } = await supabase
+        .from('exams')
+        .delete()
+        .eq('id', examToDelete);
+
+      if (examError) throw examError;
+
+      toast({
+        title: "Success",
+        description: "Exam deleted successfully"
+      });
+
+      setDeleteDialogOpen(false);
+      setExamToDelete(null);
+      await loadExams();
+    } catch (error) {
+      console.error('Error deleting exam:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete exam",
+        variant: "destructive"
+      });
     }
   };
 
@@ -232,10 +273,40 @@ const ExamHistory = () => {
                   </>
                 )}
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setExamToDelete(exam.id);
+                  setDeleteDialogOpen(true);
+                }}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
             </div>
           </CardContent>
         </Card>
       ))}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Exam</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this exam? This action cannot be undone and will also delete all associated questions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setExamToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteExam} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

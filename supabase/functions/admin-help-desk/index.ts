@@ -109,9 +109,39 @@ serve(async (req) => {
       );
     }
     
+    else if (action === 'delete_ticket') {
+      // Delete ticket
+      if (!ticketId) {
+        return new Response(
+          JSON.stringify({ error: 'Missing required field: ticketId' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { error } = await supabase
+        .from('help_tickets')
+        .delete()
+        .eq('id', ticketId);
+
+      if (error) {
+        console.error('Error deleting ticket:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to delete ticket', details: error.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Ticket ${ticketId} deleted successfully`);
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Ticket deleted successfully' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     else {
       return new Response(
-        JSON.stringify({ error: 'Invalid action. Supported actions: fetch_all, update_status, update_priority' }),
+        JSON.stringify({ error: 'Invalid action. Supported actions: fetch_all, update_status, update_priority, delete_ticket' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
