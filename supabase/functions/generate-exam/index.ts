@@ -506,18 +506,19 @@ function generatePrintHTML(examData: any, inputData: any): string {
   <meta charset="UTF-8">
   <style>
     @page { size: A4 portrait; margin: 20mm; }
-    body { font-family: 'Times New Roman', serif; line-height: 1.6; color: #000; }
+    body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #000; }
     .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-    .header h1 { font-size: 18pt; margin: 5px 0; }
-    .header p { margin: 3px 0; font-size: 11pt; }
-    .instructions { margin: 20px 0; padding: 15px; border: 1px solid #000; }
+    .header h1 { font-size: 18pt; margin: 5px 0; font-family: 'Times New Roman', serif; }
+    .header p { margin: 3px 0; font-size: 12pt; font-family: 'Times New Roman', serif; }
+    .instructions { margin: 20px 0; padding: 15px; border: 1px solid #000; font-size: 12pt; }
     .question { margin: 20px 0; page-break-inside: avoid; }
-    .question-header { font-weight: bold; margin-bottom: 10px; }
-    .question-text { margin: 10px 0 10px 20px; }
-    .options { margin: 10px 0 10px 40px; list-style-type: upper-alpha; }
-    .answer-space { border: 1px dashed #666; min-height: 40px; padding: 10px; margin: 10px 0 10px 20px; }
-    .math-work { font-family: 'Courier New', monospace; border: 1px solid #000; padding: 10px; margin: 10px 0 10px 20px; min-height: 60px; }
-    .footer { margin-top: 30px; text-align: center; font-size: 9pt; }
+    .question-header { font-weight: bold; margin-bottom: 10px; font-size: 12pt; }
+    .question-text { margin: 10px 0 10px 20px; font-size: 12pt; }
+    .options { margin: 10px 0 10px 40px; list-style-type: upper-alpha; font-size: 12pt; }
+    .answer-space { border: 1px dashed #666; min-height: 40px; padding: 10px; margin: 10px 0 10px 20px; font-size: 12pt; }
+    .math-work { font-family: 'Times New Roman', serif; font-size: 12pt; border: 1px solid #000; padding: 10px; margin: 10px 0 10px 20px; min-height: 60px; }
+    .footer { margin-top: 30px; text-align: center; font-size: 12pt; font-family: 'Times New Roman', serif; }
+    .candidate-info { font-size: 12pt; }
   </style>
 </head>
 <body>
@@ -540,6 +541,7 @@ function generatePrintHTML(examData: any, inputData: any): string {
   <div class="candidate-info" style="margin: 20px 0; border: 1px solid #000; padding: 15px;">
     <p>Name: _______________________________________________ Admission No: _______________</p>
     <p>Class: _______________ Stream: _______________</p>
+    <p>Date: _______________</p>
   </div>
 
   ${questions.map((q: any) => `
