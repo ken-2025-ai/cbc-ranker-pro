@@ -152,8 +152,15 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
               </Button>
             ))}
             
-            {/* Sign Out Button */}
-            <div className="pt-2 border-t border-primary/10 mt-2">
+            {/* Footer Section */}
+            <div className="pt-4 mt-4 border-t border-primary/10">
+              {/* Institution Name */}
+              <div className="mb-3 px-3 py-2 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/10">
+                <p className="text-xs text-muted-foreground font-medium mb-1">Institution</p>
+                <p className="text-sm font-semibold text-primary truncate">{institution?.name}</p>
+              </div>
+              
+              {/* Sign Out Button */}
               <Button
                 variant="ghost"
                 className="w-full justify-start transition-smooth text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -162,9 +169,6 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
                 <LogOut className="mr-3 h-4 w-4" />
                 Sign Out
               </Button>
-              <div className="px-2 py-2 text-xs text-muted-foreground truncate">
-                {institution?.name}
-              </div>
             </div>
           </div>
         </div>
