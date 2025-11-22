@@ -668,6 +668,60 @@ export type Database = {
           },
         ]
       }
+      backup_logs: {
+        Row: {
+          backup_type: string
+          created_at: string | null
+          error_message: string | null
+          exam_period_id: string | null
+          expires_at: string | null
+          file_size_bytes: number | null
+          id: string
+          institution_id: string
+          recipient_email: string | null
+          status: string | null
+        }
+        Insert: {
+          backup_type: string
+          created_at?: string | null
+          error_message?: string | null
+          exam_period_id?: string | null
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          institution_id: string
+          recipient_email?: string | null
+          status?: string | null
+        }
+        Update: {
+          backup_type?: string
+          created_at?: string | null
+          error_message?: string | null
+          exam_period_id?: string | null
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          institution_id?: string
+          recipient_email?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_logs_exam_period_id_fkey"
+            columns: ["exam_period_id"]
+            isOneToOne: false
+            referencedRelation: "exam_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backup_logs_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       breeding_alerts: {
         Row: {
           breeding_date: string | null
@@ -1227,30 +1281,39 @@ export type Database = {
       }
       exam_periods: {
         Row: {
+          archived_at: string | null
+          backup_sent: boolean | null
           created_at: string
           end_date: string | null
           id: string
           institution_id: string
+          is_active: boolean | null
           name: string
           start_date: string | null
           term: number
           year: number
         }
         Insert: {
+          archived_at?: string | null
+          backup_sent?: boolean | null
           created_at?: string
           end_date?: string | null
           id?: string
           institution_id: string
+          is_active?: boolean | null
           name: string
           start_date?: string | null
           term: number
           year?: number
         }
         Update: {
+          archived_at?: string | null
+          backup_sent?: boolean | null
           created_at?: string
           end_date?: string | null
           id?: string
           institution_id?: string
+          is_active?: boolean | null
           name?: string
           start_date?: string | null
           term?: number
@@ -1978,6 +2041,67 @@ export type Database = {
           },
         ]
       }
+      marks_active: {
+        Row: {
+          created_at: string | null
+          exam_period_id: string
+          expires_at: string | null
+          grade: string | null
+          id: string
+          score: number
+          student_id: string
+          subject_id: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          exam_period_id: string
+          expires_at?: string | null
+          grade?: string | null
+          id?: string
+          score: number
+          student_id: string
+          subject_id: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          exam_period_id?: string
+          expires_at?: string | null
+          grade?: string | null
+          id?: string
+          score?: number
+          student_id?: string
+          subject_id?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marks_active_exam_period_id_fkey"
+            columns: ["exam_period_id"]
+            isOneToOne: false
+            referencedRelation: "exam_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_active_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_meta"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_active_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -2376,6 +2500,76 @@ export type Database = {
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rankings_cache: {
+        Row: {
+          average_score: number
+          computed_at: string | null
+          exam_period_id: string
+          expires_at: string | null
+          grade: string
+          id: string
+          institution_id: string
+          rank_overall: number
+          rank_stream: number | null
+          stream: string | null
+          student_id: string
+          subject_scores: Json | null
+          total_marks: number
+        }
+        Insert: {
+          average_score: number
+          computed_at?: string | null
+          exam_period_id: string
+          expires_at?: string | null
+          grade: string
+          id?: string
+          institution_id: string
+          rank_overall: number
+          rank_stream?: number | null
+          stream?: string | null
+          student_id: string
+          subject_scores?: Json | null
+          total_marks: number
+        }
+        Update: {
+          average_score?: number
+          computed_at?: string | null
+          exam_period_id?: string
+          expires_at?: string | null
+          grade?: string
+          id?: string
+          institution_id?: string
+          rank_overall?: number
+          rank_stream?: number | null
+          stream?: string | null
+          student_id?: string
+          subject_scores?: Json | null
+          total_marks?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rankings_cache_exam_period_id_fkey"
+            columns: ["exam_period_id"]
+            isOneToOne: false
+            referencedRelation: "exam_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rankings_cache_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rankings_cache_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_meta"
             referencedColumns: ["id"]
           },
         ]
@@ -2795,6 +2989,50 @@ export type Database = {
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students_meta: {
+        Row: {
+          admission_number: string
+          created_at: string | null
+          full_name: string
+          grade: string
+          id: string
+          institution_id: string
+          is_active: boolean | null
+          stream: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admission_number: string
+          created_at?: string | null
+          full_name: string
+          grade: string
+          id?: string
+          institution_id: string
+          is_active?: boolean | null
+          stream?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admission_number?: string
+          created_at?: string | null
+          full_name?: string
+          grade?: string
+          id?: string
+          institution_id?: string
+          is_active?: boolean | null
+          stream?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_meta_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
             referencedColumns: ["id"]
           },
         ]
@@ -3330,6 +3568,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_term_data: { Args: { p_exam_period_id: string }; Returns: Json }
       calculate_student_progress: {
         Args: { competency_uuid: string; student_uuid: string }
         Returns: undefined
@@ -3340,6 +3579,24 @@ export type Database = {
           days_remaining: number
           expiry_date: string
           is_active: boolean
+        }[]
+      }
+      cleanup_expired_data: {
+        Args: never
+        Returns: {
+          rows_deleted: number
+          table_name: string
+        }[]
+      }
+      compute_rankings_fast: {
+        Args: { p_exam_period_id: string; p_grade: string; p_stream?: string }
+        Returns: {
+          average_score: number
+          rank_overall: number
+          rank_stream: number
+          student_id: string
+          subject_scores: Json
+          total_marks: number
         }[]
       }
       create_admin_user: { Args: never; Returns: string }
