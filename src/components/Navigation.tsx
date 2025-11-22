@@ -111,11 +111,16 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
           </div>
           
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="relative h-10 w-10 rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 hover:border-primary/40 hover:from-primary/20 hover:to-primary/10 transition-all duration-300 shadow-sm hover:shadow-md"
           >
-            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {isMobileMenuOpen ? (
+              <X className="h-5 w-5 text-primary transition-transform duration-300 rotate-90" />
+            ) : (
+              <Menu className="h-5 w-5 text-primary transition-transform duration-300" />
+            )}
           </Button>
         </div>
 
