@@ -11,6 +11,8 @@ import HelpDesk from '@/components/admin/HelpDesk';
 import ActivityLogs from '@/components/admin/ActivityLogs';
 import ReportsAnalytics from '@/components/admin/ReportsAnalytics';
 import AdminSettings from '@/components/admin/AdminSettings';
+import DataCleanup from '@/components/admin/DataCleanup';
+import SystemMonitoring from '@/components/admin/SystemMonitoring';
 import { Loader2 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -54,6 +56,10 @@ const AdminDashboard = () => {
         return <ReportsAnalytics />;
       case 'settings':
         return <AdminSettings />;
+      case 'data-cleanup':
+        return <DataCleanup />;
+      case 'system-monitoring':
+        return <SystemMonitoring />;
       default:
         return <AdminOverview />;
     }

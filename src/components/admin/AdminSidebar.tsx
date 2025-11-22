@@ -14,7 +14,9 @@ import {
   Eye,
   X,
   GraduationCap,
-  HeadphonesIcon
+  HeadphonesIcon,
+  Database,
+  Monitor
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -34,6 +36,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ currentView, onViewChange }
     { id: 'helpdesk', label: 'Help Desk', icon: HeadphonesIcon },
     { id: 'logs', label: 'Activity Logs', icon: FileText },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'data-cleanup', label: 'Data Cleanup', icon: Database },
+    { id: 'system-monitoring', label: 'System Monitoring', icon: Monitor },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
