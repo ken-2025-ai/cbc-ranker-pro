@@ -54,13 +54,19 @@ const HelpDesk = React.memo(() => {
   const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('help_tickets')
-        .select('*')
-        .order('created_at', { ascending: false });
+      
+      // Call edge function to fetch tickets (bypasses RLS for admin users)
+      const { data, error } = await supabase.functions.invoke('admin-help-desk', {
+        body: { action: 'fetch_all' }
+      });
 
       if (error) throw error;
-      setTickets((data || []) as HelpTicket[]);
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch tickets');
+      }
+
+      setTickets((data.tickets || []) as HelpTicket[]);
     } catch (error) {
       console.error('Error fetching tickets:', error);
       toast({
@@ -103,17 +109,20 @@ const HelpDesk = React.memo(() => {
 
   const updateTicketStatus = useCallback(async (ticketId: string, status: string) => {
     try {
-      const updates: any = { status };
-      if (status === 'resolved') {
-        updates.resolved_at = new Date().toISOString();
-      }
-
-      const { error } = await supabase
-        .from('help_tickets')
-        .update(updates)
-        .eq('id', ticketId);
+      // Call edge function to update ticket status
+      const { data, error } = await supabase.functions.invoke('admin-help-desk', {
+        body: { 
+          action: 'update_status',
+          ticketId,
+          updates: { status }
+        }
+      });
 
       if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to update ticket status');
+      }
 
       await fetchTickets();
       setDetailsOpen(false);
@@ -134,12 +143,20 @@ const HelpDesk = React.memo(() => {
 
   const updateTicketPriority = useCallback(async (ticketId: string, priority: string) => {
     try {
-      const { error } = await supabase
-        .from('help_tickets')
-        .update({ priority })
-        .eq('id', ticketId);
+      // Call edge function to update ticket priority
+      const { data, error } = await supabase.functions.invoke('admin-help-desk', {
+        body: { 
+          action: 'update_priority',
+          ticketId,
+          updates: { priority }
+        }
+      });
 
       if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to update ticket priority');
+      }
 
       await fetchTickets();
       
