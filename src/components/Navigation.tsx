@@ -108,7 +108,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
             variant="outline"
             size="icon"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="relative h-12 w-12 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-primary/5 hover:border-primary/50 hover:from-primary/25 hover:to-primary/10 transition-all duration-300 shadow-md hover:shadow-lg active:scale-95"
+            className="relative z-10 h-12 w-12 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-primary/5 hover:border-primary/50 hover:from-primary/25 hover:to-primary/10 transition-all duration-300 shadow-md hover:shadow-lg active:scale-95"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
