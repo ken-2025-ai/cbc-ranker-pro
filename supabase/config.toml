@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.admin-help-desk]
 verify_jwt = false
+
+[functions.scheduled-cleanup]
+verify_jwt = false
+
+[functions.backup-notification]
+verify_jwt = false
