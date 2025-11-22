@@ -141,19 +141,19 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
               </Button>
             ))}
             
-            {/* Mobile User Section */}
+            {/* Sign Out Button */}
             <div className="pt-2 border-t border-primary/10 mt-2">
-              <div className="px-2 py-1 text-sm text-muted-foreground truncate">
-                {institution?.name}
-              </div>
               <Button
                 variant="ghost"
-                className="w-full justify-start text-muted-foreground mt-1"
+                className="w-full justify-start transition-smooth text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={signOut}
               >
                 <LogOut className="mr-3 h-4 w-4" />
                 Sign Out
               </Button>
+              <div className="px-2 py-2 text-xs text-muted-foreground truncate">
+                {institution?.name}
+              </div>
             </div>
           </div>
         </div>
