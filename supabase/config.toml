@@ -20,3 +20,6 @@ verify_jwt = true
 
 [functions.generate-exam]
 verify_jwt = true
+
+[functions.submit-help-ticket]
+verify_jwt = false

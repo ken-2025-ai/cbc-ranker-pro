@@ -12,15 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
-const generateTicketNumber = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const random = Math.floor(10000 + Math.random() * 90000);
-  return `TKT-${year}${month}${day}-${random}`;
-};
-
 const ticketSchema = z.object({
   email: z.string()
     .trim()
@@ -70,27 +61,23 @@ const HelpButton = React.memo(() => {
       const validated = ticketSchema.parse(trimmedData);
       setLoading(true);
 
-      // Generate unique ticket number
-      const generatedTicketNumber = generateTicketNumber();
-
-      // Insert ticket into database
-      const { data, error } = await supabase
-        .from('help_tickets')
-        .insert([{
-          ticket_number: generatedTicketNumber,
+      // Submit ticket via edge function (doesn't require auth)
+      const { data, error } = await supabase.functions.invoke('submit-help-ticket', {
+        body: {
           email: validated.email,
           phone_number: validated.phone_number,
           issue_type: validated.issue_type,
-          description: validated.description,
-          status: 'open',
-          priority: 'normal'
-        }])
-        .select('ticket_number')
-        .single();
+          description: validated.description
+        }
+      });
 
       if (error) {
-        console.error('Database error:', error);
+        console.error('Function error:', error);
         throw new Error('Failed to create ticket. Please try again.');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create ticket');
       }
 
       // Success
