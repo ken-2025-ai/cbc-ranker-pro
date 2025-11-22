@@ -96,8 +96,8 @@ const Index = () => {
       <ImpersonationBanner />
       <Navigation currentView={currentView} onViewChange={setCurrentView} />
       
-      {/* Center Top Notification Button */}
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+      {/* Notification Bell - positioned to avoid mobile menu button */}
+      <div className="fixed top-4 left-4 lg:left-1/2 lg:transform lg:-translate-x-1/2 z-40">
         <NotificationBell />
       </div>
       
