@@ -1,4 +1,16 @@
 import { useState, useEffect } from "react";
+import {
+  generateAESKey,
+  encryptExamData,
+  exportAESKey,
+  encryptAESKey,
+} from "@/utils/crypto";
+import {
+  initializeDevice,
+  getDevicePublicKey,
+  getDevicePublicKeyString,
+} from "@/utils/deviceManager";
+import { storeEncryptedExam } from "@/utils/examStorage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

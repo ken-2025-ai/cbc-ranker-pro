@@ -32,3 +32,12 @@ verify_jwt = false
 
 [functions.backup-notification]
 verify_jwt = false
+
+[functions.share-exam-key]
+verify_jwt = false
+
+[functions.store-exam-metadata]
+verify_jwt = false
+
+[functions.register-device]
+verify_jwt = false
