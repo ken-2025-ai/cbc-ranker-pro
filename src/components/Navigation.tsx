@@ -159,23 +159,6 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
         </div>
       </div>
 
-      {/* Bottom Navigation for Mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t shadow-elevated z-40">
-        <div className="grid grid-cols-8 gap-1 p-2">
-          {navItems.map((item) => (
-            <Button
-              key={item.id}
-              variant={currentView === item.id ? "academic" : "ghost"}
-              size="sm"
-              className="flex flex-col h-12 transition-smooth px-1"
-              onClick={() => handleNavClick(item.id)}
-            >
-              <item.icon className="h-3 w-3 sm:h-4 sm:w-4 mb-1" />
-              <span className="text-[10px] sm:text-xs leading-tight">{item.label.split(' ')[0]}</span>
-            </Button>
-          ))}
-        </div>
-      </div>
     </>
   );
 };
