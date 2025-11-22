@@ -286,13 +286,13 @@ const MarksEntry = () => {
       const { data: studentsData, error } = await query;
       if (error) throw error;
 
-      // Fetch existing marks for these students
+      // Fetch existing marks from marks_active (WhatsApp-style TTL)
       const studentIds = studentsData?.map(s => s.id) || [];
       let marksData: any[] = [];
       
       if (studentIds.length > 0 && selectedSubject && selectedExamPeriod) {
         const { data: marks, error: marksError } = await supabase
-          .from('marks')
+          .from('marks_active')
           .select('student_id, score')
           .in('student_id', studentIds)
           .eq('subject_id', selectedSubject)
@@ -455,18 +455,21 @@ const MarksEntry = () => {
         }
       }
 
-      // Prepare marks data for upsert
+      // Prepare marks data with TTL expiry (WhatsApp-style: 12 months)
+      const expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + 12);
+      
       const marksToSave = studentsWithMarks.map(student => ({
         student_id: student.id,
         subject_id: subjectId,
         exam_period_id: selectedExamPeriod,
         score: student.marks[selectedSubject],
         grade: null, // Will be calculated by the system if needed
-        remarks: null
+        expires_at: expiryDate.toISOString()
       }));
 
       const { error } = await supabase
-        .from('marks')
+        .from('marks_active')
         .upsert(marksToSave, { 
           onConflict: 'student_id,subject_id,exam_period_id'
         });

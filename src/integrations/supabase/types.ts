@@ -3631,6 +3631,12 @@ export type Database = {
         Args: { notification_id: string }
         Returns: undefined
       }
+      migrate_marks_to_active: {
+        Args: { p_exam_period_id: string; p_expiry_months?: number }
+        Returns: {
+          migrated_count: number
+        }[]
+      }
       promote_students: {
         Args: { apply_changes?: boolean; p_institution_id: string }
         Returns: {
@@ -3640,6 +3646,16 @@ export type Database = {
           student_count: number
         }[]
       }
+      run_scheduled_cleanup: {
+        Args: never
+        Returns: {
+          execution_time: string
+          rows_cleaned: number
+          table_name: string
+        }[]
+      }
+      set_default_expiry_dates: { Args: never; Returns: number }
+      sync_student_metadata: { Args: never; Returns: number }
     }
     Enums: {
       app_role:
