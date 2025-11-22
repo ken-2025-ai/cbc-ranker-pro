@@ -119,7 +119,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
           </Button>
           
           {/* Logo/Branding - Centered */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 pointer-events-none">
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
               <GraduationCap className="h-5 w-5 text-white" />
             </div>
