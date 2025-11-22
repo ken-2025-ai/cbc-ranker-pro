@@ -103,25 +103,31 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
       <div className="lg:hidden">
         {/* Mobile Header */}
         <div className="fixed top-0 left-0 right-0 h-16 bg-card border-b shadow-card z-50 flex items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-white" />
-            </div>
-            <h2 className="font-bold text-primary">CBC Records</h2>
-          </div>
-          
+          {/* Hamburger Menu Button - Left Side (Most Accessible) */}
           <Button
             variant="outline"
             size="icon"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="relative h-10 w-10 rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 hover:border-primary/40 hover:from-primary/20 hover:to-primary/10 transition-all duration-300 shadow-sm hover:shadow-md"
+            className="relative h-12 w-12 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-primary/5 hover:border-primary/50 hover:from-primary/25 hover:to-primary/10 transition-all duration-300 shadow-md hover:shadow-lg active:scale-95"
+            aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
-              <X className="h-5 w-5 text-primary transition-transform duration-300 rotate-90" />
+              <X className="h-6 w-6 text-primary transition-transform duration-300 rotate-90" />
             ) : (
-              <Menu className="h-5 w-5 text-primary transition-transform duration-300" />
+              <Menu className="h-6 w-6 text-primary transition-transform duration-300" />
             )}
           </Button>
+          
+          {/* Logo/Branding - Centered */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <GraduationCap className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="font-bold text-primary text-sm sm:text-base">CBC Records</h2>
+          </div>
+          
+          {/* Spacer for balance */}
+          <div className="w-12"></div>
         </div>
 
         {/* Mobile Menu Overlay */}
