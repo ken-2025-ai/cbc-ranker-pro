@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.submit-help-ticket]
 verify_jwt = false
+
+[functions.admin-help-desk]
+verify_jwt = false
