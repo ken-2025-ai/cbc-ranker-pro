@@ -4,49 +4,122 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { GraduationCap, AlertTriangle, TrendingUp, Users, CheckCircle2 } from "lucide-react";
+import { GraduationCap, AlertTriangle, TrendingUp, Users, CheckCircle2, Download, Mail, Database, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 
-interface PromotionResult {
-  action: string;
-  grade: number;
-  stream: string;
-  student_count: number;
+interface YearEndResult {
+  yearEndDate?: string;
+  studentsPromoted?: number;
+  studentsDeleted?: number;
+  marksDeleted?: number;
+  examPeriodsDeleted?: number;
+  examsDeleted?: number;
+  serverStorageBeforeKB?: number;
+  serverStorageAfterCleanupKB?: number;
+  storageSavedKB?: number;
+  preview?: boolean;
+  studentsToPromote?: number;
+  studentsToDelete?: number;
+  marksToDelete?: number;
+  examPeriodsToDelete?: number;
+  examsToDelete?: number;
+  message?: string;
 }
 
 export default function YearlyPromotion() {
   const { institutionId } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [dryRunResults, setDryRunResults] = useState<PromotionResult[]>([]);
+  const [backupProgress, setBackupProgress] = useState(0);
+  const [previewResults, setPreviewResults] = useState<YearEndResult | null>(null);
+  const [promotionResults, setPromotionResults] = useState<YearEndResult | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmationText, setConfirmationText] = useState("");
   const currentYear = new Date().getFullYear();
 
-  const handleDryRun = async () => {
+  const handlePreview = async () => {
     if (!institutionId) {
       toast.error("Institution ID not found");
       return;
     }
 
     setLoading(true);
+    setBackupProgress(0);
     try {
-      const { data, error } = await supabase.rpc('promote_students', {
+      const { data, error } = await supabase.rpc('year_end_promotion', {
         p_institution_id: institutionId,
         apply_changes: false
       });
 
       if (error) throw error;
 
-      setDryRunResults(data || []);
-      toast.success("Dry run completed successfully");
+      setPreviewResults(data as YearEndResult);
+      toast.success("Preview completed - Review the changes below");
     } catch (error: any) {
-      console.error("Error running dry run:", error);
-      toast.error(error.message || "Failed to run dry run");
+      console.error("Error running preview:", error);
+      toast.error(error.message || "Failed to run preview");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBackupAndDownload = async () => {
+    if (!institutionId) {
+      toast.error("Institution ID not found");
+      return;
+    }
+
+    setLoading(true);
+    setBackupProgress(10);
+    try {
+      // Get institution details
+      const { data: institution } = await supabase
+        .from('admin_institutions')
+        .select('name, email')
+        .eq('id', institutionId)
+        .single();
+
+      setBackupProgress(30);
+
+      // Call backup function
+      const { data: backupData, error: backupError } = await supabase.functions.invoke('year-end-backup', {
+        body: {
+          institution_id: institutionId,
+          institution_email: institution?.email,
+          institution_name: institution?.name,
+        }
+      });
+
+      if (backupError) throw backupError;
+
+      setBackupProgress(70);
+
+      // Download backup locally
+      const dataStr = JSON.stringify(backupData.backup, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `year-end-backup-${institutionId}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setBackupProgress(100);
+
+      toast.success(backupData.emailSent 
+        ? "Backup created, downloaded, and emailed successfully!" 
+        : "Backup created and downloaded successfully!");
+    } catch (error: any) {
+      console.error("Error creating backup:", error);
+      toast.error(error.message || "Failed to create backup");
+    } finally {
+      setLoading(false);
+      setTimeout(() => setBackupProgress(0), 2000);
     }
   };
 
@@ -57,49 +130,47 @@ export default function YearlyPromotion() {
     }
 
     setLoading(true);
+    setBackupProgress(10);
     try {
-      const { data, error } = await supabase.rpc('promote_students', {
+      // Apply year-end promotion with full cleanup
+      const { data, error } = await supabase.rpc('year_end_promotion', {
         p_institution_id: institutionId,
         apply_changes: true
       });
 
       if (error) throw error;
 
-      // Log the promotion
-      const { error: logError } = await supabase.from('promotion_logs').insert({
-        institution_id: institutionId,
-        performed_by: (await supabase.auth.getUser()).data.user?.id,
-        action: 'applied',
-        details: { results: data, timestamp: new Date().toISOString() }
+      setBackupProgress(100);
+      setPromotionResults(data as YearEndResult);
+
+      const result = data as YearEndResult;
+
+      // Log the action
+      const { error: logError } = await supabase.from('admin_activity_logs').insert({
+        action_type: 'year_end_promotion',
+        description: `Year-end promotion applied: ${result.studentsPromoted} promoted, ${result.studentsDeleted} deleted, ${result.marksDeleted} marks cleaned`,
+        admin_id: (await supabase.auth.getUser()).data.user?.id,
       });
 
-      if (logError) console.error("Failed to log promotion:", logError);
+      if (logError) console.error("Failed to log action:", logError);
 
-      toast.success("Students promoted successfully!");
+      toast.success("Year-end promotion completed successfully!");
       setShowConfirmDialog(false);
       setConfirmationText("");
-      setDryRunResults([]);
+      setPreviewResults(null);
     } catch (error: any) {
       console.error("Error applying promotion:", error);
       toast.error(error.message || "Failed to apply promotion");
     } finally {
       setLoading(false);
+      setTimeout(() => setBackupProgress(0), 2000);
     }
   };
 
-  const getTotalStudents = () => {
-    return dryRunResults.reduce((sum, result) => sum + result.student_count, 0);
-  };
-
-  const getGrade9Count = () => {
-    const grade9Result = dryRunResults.find(r => r.action === 'would_delete' && r.grade === 9);
-    return grade9Result ? grade9Result.student_count : 0;
-  };
-
-  const getPromotionCount = () => {
-    return dryRunResults
-      .filter(r => r.action === 'would_promote')
-      .reduce((sum, result) => sum + result.student_count, 0);
+  const formatStorage = (kb: number) => {
+    if (kb < 1024) return `${kb.toFixed(2)} KB`;
+    if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(2)} MB`;
+    return `${(kb / (1024 * 1024)).toFixed(2)} GB`;
   };
 
   return (
@@ -109,134 +180,273 @@ export default function YearlyPromotion() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <GraduationCap className="h-6 w-6" />
-            Yearly Student Promotion
+            Year-End Student Promotion & Data Cleanup
           </CardTitle>
           <CardDescription>
-            Promote students to the next grade level and graduate Grade 9 students
+            Comprehensive year-end process: Backup data, promote students, and cleanup server storage
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 space-y-2">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-2">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
               <div className="space-y-2 flex-1">
-                <p className="font-semibold">Important Notice</p>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>Grade 9 students will be permanently deleted</li>
-                  <li>Students in Grades 1-8 will be promoted to the next grade</li>
-                  <li>Student streams will be preserved during promotion</li>
-                  <li>This action cannot be undone - please backup your data first</li>
+                <p className="font-semibold text-destructive">CRITICAL: Read Before Proceeding</p>
+                <ul className="text-sm space-y-1 list-disc list-inside">
+                  <li><strong>Backup First:</strong> Create and download backup before promotion</li>
+                  <li><strong>Grade 9 Students:</strong> Will be permanently deleted</li>
+                  <li><strong>All Exam Data:</strong> Marks, exam periods, and exams will be deleted</li>
+                  <li><strong>Server Storage:</strong> Only students and staff records will remain</li>
+                  <li><strong>Irreversible:</strong> This action cannot be undone</li>
                 </ul>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4">
+          {backupProgress > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>Processing...</span>
+                <span>{backupProgress}%</span>
+              </div>
+              <Progress value={backupProgress} />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button
-              onClick={handleDryRun}
+              onClick={handlePreview}
               disabled={loading}
               variant="outline"
-              className="flex-1"
+              className="h-auto flex-col gap-2 py-4"
             >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              {loading ? "Running Preview..." : "Preview Changes (Dry Run)"}
+              <TrendingUp className="h-5 w-5" />
+              <div className="text-center">
+                <div className="font-semibold">1. Preview</div>
+                <div className="text-xs text-muted-foreground">See what will change</div>
+              </div>
+            </Button>
+            <Button
+              onClick={handleBackupAndDownload}
+              disabled={loading || !previewResults}
+              variant="outline"
+              className="h-auto flex-col gap-2 py-4"
+            >
+              <Download className="h-5 w-5" />
+              <div className="text-center">
+                <div className="font-semibold">2. Backup Data</div>
+                <div className="text-xs text-muted-foreground">Download & email</div>
+              </div>
             </Button>
             <Button
               onClick={() => setShowConfirmDialog(true)}
-              disabled={loading || dryRunResults.length === 0}
+              disabled={loading || !previewResults}
               variant="destructive"
-              className="flex-1"
+              className="h-auto flex-col gap-2 py-4"
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Apply Promotion
+              <CheckCircle2 className="h-5 w-5" />
+              <div className="text-center">
+                <div className="font-semibold">3. Apply Changes</div>
+                <div className="text-xs text-muted-foreground">Execute promotion</div>
+              </div>
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Dry Run Results */}
-      {dryRunResults.length > 0 && (
+      {/* Preview Results */}
+      {previewResults && (
         <Card>
           <CardHeader>
-            <CardTitle>Promotion Preview</CardTitle>
+            <CardTitle>Year-End Changes Preview</CardTitle>
             <CardDescription>
-              Review the changes that will be made
+              Review what will happen when you apply the promotion
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Grade 9 Students</p>
-                      <p className="text-2xl font-bold text-destructive">{getGrade9Count()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Will be deleted</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Users className="h-8 w-8 text-success opacity-50" />
+                      <Badge variant="outline">Promotion</Badge>
                     </div>
-                    <Users className="h-8 w-8 text-destructive opacity-50" />
+                    <div>
+                      <p className="text-2xl font-bold text-success">
+                        {previewResults.studentsToPromote || 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Students to Promote</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Students Promoted</p>
-                      <p className="text-2xl font-bold text-success">{getPromotionCount()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Grades 1-8</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <GraduationCap className="h-8 w-8 text-destructive opacity-50" />
+                      <Badge variant="destructive">Deletion</Badge>
                     </div>
-                    <TrendingUp className="h-8 w-8 text-success opacity-50" />
+                    <div>
+                      <p className="text-2xl font-bold text-destructive">
+                        {previewResults.studentsToDelete || 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Grade 9 to Delete</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Affected</p>
-                      <p className="text-2xl font-bold">{getTotalStudents()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Students</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Database className="h-8 w-8 text-amber-500 opacity-50" />
+                      <Badge variant="outline">Data Cleanup</Badge>
                     </div>
-                    <GraduationCap className="h-8 w-8 opacity-50" />
+                    <div>
+                      <p className="text-2xl font-bold text-amber-500">
+                        {previewResults.marksToDelete || 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Marks to Delete</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Trash2 className="h-8 w-8 text-orange-500 opacity-50" />
+                      <Badge variant="outline">Cleanup</Badge>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-orange-500">
+                        {(previewResults.examPeriodsToDelete || 0) + (previewResults.examsToDelete || 0)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Exams & Periods</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Detailed Table */}
-            <div>
-              <h3 className="font-semibold mb-3">Detailed Breakdown</h3>
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Current Grade</TableHead>
-                      <TableHead>Stream</TableHead>
-                      <TableHead className="text-right">Student Count</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dryRunResults.map((result, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <Badge variant={result.action === 'would_delete' ? 'destructive' : 'default'}>
-                            {result.action === 'would_delete' ? 'Delete' : 'Promote'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>Grade {result.grade}</TableCell>
-                        <TableCell>{result.stream || 'N/A'}</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {result.student_count}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            <div className="bg-muted/50 rounded-lg p-4">
+              <h3 className="font-semibold mb-2">What Will Happen:</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
+                  <span>{previewResults.studentsToPromote} students will be promoted to the next grade</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
+                  <span>{previewResults.studentsToDelete} Grade 9 students will be deleted permanently</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Trash2 className="h-4 w-4 text-amber-500 mt-0.5" />
+                  <span>All {previewResults.marksToDelete} marks will be deleted from server</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Database className="h-4 w-4 text-orange-500 mt-0.5" />
+                  <span>{previewResults.examPeriodsToDelete} exam periods and {previewResults.examsToDelete} exams will be deleted</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Database className="h-4 w-4 text-blue-500 mt-0.5" />
+                  <span>Only student records and staff data will remain on server</span>
+                </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Promotion Results */}
+      {promotionResults && !promotionResults.preview && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-success" />
+              Year-End Promotion Completed
+            </CardTitle>
+            <CardDescription>
+              Summary of changes applied to your system
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-success">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <Users className="h-8 w-8 mx-auto text-success mb-2" />
+                    <p className="text-3xl font-bold text-success">{promotionResults.studentsPromoted}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Students Promoted</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-destructive">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <GraduationCap className="h-8 w-8 mx-auto text-destructive mb-2" />
+                    <p className="text-3xl font-bold text-destructive">{promotionResults.studentsDeleted}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Grade 9 Deleted</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-amber-500">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <Database className="h-8 w-8 mx-auto text-amber-500 mb-2" />
+                    <p className="text-3xl font-bold text-amber-500">{promotionResults.marksDeleted}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Marks Cleaned</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-500">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <Trash2 className="h-8 w-8 mx-auto text-blue-500 mb-2" />
+                    <p className="text-3xl font-bold text-blue-500">
+                      {(promotionResults.examPeriodsDeleted || 0) + (promotionResults.examsDeleted || 0)}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">Exams Removed</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-success/5 border-success">
+              <CardContent className="pt-6">
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    Server Storage Optimization
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Before Cleanup</p>
+                      <p className="font-semibold">{formatStorage(promotionResults.serverStorageBeforeKB || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">After Cleanup</p>
+                      <p className="font-semibold">{formatStorage(promotionResults.serverStorageAfterCleanupKB || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Storage Saved</p>
+                      <p className="font-semibold text-success">{formatStorage(promotionResults.storageSavedKB || 0)}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Completed on {new Date(promotionResults.yearEndDate || '').toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>

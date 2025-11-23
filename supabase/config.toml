@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.system-analytics]
 verify_jwt = true
+
+[functions.year-end-backup]
+verify_jwt = true
