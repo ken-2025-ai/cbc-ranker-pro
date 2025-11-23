@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,7 +19,87 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify session
+    // CREATE SUPPORT STAFF (No session required - called by admin)
+    if (action === 'create_support_staff') {
+      const { email, password, full_name, role } = params;
+
+      if (!email || !password || !full_name || !role) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'All fields are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid email format' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate password length
+      if (password.length < 8) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Password must be at least 8 characters' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if email already exists
+      const { data: existing } = await supabase
+        .from('support_staff')
+        .select('id')
+        .eq('email', email.toLowerCase().trim())
+        .single();
+
+      if (existing) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Email already registered' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Hash password
+      const password_hash = await bcrypt.hash(password);
+
+      // Insert new support staff
+      const { data: newStaff, error: insertError } = await supabase
+        .from('support_staff')
+        .insert({
+          email: email.toLowerCase().trim(),
+          password_hash,
+          full_name: full_name.trim(),
+          role,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to create support staff' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          staff: {
+            id: newStaff.id,
+            email: newStaff.email,
+            full_name: newStaff.full_name,
+            role: newStaff.role,
+          },
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify session for other actions
     const { data: session } = await supabase
       .from('support_sessions')
       .select('*, support_staff(*)')

@@ -13,6 +13,7 @@ import ReportsAnalytics from '@/components/admin/ReportsAnalytics';
 import AdminSettings from '@/components/admin/AdminSettings';
 import DataCleanup from '@/components/admin/DataCleanup';
 import SystemMonitoring from '@/components/admin/SystemMonitoring';
+import SupportStaffManagement from '@/components/admin/SupportStaffManagement';
 import { Loader2 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -60,6 +61,8 @@ const AdminDashboard = () => {
         return <DataCleanup />;
       case 'system-monitoring':
         return <SystemMonitoring />;
+      case 'support-staff':
+        return <SupportStaffManagement />;
       default:
         return <AdminOverview />;
     }
