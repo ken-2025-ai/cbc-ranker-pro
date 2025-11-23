@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,6 +33,7 @@ const ticketSchema = z.object({
 });
 
 const HelpButton = React.memo(() => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -328,6 +330,20 @@ const HelpButton = React.memo(() => {
                   <p className="text-xs text-center text-muted-foreground mt-2">
                     We typically respond within 72 hours
                   </p>
+
+                  {/* Hidden Support Access Button */}
+                  <div className="mt-6 pt-4 border-t border-border/50">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false);
+                        navigate('/support/auth');
+                      }}
+                      className="text-xs text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors underline-offset-4 hover:underline"
+                    >
+                      Access Account
+                    </button>
+                  </div>
                 </form>
               ) : (
                 <Card className="border-success">
