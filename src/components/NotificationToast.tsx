@@ -14,9 +14,12 @@ const NotificationToast = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('NotificationToast: No user logged in');
+      return;
+    }
 
-    console.log('Setting up notification subscription for user:', user.id);
+    console.log('NotificationToast: Setting up notification subscription for user:', user.id);
 
     // Set up realtime subscription for new notifications
     const subscription = supabase
@@ -30,6 +33,7 @@ const NotificationToast = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
+          console.log('NotificationToast: New notification received:', payload);
           const notification = payload.new as any;
           
           // Show toast for new notification
@@ -48,9 +52,12 @@ const NotificationToast = () => {
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('NotificationToast: Subscription status:', status);
+      });
 
     return () => {
+      console.log('NotificationToast: Cleaning up subscription');
       supabase.removeChannel(subscription);
     };
   }, [user, toast]);

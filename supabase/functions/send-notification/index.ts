@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-// import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +28,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
     const { notificationId, sessionToken }: NotificationRequest = await req.json();
     
@@ -157,9 +157,11 @@ serve(async (req) => {
     // Create in-app notifications for users from target institutions
     let inAppNotificationsCreated = 0;
     if (notification.delivery_method.includes('in_app')) {
+      console.log('Creating in-app notifications for', institutions?.length || 0, 'institutions');
+      
       for (const institution of institutions || []) {
         try {
-          // Get all users from this institution
+          // Get all users from this institution via institution_users table
           const { data: institutionUsers, error: usersError } = await supabaseClient
             .from('institution_users')
             .select('user_id')
@@ -167,8 +169,11 @@ serve(async (req) => {
 
           if (usersError) {
             console.error(`Failed to get users for institution ${institution.name}:`, usersError);
+            errors.push(`Failed to get users for ${institution.name}: ${usersError.message}`);
             continue;
           }
+
+          console.log(`Found ${institutionUsers?.length || 0} users for institution ${institution.name}`);
 
           // Create in-app notifications for each user
           if (institutionUsers && institutionUsers.length > 0) {
@@ -177,35 +182,45 @@ serve(async (req) => {
               title: notification.title,
               message: notification.message,
               notification_type: notification.notification_type,
-              priority: notification.notification_type === 'deadline_reminder' ? 'high' : 'normal'
+              priority: notification.notification_type === 'deadline_reminder' ? 'high' : 'normal',
+              created_at: new Date().toISOString()
             }));
 
-            const { error: notificationError } = await supabaseClient
+            console.log(`Inserting ${userNotifications.length} notifications for ${institution.name}`);
+
+            const { data: insertedNotifications, error: notificationError } = await supabaseClient
               .from('user_notifications')
-              .insert(userNotifications);
+              .insert(userNotifications)
+              .select();
 
             if (notificationError) {
               console.error(`Failed to create in-app notifications for ${institution.name}:`, notificationError);
+              errors.push(`Failed to create notifications for ${institution.name}: ${notificationError.message}`);
             } else {
+              console.log(`Successfully created ${insertedNotifications?.length || 0} notifications for ${institution.name}`);
               inAppNotificationsCreated += userNotifications.length;
             }
+          } else {
+            console.log(`No users found for institution ${institution.name}`);
           }
         } catch (error) {
           console.error(`Error processing institution ${institution.name}:`, error);
+          errors.push(`Error processing ${institution.name}: ${error.message}`);
         }
       }
+      
+      console.log(`Total in-app notifications created: ${inAppNotificationsCreated}`);
     }
 
     // Send emails if email delivery is enabled
     if (notification.delivery_method.includes('email')) {
-      console.log('Email delivery is disabled in this version');
-      // Email functionality temporarily disabled - Resend package not configured
-      /*
+      console.log('Attempting to send emails to', institutions?.length || 0, 'institutions');
+      
       for (const institution of institutions || []) {
         if (institution.email) {
           try {
-            await resend.emails.send({
-              from: "CBC Pro Ranker <noreply@cbcproranker.com>",
+            const emailResult = await resend.emails.send({
+              from: "CBC Pro Ranker <onboarding@resend.dev>",
               to: [institution.email],
               subject: notification.title,
               html: `
@@ -213,7 +228,7 @@ serve(async (req) => {
                   <h2 style="color: #1e40af;">${notification.title}</h2>
                   <p>Dear ${institution.headteacher_name || 'Administrator'},</p>
                   <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <p style="line-height: 1.6; margin: 0;">${notification.message}</p>
+                    <p style="line-height: 1.6; margin: 0;">${notification.message.replace(/\n/g, '<br>')}</p>
                   </div>
                   <p>Best regards,<br>CBC Pro Ranker Admin Team</p>
                   <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
@@ -223,14 +238,16 @@ serve(async (req) => {
                 </div>
               `,
             });
+            console.log('Email sent successfully to', institution.email, 'Result:', emailResult);
             emailsSent++;
           } catch (error) {
             console.error(`Failed to send email to ${institution.email}:`, error);
-            errors.push(`Failed to send email to ${institution.name}`);
+            errors.push(`Failed to send email to ${institution.name}: ${error.message}`);
           }
+        } else {
+          console.log(`No email address for institution: ${institution.name}`);
         }
       }
-      */
     }
 
     // Update notification as sent
@@ -260,6 +277,15 @@ serve(async (req) => {
         ip_address: req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown',
         user_agent: req.headers.get('user-agent') || 'unknown'
       });
+
+    console.log('=== Notification Send Summary ===');
+    console.log(`Total institutions targeted: ${institutions?.length || 0}`);
+    console.log(`Emails sent: ${emailsSent}`);
+    console.log(`In-app notifications created: ${inAppNotificationsCreated}`);
+    console.log(`Errors encountered: ${errors.length}`);
+    if (errors.length > 0) {
+      console.log('Error details:', errors);
+    }
 
     return new Response(JSON.stringify({
       message: 'Notification sent successfully',

@@ -147,17 +147,18 @@ const NotificationCenter = () => {
   const sendNotification = async (notificationId: string) => {
     if (!sessionToken) {
       toast({
-        title: "Error",
-        description: "No valid admin session found. Please log in again.",
+        title: "Authentication Error",
+        description: "No valid session found. Please log in again.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      console.log('Sending notification:', notificationId, 'with session token:', sessionToken);
+      console.log('=== Sending Notification ===');
+      console.log('Notification ID:', notificationId);
+      console.log('Session token present:', !!sessionToken);
       
-      // Call the send-notification edge function
       const { data, error } = await supabase.functions.invoke('send-notification', {
         body: {
           notificationId,
@@ -165,27 +166,50 @@ const NotificationCenter = () => {
         }
       });
 
+      console.log('Edge function response:', { data, error });
+
       if (error) {
         console.error('Function invoke error:', error);
         throw new Error(error.message || 'Failed to invoke send-notification function');
       }
 
       if (data?.error) {
-        console.error('Function returned error:', data.error);
-        throw new Error(data.error);
+        console.error('Function returned error:', data.error, data.details);
+        throw new Error(`${data.error}: ${data.details || ''}`);
       }
 
+      const stats = data.stats || {};
+      console.log('Notification stats:', stats);
+      
+      const statsMessage = [
+        `Sent to ${stats.totalInstitutions || 0} institutions`,
+        `${stats.emailsSent || 0} emails sent`,
+        `${stats.inAppNotificationsCreated || 0} in-app notifications created`
+      ].join(' • ');
+      
       toast({
-        title: "Success",
-        description: `Notification sent successfully! ${data.stats?.emailsSent || 0} emails sent, ${data.stats?.inAppNotificationsCreated || 0} in-app notifications created for ${data.stats?.totalInstitutions || 0} institutions`,
+        title: "Notification Sent Successfully",
+        description: statsMessage,
       });
 
+      // Show errors if any
+      if (stats.errors && stats.errors.length > 0) {
+        console.warn('Errors during send:', stats.errors);
+        setTimeout(() => {
+          toast({
+            title: "Some Issues Occurred",
+            description: `${stats.errors.length} error(s): ${stats.errors[0]}`,
+            variant: "destructive",
+          });
+        }, 1000);
+      }
+
       fetchData();
-    } catch (error) {
-      console.error('Error sending notification:', error);
+    } catch (error: any) {
+      console.error('Unexpected error sending notification:', error);
       toast({
         title: "Error",
-        description: "Failed to send notification",
+        description: error.message || "Failed to send notification",
         variant: "destructive",
       });
     }
