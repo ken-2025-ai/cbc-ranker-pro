@@ -213,42 +213,98 @@ export default function YearlyPromotion() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Button
               onClick={handlePreview}
               disabled={loading}
-              variant="outline"
-              className="h-auto flex-col gap-2 py-4"
+              variant={previewResults ? "success" : "outline"}
+              className="h-auto flex-col gap-3 py-6 relative overflow-hidden group transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Preview year-end changes before applying"
             >
-              <TrendingUp className="h-5 w-5" />
+              {loading && !previewResults ? (
+                <div className="animate-spin">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+              ) : (
+                <TrendingUp className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
+              )}
               <div className="text-center">
-                <div className="font-semibold">1. Preview</div>
-                <div className="text-xs text-muted-foreground">See what will change</div>
+                <div className="font-semibold text-base">1. Preview Changes</div>
+                <div className="text-xs opacity-80 mt-1">
+                  {loading && !previewResults ? "Analyzing..." : "See what will change"}
+                </div>
               </div>
+              {previewResults && (
+                <Badge variant="outline" className="absolute top-2 right-2 bg-success/10 text-success border-success/20">
+                  Complete
+                </Badge>
+              )}
             </Button>
+
             <Button
               onClick={handleBackupAndDownload}
               disabled={loading || !previewResults}
-              variant="outline"
-              className="h-auto flex-col gap-2 py-4"
+              variant={backupProgress === 100 ? "success" : "outline"}
+              className="h-auto flex-col gap-3 py-6 relative overflow-hidden group transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Backup all data before promotion"
+              title={!previewResults ? "Complete preview first" : "Create and download backup"}
             >
-              <Download className="h-5 w-5" />
+              {loading && backupProgress > 0 && backupProgress < 100 ? (
+                <div className="animate-pulse">
+                  <Download className="h-6 w-6" />
+                </div>
+              ) : (
+                <Download className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
+              )}
               <div className="text-center">
-                <div className="font-semibold">2. Backup Data</div>
-                <div className="text-xs text-muted-foreground">Download & email</div>
+                <div className="font-semibold text-base">2. Backup Data</div>
+                <div className="text-xs opacity-80 mt-1">
+                  {loading && backupProgress > 0 && backupProgress < 100
+                    ? `Backing up... ${backupProgress}%`
+                    : backupProgress === 100
+                    ? "Backup complete"
+                    : "Download & email"}
+                </div>
               </div>
+              {backupProgress === 100 && (
+                <Badge variant="outline" className="absolute top-2 right-2 bg-success/10 text-success border-success/20">
+                  Complete
+                </Badge>
+              )}
+              {!previewResults && (
+                <Badge variant="outline" className="absolute top-2 right-2 bg-muted text-muted-foreground">
+                  Locked
+                </Badge>
+              )}
             </Button>
+
             <Button
               onClick={() => setShowConfirmDialog(true)}
               disabled={loading || !previewResults}
               variant="destructive"
-              className="h-auto flex-col gap-2 py-4"
+              className="h-auto flex-col gap-3 py-6 relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:shadow-destructive/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Apply year-end promotion and cleanup"
+              title={!previewResults ? "Complete preview first" : "Execute promotion with full cleanup"}
             >
-              <CheckCircle2 className="h-5 w-5" />
+              {loading && showConfirmDialog ? (
+                <div className="animate-spin">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+              ) : (
+                <CheckCircle2 className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
+              )}
               <div className="text-center">
-                <div className="font-semibold">3. Apply Changes</div>
-                <div className="text-xs text-muted-foreground">Execute promotion</div>
+                <div className="font-semibold text-base">3. Apply Promotion</div>
+                <div className="text-xs opacity-90 mt-1">
+                  {loading && showConfirmDialog ? "Processing..." : "Execute changes"}
+                </div>
               </div>
+              {!previewResults && (
+                <Badge variant="outline" className="absolute top-2 right-2 bg-muted text-muted-foreground">
+                  Locked
+                </Badge>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-r from-destructive/0 via-destructive/5 to-destructive/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
             </Button>
           </div>
         </CardContent>
@@ -483,9 +539,17 @@ export default function YearlyPromotion() {
             <AlertDialogAction
               onClick={handleApplyPromotion}
               disabled={confirmationText !== `PROMOTE ${currentYear}` || loading}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Confirm and execute year-end promotion"
             >
-              {loading ? "Applying..." : "Apply Promotion"}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                  Applying Changes...
+                </span>
+              ) : (
+                "Apply Promotion"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
