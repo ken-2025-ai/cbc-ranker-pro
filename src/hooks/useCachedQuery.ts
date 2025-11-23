@@ -27,19 +27,34 @@ export function useCachedQuery<TData>(
   const query = useQuery({
     queryKey: key,
     queryFn,
-    staleTime: 1000 * 60 * 15, // 15 minutes
-    gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    staleTime: 1000 * 60 * 5, // 5 minutes (reduced from 15 for RAM optimization)
+    gcTime: 1000 * 60 * 15, // 15 minutes (reduced from 24h for RAM optimization)
     placeholderData: initialData as any,
     ...options,
   });
 
-  // Update localStorage when data changes
+  // Update localStorage when data changes (with size limit)
   useEffect(() => {
     if (query.data) {
       try {
-        localStorage.setItem(cacheKey, JSON.stringify(query.data));
+        const dataStr = JSON.stringify(query.data);
+        const currentSize = JSON.stringify(localStorage).length;
+        const MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB limit
+        
+        // Only cache if under size limit
+        if (currentSize + dataStr.length < MAX_STORAGE_SIZE) {
+          localStorage.setItem(cacheKey, dataStr);
+        } else {
+          console.warn('localStorage size limit reached, skipping cache');
+          // Clear oldest caches if over limit
+          clearOldestCaches();
+        }
       } catch (e) {
         console.warn('Failed to cache data to localStorage:', e);
+        // If QuotaExceededError, clear some cache
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+          clearOldestCaches();
+        }
       }
     }
   }, [query.data, cacheKey]);
@@ -74,4 +89,25 @@ export function clearCache(pattern?: string): void {
       .filter(key => key.startsWith('cache_'))
       .forEach(key => localStorage.removeItem(key));
   }
+}
+
+/**
+ * Clear oldest caches when storage is full
+ */
+function clearOldestCaches(): void {
+  const cacheKeys = Object.keys(localStorage)
+    .filter(key => key.startsWith('cache_'));
+  
+  // Remove oldest 25% of caches
+  const toRemove = Math.ceil(cacheKeys.length * 0.25);
+  cacheKeys.slice(0, toRemove).forEach(key => localStorage.removeItem(key));
+  
+  console.log(`Cleared ${toRemove} old cache entries to free up space`);
+}
+
+/**
+ * Get current cache size in KB
+ */
+export function getCacheSize(): number {
+  return JSON.stringify(localStorage).length / 1024;
 }

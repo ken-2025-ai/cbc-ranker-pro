@@ -14,21 +14,28 @@ const DataCleanup = () => {
   const handleManualCleanup = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('scheduled-cleanup');
+      // Call the database cleanup function directly
+      const { data, error } = await supabase.rpc('run_tracked_cleanup' as any) as { 
+        data: any; 
+        error: any 
+      };
 
       if (error) throw error;
 
       setLastCleanup(data);
 
+      const totalDeleted = (data as any)?.total_rows_deleted || 0;
+      const duration = (data as any)?.duration_ms || 0;
+
       toast({
         title: "Cleanup Completed",
-        description: `Cleaned ${data.records_cleaned?.length || 0} records. Backed up ${data.exam_periods_backed_up} exam periods.`,
+        description: `Deleted ${totalDeleted} expired records in ${duration}ms`,
       });
     } catch (error: any) {
       console.error('Cleanup error:', error);
       toast({
         title: "Cleanup Failed",
-        description: error.message || "Failed to run cleanup",
+        description: error.message || "Failed to run cleanup. Please run the SQL fix from DATABASE_FIXES.sql",
         variant: "destructive",
       });
     } finally {
@@ -115,9 +122,21 @@ const DataCleanup = () => {
                 <CardContent className="p-4">
                   <h4 className="font-semibold mb-2">Last Cleanup Results</h4>
                   <div className="space-y-1 text-sm">
-                    <p>• Timestamp: {new Date(lastCleanup.timestamp).toLocaleString()}</p>
-                    <p>• Exam Periods Backed Up: {lastCleanup.exam_periods_backed_up}</p>
-                    <p>• Records Processed: {lastCleanup.records_cleaned?.length || 0}</p>
+                    <p>• Timestamp: {new Date((lastCleanup as any).timestamp).toLocaleString()}</p>
+                    <p>• Total Rows Deleted: {(lastCleanup as any).total_rows_deleted || 0}</p>
+                    <p>• Execution Time: {(lastCleanup as any).duration_ms || 0}ms</p>
+                    {(lastCleanup as any).tables_cleaned && (
+                      <div className="mt-2">
+                        <p className="font-medium">Tables Cleaned:</p>
+                        <ul className="list-disc list-inside ml-2">
+                          {(lastCleanup as any).tables_cleaned.map((table: any, idx: number) => (
+                            <li key={idx}>
+                              {table.table}: {table.rows_deleted} rows
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
