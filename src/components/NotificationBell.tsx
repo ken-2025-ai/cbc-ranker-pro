@@ -28,59 +28,94 @@ const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (user?.id) {
-      fetchNotifications();
-      
-      // Set up realtime subscription for new notifications
-      const subscription = supabase
-        .channel('user-notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'user_notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('New notification received:', payload);
-            setNotifications(prev => [payload.new as UserNotification, ...prev]);
-            setUnreadCount(prev => prev + 1);
-            
-            // Show toast for new notification
-            toast({
-              title: "New Notification",
-              description: (payload.new as UserNotification).title,
-              duration: 5000,
-            });
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(subscription);
-      };
+    if (!user?.id) {
+      console.log('NotificationBell: No user logged in');
+      return;
     }
+
+    console.log('NotificationBell: Setting up for user:', user.id);
+    fetchNotifications();
+    
+    // Set up realtime subscription for new notifications
+    const subscription = supabase
+      .channel('user-notifications-bell')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('NotificationBell: New notification received:', payload);
+          const newNotif = payload.new as UserNotification;
+          
+          setNotifications(prev => [newNotif, ...prev]);
+          setUnreadCount(prev => prev + 1);
+          
+          toast({
+            title: "New Notification",
+            description: newNotif.title,
+            duration: 5000,
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('NotificationBell: Notification updated:', payload);
+          setNotifications(prev => 
+            prev.map(n => n.id === payload.new.id ? payload.new as UserNotification : n)
+          );
+          if ((payload.new as UserNotification).is_read) {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('NotificationBell: Subscription status:', status);
+      });
+
+    return () => {
+      console.log('NotificationBell: Cleaning up subscription');
+      supabase.removeChannel(subscription);
+    };
   }, [user, toast]);
 
   const fetchNotifications = async () => {
     if (!user?.id) return;
 
     try {
+      console.log('NotificationBell: Fetching notifications for user:', user.id);
+      
       const { data, error } = await supabase
         .from('user_notifications')
         .select('*')
         .eq('user_id', user.id)
-        .or('expires_at.is.null,expires_at.gt.now()')
+        .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (error) {
+        console.error('NotificationBell: Error fetching notifications:', error);
+        throw error;
+      }
 
+      console.log('NotificationBell: Fetched', data?.length || 0, 'notifications');
       setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      
+      const unread = data?.filter(n => !n.is_read).length || 0;
+      console.log('NotificationBell: Unread count:', unread);
+      setUnreadCount(unread);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('NotificationBell: Failed to fetch notifications:', error);
     }
   };
 
