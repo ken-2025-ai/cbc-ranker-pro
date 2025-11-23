@@ -15,7 +15,19 @@ import AdminDashboard from "./pages/AdminDashboard";
 import SubscriptionExpired from "./pages/SubscriptionExpired";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Aggressive caching configuration for speed
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 10, // 10 minutes - data stays fresh
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep in cache
+      retry: 2,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
