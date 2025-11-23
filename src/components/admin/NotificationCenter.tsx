@@ -19,7 +19,8 @@ import {
   CheckCircle, 
   Clock,
   Plus,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from 'lucide-react';
 
 interface Notification {
@@ -214,6 +215,49 @@ const NotificationCenter = () => {
       });
     }
   };
+
+  const deleteNotification = async (notificationId: string, deleteForEveryone: boolean) => {
+    try {
+      if (deleteForEveryone) {
+        // Delete from user_notifications first
+        const { error: userNotifError } = await supabase
+          .from('user_notifications')
+          .delete()
+          .eq('title', notifications.find(n => n.id === notificationId)?.title || '');
+
+        if (userNotifError) {
+          console.error('Error deleting user notifications:', userNotifError);
+        }
+      }
+
+      // Delete from admin_notifications
+      const { error } = await supabase
+        .from('admin_notifications')
+        .delete()
+        .eq('id', notificationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Notification deleted",
+        description: deleteForEveryone 
+          ? "Notification deleted for everyone" 
+          : "Notification removed from admin panel",
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete notification",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
 
   const resetForm = () => {
     setNotificationForm({
@@ -554,6 +598,17 @@ const NotificationCenter = () => {
                         Send Now
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedNotificationId(notification.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                      className="text-red-400 border-red-400 hover:bg-red-400/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -561,6 +616,48 @@ const NotificationCenter = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Delete Notification</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Choose how you want to delete this notification
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-4">
+            <Button
+              className="w-full justify-start bg-slate-700 hover:bg-slate-600"
+              onClick={() => {
+                if (selectedNotificationId) {
+                  deleteNotification(selectedNotificationId, false);
+                  setDeleteDialogOpen(false);
+                  setSelectedNotificationId(null);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete from admin panel only
+              <span className="ml-auto text-xs text-slate-400">Users keep their notifications</span>
+            </Button>
+            <Button
+              className="w-full justify-start bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (selectedNotificationId) {
+                  deleteNotification(selectedNotificationId, true);
+                  setDeleteDialogOpen(false);
+                  setSelectedNotificationId(null);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete for everyone
+              <span className="ml-auto text-xs text-slate-300">Removes from all users</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

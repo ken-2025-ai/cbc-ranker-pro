@@ -164,24 +164,42 @@ serve(async (req) => {
       
       for (const institution of institutions || []) {
         try {
-          // Get all users from this institution via institution_users table
-          const { data: institutionUsers, error: usersError } = await supabaseClient
-            .from('institution_users')
-            .select('user_id')
-            .eq('institution_id', institution.id);
+          const userIds: string[] = [];
 
-          if (usersError) {
-            console.error(`Failed to get users for institution ${institution.name}:`, usersError);
-            errors.push(`Failed to get users for ${institution.name}: ${usersError.message}`);
-            continue;
+          // Get institution owner from admin_institutions
+          const { data: institutionData, error: instError } = await supabaseClient
+            .from('admin_institutions')
+            .select('user_id')
+            .eq('id', institution.id)
+            .single();
+
+          if (institutionData?.user_id) {
+            userIds.push(institutionData.user_id);
+            console.log(`Found institution owner for ${institution.name}`);
           }
 
-          console.log(`Found ${institutionUsers?.length || 0} users for institution ${institution.name}`);
+          // Get all staff members from institution_staff
+          const { data: staffMembers, error: staffError } = await supabaseClient
+            .from('institution_staff')
+            .select('user_id')
+            .eq('institution_id', institution.id)
+            .eq('is_active', true);
+
+          if (staffMembers && staffMembers.length > 0) {
+            userIds.push(...staffMembers.map(s => s.user_id));
+            console.log(`Found ${staffMembers.length} staff members for ${institution.name}`);
+          }
+
+          if (instError || staffError) {
+            console.error(`Error fetching users for ${institution.name}:`, { instError, staffError });
+          }
+
+          console.log(`Total users found for ${institution.name}: ${userIds.length}`);
 
           // Create in-app notifications for each user
-          if (institutionUsers && institutionUsers.length > 0) {
-            const userNotifications = institutionUsers.map(iu => ({
-              user_id: iu.user_id,
+          if (userIds.length > 0) {
+            const userNotifications = userIds.map(userId => ({
+              user_id: userId,
               title: notification.title,
               message: notification.message,
               notification_type: notification.notification_type,
