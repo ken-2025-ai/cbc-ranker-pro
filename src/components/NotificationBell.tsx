@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, X, Check, AlertCircle, Info } from 'lucide-react';
+import { Bell, X, Check, AlertCircle, Info, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,6 +79,23 @@ const NotificationBell = () => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('NotificationBell: Notification deleted:', payload);
+          const deletedNotif = payload.old as UserNotification;
+          setNotifications(prev => prev.filter(n => n.id !== deletedNotif.id));
+          if (!deletedNotif.is_read) {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
+        }
+      )
       .subscribe((status) => {
         console.log('NotificationBell: Subscription status:', status);
       });
@@ -153,6 +170,38 @@ const NotificationBell = () => {
       setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const deleteNotification = async (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      const { error } = await supabase
+        .from('user_notifications')
+        .delete()
+        .eq('id', notificationId);
+
+      if (error) throw error;
+
+      const notification = notifications.find(n => n.id === notificationId);
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      
+      if (notification && !notification.is_read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+
+      toast({
+        title: "Notification deleted",
+        description: "The notification has been removed.",
+      });
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete notification.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -253,21 +302,23 @@ const NotificationBell = () => {
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-3 border-b cursor-pointer hover:bg-accent/50 transition-colors ${
+                        className={`p-3 border-b hover:bg-accent/50 transition-colors ${
                           !notification.is_read ? 'bg-accent/20' : ''
                         }`}
-                        onClick={() => {
-                          if (!notification.is_read) {
-                            markAsRead(notification.id);
-                          }
-                          if (notification.action_url) {
-                            window.open(notification.action_url, '_blank');
-                          }
-                        }}
                       >
                         <div className="flex items-start gap-3">
                           {getNotificationIcon(notification.notification_type)}
-                          <div className="flex-1 min-w-0">
+                          <div 
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              if (!notification.is_read) {
+                                markAsRead(notification.id);
+                              }
+                              if (notification.action_url) {
+                                window.open(notification.action_url, '_blank');
+                              }
+                            }}
+                          >
                             <div className="flex items-center justify-between mb-1">
                               <p className="text-sm font-medium truncate">
                                 {notification.title}
@@ -283,6 +334,14 @@ const NotificationBell = () => {
                               {formatTimeAgo(notification.created_at)}
                             </p>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive flex-shrink-0"
+                            onClick={(e) => deleteNotification(notification.id, e)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     ))}
