@@ -3190,6 +3190,148 @@ export type Database = {
           },
         ]
       }
+      support_activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          description: string
+          id: string
+          ip_address: unknown
+          support_staff_id: string
+          target_id: string | null
+          target_type: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description: string
+          id?: string
+          ip_address?: unknown
+          support_staff_id: string
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          ip_address?: unknown
+          support_staff_id?: string
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_activity_logs_support_staff_id_fkey"
+            columns: ["support_staff_id"]
+            isOneToOne: false
+            referencedRelation: "support_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          session_token: string
+          support_staff_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          session_token: string
+          support_staff_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          session_token?: string
+          support_staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_sessions_support_staff_id_fkey"
+            columns: ["support_staff_id"]
+            isOneToOne: false
+            referencedRelation: "support_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_staff: {
+        Row: {
+          created_at: string
+          email: string
+          failed_login_attempts: number | null
+          full_name: string
+          id: string
+          is_active: boolean | null
+          last_failed_login: string | null
+          last_login: string | null
+          password_hash: string
+          role: Database["public"]["Enums"]["support_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          failed_login_attempts?: number | null
+          full_name: string
+          id?: string
+          is_active?: boolean | null
+          last_failed_login?: string | null
+          last_login?: string | null
+          password_hash: string
+          role?: Database["public"]["Enums"]["support_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          failed_login_attempts?: number | null
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          last_failed_login?: string | null
+          last_login?: string | null
+          password_hash?: string
+          role?: Database["public"]["Enums"]["support_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      system_metrics: {
+        Row: {
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_value: number
+          recorded_at: string
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_value: number
+          recorded_at?: string
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_value?: number
+          recorded_at?: string
+        }
+        Relationships: []
+      }
       system_notifications: {
         Row: {
           created_at: string
@@ -3627,6 +3769,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      is_support_staff: { Args: { staff_email: string }; Returns: boolean }
       mark_notification_read: {
         Args: { notification_id: string }
         Returns: undefined
@@ -3673,6 +3816,7 @@ export type Database = {
         | "doctor"
         | "patient"
       institution_role: "admin" | "principal" | "teacher" | "staff"
+      support_role: "level_1" | "level_2" | "level_3" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3812,6 +3956,7 @@ export const Constants = {
         "patient",
       ],
       institution_role: ["admin", "principal", "teacher", "staff"],
+      support_role: ["level_1", "level_2", "level_3", "admin"],
     },
   },
 } as const
