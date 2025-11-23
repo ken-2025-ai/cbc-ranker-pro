@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.register-device]
 verify_jwt = false
+
+[functions.system-analytics]
+verify_jwt = true
