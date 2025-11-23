@@ -3656,6 +3656,10 @@ export type Database = {
       }
       set_default_expiry_dates: { Args: never; Returns: number }
       sync_student_metadata: { Args: never; Returns: number }
+      year_end_promotion: {
+        Args: { apply_changes?: boolean; p_institution_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:
