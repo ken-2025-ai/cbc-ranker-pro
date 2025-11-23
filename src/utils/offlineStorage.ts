@@ -48,7 +48,7 @@ export async function cacheData(
   storeName: keyof typeof STORES,
   key: string,
   data: any,
-  ttlMinutes: number = 60
+  ttlMinutes: number = 30 // Reduced from 60 to 30 for RAM optimization
 ): Promise<void> {
   const db = await openDB();
   const store = STORES[storeName];
@@ -155,7 +155,57 @@ export async function cleanupExpiredCache(): Promise<void> {
   }
 }
 
-// Auto cleanup on load
+/**
+ * Limit cache size per store
+ */
+const MAX_ENTRIES_PER_STORE = 100;
+
+export async function enforceStorageLimit(storeName: keyof typeof STORES): Promise<void> {
+  const db = await openDB();
+  const store = STORES[storeName];
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([store], "readwrite");
+    const objectStore = transaction.objectStore(store);
+    const countRequest = objectStore.count();
+    
+    countRequest.onsuccess = () => {
+      const count = countRequest.result;
+      
+      if (count > MAX_ENTRIES_PER_STORE) {
+        // Remove oldest entries
+        const index = objectStore.index("timestamp");
+        const cursorRequest = index.openCursor();
+        let removed = 0;
+        const toRemove = count - MAX_ENTRIES_PER_STORE;
+        
+        cursorRequest.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest).result;
+          if (cursor && removed < toRemove) {
+            cursor.delete();
+            removed++;
+            cursor.continue();
+          } else {
+            resolve();
+          }
+        };
+        
+        cursorRequest.onerror = () => reject(cursorRequest.error);
+      } else {
+        resolve();
+      }
+    };
+    
+    countRequest.onerror = () => reject(countRequest.error);
+  });
+}
+
+// Auto cleanup on load (more aggressive)
 if (typeof window !== 'undefined') {
   cleanupExpiredCache().catch(console.error);
+  
+  // Enforce storage limits on all stores
+  Object.keys(STORES).forEach(storeName => {
+    enforceStorageLimit(storeName as keyof typeof STORES).catch(console.error);
+  });
 }
