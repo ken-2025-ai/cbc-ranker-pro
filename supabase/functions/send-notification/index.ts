@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { Resend } from "npm:resend@2.0.0";
+import React from 'npm:react@18.3.1';
+import { renderAsync } from 'npm:@react-email/components@0.0.22';
+import { NotificationEmail } from './_templates/notification-email.tsx';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -219,25 +222,26 @@ serve(async (req) => {
       for (const institution of institutions || []) {
         if (institution.email) {
           try {
+            // Render React Email template
+            const html = await renderAsync(
+              React.createElement(NotificationEmail, {
+                title: notification.title,
+                message: notification.message,
+                recipientName: institution.headteacher_name || institution.name || 'Administrator',
+                notificationType: notification.notification_type,
+                actionUrl: notification.target_type === 'payment_reminder' 
+                  ? `https://tzdpqwkbkuqypzzuphmt.supabase.co` 
+                  : undefined,
+              })
+            );
+
             const emailResult = await resend.emails.send({
               from: "CBC Pro Ranker <onboarding@resend.dev>",
               to: [institution.email],
               subject: notification.title,
-              html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #1e40af;">${notification.title}</h2>
-                  <p>Dear ${institution.headteacher_name || 'Administrator'},</p>
-                  <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <p style="line-height: 1.6; margin: 0;">${notification.message.replace(/\n/g, '<br>')}</p>
-                  </div>
-                  <p>Best regards,<br>CBC Pro Ranker Admin Team</p>
-                  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-                  <p style="font-size: 12px; color: #64748b;">
-                    This is an automated message from CBC Pro Ranker administrative system.
-                  </p>
-                </div>
-              `,
+              html,
             });
+            
             console.log('Email sent successfully to', institution.email, 'Result:', emailResult);
             emailsSent++;
           } catch (error) {
