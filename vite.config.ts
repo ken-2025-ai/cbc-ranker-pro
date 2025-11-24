@@ -41,15 +41,15 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB limit
         runtimeCaching: [
-          // Supabase API calls - Network First with long cache
+          // Supabase API calls - Network First with aggressive client cache
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-api-cache',
               expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days - aggressive device caching
               },
               networkTimeoutSeconds: 10,
               cacheableResponse: {
@@ -72,14 +72,14 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
-          // Static assets - Cache First
+          // Static assets - Cache First (aggressive device caching)
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'image-cache',
               expiration: {
-                maxEntries: 100,
+                maxEntries: 300,
                 maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               }
             }
@@ -96,15 +96,15 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
-          // CSS and JS - Stale While Revalidate
+          // CSS and JS - Stale While Revalidate (extended device caching)
           {
             urlPattern: /\.(?:js|css)$/,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'static-resources',
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               }
             }
           }

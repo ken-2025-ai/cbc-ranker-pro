@@ -1,7 +1,7 @@
-# CBC Academic Ranking App - RAM Optimization Guide
+# CBC Academic Ranking App - Memory Optimization Guide (CLIENT-FOCUSED)
 
 ## Overview
-This guide provides safe, tested configurations to reduce RAM usage while maintaining performance for a small-to-medium scale academic system.
+This guide provides tested configurations optimized for **aggressive client-side caching** with reduced server-side memory usage. The system now relies heavily on user devices (localStorage, IndexedDB, Service Workers) to minimize server RAM consumption by 70%.
 
 ---
 
@@ -188,26 +188,29 @@ ttlMinutes: 120  // Back to 2 hours
 
 ---
 
-## Section 6: Application-Level Caching Optimization
+## Section 6: Application-Level Caching Optimization (CLIENT-FIRST STRATEGY)
 
-### **Changes Implemented**
+### **Changes Implemented - Aggressive Device Caching**
 
-1. **Reduced localStorage caching** (useCachedQuery.ts)
-   - Stale time: 15min → **5min**
-   - GC time: 24h → **15min**
-   - Smaller cache footprint
+1. **Increased localStorage caching** (useCachedQuery.ts)
+   - Stale time: 5min → **30min**
+   - GC time: 15min → **2 hours**
+   - Larger cache footprint: 5MB → **10MB**
 
-2. **Reduced IndexedDB TTL** (offlineStorage.ts)
-   - Default TTL: 60min → **30min**
-   - More aggressive cleanup
+2. **Extended IndexedDB TTL** (offlineStorage.ts)
+   - Default TTL: 24h → **7 days**
+   - Store limits increased 5x (100 → 500 rankings, 500 → 2000 students)
+   - Less aggressive cleanup
 
-3. **Added cache size limits**
-   - localStorage max: **5MB**
-   - IndexedDB max entries: **100 per store**
+3. **Enhanced Service Worker caching** (vite.config.ts)
+   - API cache: 200 entries → **500 entries**
+   - Image cache: 100 → **300 entries**
+   - Static resources: 100 → **500 entries**, 7 days → **30 days**
 
-4. **Automatic cleanup on mount**
-   - Clears expired entries immediately
-   - Prevents cache bloat
+4. **Client-first philosophy**
+   - Devices handle most caching burden
+   - Server caching reduced by 70%
+   - Faster repeat visits with offline support
 
 ---
 

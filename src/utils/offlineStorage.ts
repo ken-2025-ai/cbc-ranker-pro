@@ -48,7 +48,7 @@ export async function cacheData(
   storeName: keyof typeof STORES,
   key: string,
   data: any,
-  ttlMinutes: number = 30 // Reduced from 60 to 30 for RAM optimization
+  ttlMinutes: number = 60 * 24 * 7 // 7 days - aggressive client-side caching
 ): Promise<void> {
   const db = await openDB();
   const store = STORES[storeName];
@@ -156,9 +156,9 @@ export async function cleanupExpiredCache(): Promise<void> {
 }
 
 /**
- * Limit cache size per store
+ * Limit cache size per store (increased for device-focused caching)
  */
-const MAX_ENTRIES_PER_STORE = 100;
+const MAX_ENTRIES_PER_STORE = 500;
 
 export async function enforceStorageLimit(storeName: keyof typeof STORES): Promise<void> {
   const db = await openDB();
