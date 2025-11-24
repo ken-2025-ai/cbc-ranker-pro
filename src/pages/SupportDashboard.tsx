@@ -4,6 +4,10 @@ import { Loader2 } from 'lucide-react';
 import { useSupportAuth } from '@/contexts/SupportAuthContext';
 import SupportOverview from '@/components/support/SupportOverview';
 import SupportSidebar from '@/components/support/SupportSidebar';
+import SupportInstitutions from '@/components/support/SupportInstitutions';
+import SupportTickets from '@/components/support/SupportTickets';
+import SupportTools from '@/components/support/SupportTools';
+import SupportDevices from '@/components/support/SupportDevices';
 
 const SupportDashboard = () => {
   const navigate = useNavigate();
@@ -33,17 +37,17 @@ const SupportDashboard = () => {
       case 'overview':
         return <SupportOverview />;
       case 'institutions':
-        return <div>Institution Management (Coming Soon)</div>;
+        return <SupportInstitutions />;
       case 'tickets':
-        return <div>Support Tickets (Coming Soon)</div>;
+        return <SupportTickets />;
       case 'monitoring':
         return <div>System Monitoring (Coming Soon)</div>;
       case 'billing':
         return <div>Billing & Subscriptions (Coming Soon)</div>;
       case 'devices':
-        return <div>Device Management (Coming Soon)</div>;
+        return <SupportDevices />;
       case 'tools':
-        return <div>Support Tools (Coming Soon)</div>;
+        return <SupportTools />;
       case 'logs':
         return <div>Activity Logs (Coming Soon)</div>;
       default:
