@@ -85,6 +85,26 @@ serve(async (req) => {
         );
       }
 
+      // Track device session
+      const deviceInfo = req.headers.get('user-agent') || 'Unknown';
+      const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const deviceId = `${staff.id}_${deviceInfo}_${ipAddress}`.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 255);
+      
+      // Check if device is blocked
+      const { data: blockedDevice } = await supabase
+        .from('device_sessions')
+        .select('id, is_blocked')
+        .eq('device_id', deviceId)
+        .eq('is_blocked', true)
+        .maybeSingle();
+
+      if (blockedDevice) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'This device has been blocked from accessing the system' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Verify password
       const isValid = await verifyPassword(password, staff.password_hash);
       if (!isValid) {
@@ -102,6 +122,21 @@ serve(async (req) => {
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      // Update or create device session
+      const deviceType = deviceInfo.toLowerCase().includes('mobile') ? 'mobile' : 
+                        deviceInfo.toLowerCase().includes('tablet') ? 'tablet' : 'desktop';
+      
+      await supabase.from('device_sessions').upsert({
+        device_id: deviceId,
+        device_name: deviceInfo,
+        device_type: deviceType,
+        user_id: staff.id,
+        user_type: 'support',
+        ip_address: ipAddress,
+        user_agent: deviceInfo,
+        last_active: new Date().toISOString()
+      }, { onConflict: 'device_id' });
 
       // Generate session token
       const sessionToken = crypto.randomUUID();

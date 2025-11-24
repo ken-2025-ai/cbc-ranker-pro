@@ -57,6 +57,26 @@ serve(async (req) => {
         isValidPassword = (password === adminUser.password_hash);
       }
       
+      // Track device session
+      const deviceInfo = req.headers.get('user-agent') || 'Unknown';
+      const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const deviceId = `${adminUser.id}_${deviceInfo}_${ipAddress}`.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 255);
+      
+      // Check if device is blocked
+      const { data: blockedDevice } = await supabaseClient
+        .from('device_sessions')
+        .select('id, is_blocked')
+        .eq('device_id', deviceId)
+        .eq('is_blocked', true)
+        .maybeSingle();
+
+      if (blockedDevice) {
+        return new Response(JSON.stringify({ error: 'This device has been blocked from accessing the system' }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+
       if (!isValidPassword) {
         // Increment failed login attempts
         await supabaseClient
@@ -72,6 +92,21 @@ serve(async (req) => {
           status: 401,
         });
       }
+
+      // Update or create device session
+      const deviceType = deviceInfo.toLowerCase().includes('mobile') ? 'mobile' : 
+                        deviceInfo.toLowerCase().includes('tablet') ? 'tablet' : 'desktop';
+      
+      await supabaseClient.from('device_sessions').upsert({
+        device_id: deviceId,
+        device_name: deviceInfo,
+        device_type: deviceType,
+        user_id: adminUser.id,
+        user_type: 'admin',
+        ip_address: ipAddress,
+        user_agent: deviceInfo,
+        last_active: new Date().toISOString()
+      }, { onConflict: 'device_id' });
 
       // Reset failed login attempts on successful login
       await supabaseClient

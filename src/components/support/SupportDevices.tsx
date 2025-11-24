@@ -48,50 +48,31 @@ const SupportDevices = () => {
   const fetchDevices = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual query when device tracking is implemented
-      const mockDevices: Device[] = [
-        {
-          id: '1',
-          device_id: 'dev_001',
-          device_name: 'Chrome - Windows 10',
-          device_type: 'desktop',
-          institution_id: 'inst_001',
-          institution_name: 'ABC Primary School',
-          last_active: new Date().toISOString(),
-          is_active: true,
-          registered_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          ip_address: '192.168.1.100',
-          location: 'Nairobi, Kenya'
-        },
-        {
-          id: '2',
-          device_id: 'dev_002',
-          device_name: 'Safari - iOS 16',
-          device_type: 'mobile',
-          institution_id: 'inst_001',
-          institution_name: 'ABC Primary School',
-          last_active: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          is_active: true,
-          registered_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-          ip_address: '41.90.123.45',
-          location: 'Mombasa, Kenya'
-        },
-        {
-          id: '3',
-          device_id: 'dev_003',
-          device_name: 'Firefox - Windows 11',
-          device_type: 'desktop',
-          institution_id: 'inst_002',
-          institution_name: 'XYZ Secondary School',
-          last_active: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          is_active: false,
-          registered_at: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-          ip_address: '197.248.10.20',
-          location: 'Kisumu, Kenya'
-        }
-      ];
       
-      setDevices(mockDevices);
+      const { data, error } = await supabase.functions.invoke('device-management', {
+        body: { action: 'list' }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.devices) {
+        const formattedDevices: Device[] = data.devices.map((d: any) => ({
+          id: d.id,
+          device_id: d.device_id,
+          device_name: d.device_name,
+          device_type: d.device_type,
+          institution_id: d.institution_id || 'N/A',
+          institution_name: d.institution?.name || 'System Access',
+          last_active: d.last_active,
+          is_active: !d.is_blocked,
+          registered_at: d.registered_at,
+          ip_address: d.ip_address,
+          location: d.location_city && d.location_country 
+            ? `${d.location_city}, ${d.location_country}` 
+            : d.location_country || 'Unknown'
+        }));
+        setDevices(formattedDevices);
+      }
     } catch (error) {
       console.error('Error fetching devices:', error);
       toast({
@@ -106,16 +87,45 @@ const SupportDevices = () => {
 
   const toggleDeviceStatus = async (deviceId: string) => {
     try {
-      // Implementation for toggling device status
-      toast({
-        title: "Success",
-        description: "Device status updated"
+      const device = devices.find(d => d.id === deviceId);
+      if (!device) return;
+
+      const sessionToken = localStorage.getItem('support_session_token');
+      if (!sessionToken) {
+        toast({
+          title: "Error",
+          description: "Not authenticated",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const action = device.is_active ? 'block' : 'unblock';
+      const { data, error } = await supabase.functions.invoke('device-management', {
+        body: { 
+          action, 
+          device_id: device.device_id,
+          session_token: sessionToken,
+          block_reason: 'Blocked by support staff for security reasons'
+        }
       });
-      fetchDevices();
-    } catch (error) {
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Success",
+          description: `Device ${action}ed successfully`
+        });
+        fetchDevices();
+      } else {
+        throw new Error(data?.error || 'Failed to update device status');
+      }
+    } catch (error: any) {
+      console.error('Error toggling device status:', error);
       toast({
         title: "Error",
-        description: "Failed to update device status",
+        description: error.message || "Failed to update device status",
         variant: "destructive"
       });
     }

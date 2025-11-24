@@ -1,6 +1,42 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
-import bcrypt from 'https://esm.sh/bcryptjs@2.4.3';
+
+// Password verification using Web Crypto API
+async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  try {
+    const { salt: saltArray, hash: storedHashArray } = JSON.parse(storedHash);
+    const encoder = new TextEncoder();
+    const salt = new Uint8Array(saltArray);
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveBits", "deriveKey"]
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      true,
+      ["encrypt", "decrypt"]
+    );
+    
+    const exportedKey = await crypto.subtle.exportKey("raw", key);
+    const hashArray = Array.from(new Uint8Array(exportedKey));
+    
+    return JSON.stringify(hashArray) === JSON.stringify(storedHashArray);
+  } catch {
+    return false;
+  }
+}
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -10,21 +46,19 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 Deno.serve(async (req) => {
   console.log('Institution auth request received');
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { action, email, password, session_token } = await req.json();
+    const { action, username, password, session_token } = await req.json();
     console.log('Institution auth action:', action);
 
     if (action === 'login') {
-      // Authenticate institution
       const { data: institution, error } = await supabase
         .from('admin_institutions')
         .select('*')
-        .eq('email', email)
+        .eq('username', username)
         .maybeSingle();
 
       if (error || !institution) {
@@ -38,7 +72,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check if institution is active
       if (!institution.is_active) {
         return new Response(
           JSON.stringify({ error: 'This institution account has been deactivated. Please contact support.' }),
@@ -49,7 +82,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check if institution is blocked
       if (institution.is_blocked) {
         return new Response(
           JSON.stringify({ error: 'Your account has been blocked by admin. Please contact support.' }),
@@ -60,7 +92,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check subscription expiry
       if (institution.subscription_expires_at) {
         const expiryDate = new Date(institution.subscription_expires_at);
         const today = new Date();
@@ -75,20 +106,32 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Password verification: support bcrypt hashes and plaintext
-      let passwordValid = false;
-      const stored = institution.password_hash as string | null;
-      if (stored && (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$'))) {
-        try {
-          passwordValid = bcrypt.compareSync(password, stored);
-        } catch (_e) {
-          passwordValid = false;
-        }
-      } else {
-        passwordValid = stored === password;
+      // Track device session
+      const deviceInfo = req.headers.get('user-agent') || 'Unknown';
+      const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const deviceId = `${institution.id}_${deviceInfo}_${ipAddress}`.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 255);
+      
+      // Check if device is blocked
+      const { data: blockedDevice } = await supabase
+        .from('device_sessions')
+        .select('id, is_blocked')
+        .eq('device_id', deviceId)
+        .eq('is_blocked', true)
+        .maybeSingle();
+
+      if (blockedDevice) {
+        return new Response(
+          JSON.stringify({ error: 'This device has been blocked from accessing the system' }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 403 
+          }
+        );
       }
 
-      if (!passwordValid) {
+      // Verify password
+      const isPasswordValid = await verifyPassword(password, institution.password_hash);
+      if (!isPasswordValid) {
         return new Response(
           JSON.stringify({ error: 'Invalid password' }),
           { 
@@ -98,31 +141,44 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Update or create device session
+      const deviceType = deviceInfo.toLowerCase().includes('mobile') ? 'mobile' : 
+                        deviceInfo.toLowerCase().includes('tablet') ? 'tablet' : 'desktop';
+      
+      await supabase.from('device_sessions').upsert({
+        device_id: deviceId,
+        device_name: deviceInfo,
+        device_type: deviceType,
+        user_id: institution.user_id,
+        user_type: 'institution',
+        institution_id: institution.id,
+        ip_address: ipAddress,
+        user_agent: deviceInfo,
+        last_active: new Date().toISOString()
+      }, { onConflict: 'device_id' });
+
       // Create session token
       const sessionToken = crypto.randomUUID();
       
-      // Store session (you might want to use a sessions table)
       const sessionData = {
         institution_id: institution.id,
         username: institution.username,
         name: institution.name,
         token: sessionToken,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         last_login: new Date().toISOString()
       };
 
-      // Update last login and ensure institutions row exists
       await supabase
         .from('admin_institutions')
         .update({ last_login: new Date().toISOString() })
         .eq('id', institution.id);
 
-      // Ensure a corresponding row exists in public.institutions for FK integrity
       const upsertPayload = {
         id: institution.id,
         name: institution.name,
         email: institution.email || null,
-        code: institution.username, // use username as institution code
+        code: institution.username,
         address: institution.address || null,
         phone: institution.phone || null,
         updated_at: new Date().toISOString()
@@ -157,8 +213,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'verify_session') {
-      // In a real implementation, you'd verify against a sessions table
-      // For now, we'll just check if the institution still exists and is active
       if (!session_token) {
         return new Response(
           JSON.stringify({ error: 'No session token provided' }),
@@ -169,7 +223,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // This is a simplified verification - in production you'd have a proper sessions table
       return new Response(
         JSON.stringify({ valid: true }),
         { 
@@ -180,7 +233,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'logout') {
-      // In production, you'd invalidate the session in the database
       return new Response(
         JSON.stringify({ success: true }),
         { 
