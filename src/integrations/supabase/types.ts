@@ -1153,6 +1153,90 @@ export type Database = {
         }
         Relationships: []
       }
+      device_sessions: {
+        Row: {
+          block_reason: string | null
+          blocked_at: string | null
+          blocked_by: string | null
+          created_at: string | null
+          device_id: string
+          device_name: string
+          device_type: string
+          id: string
+          institution_id: string | null
+          ip_address: unknown
+          is_blocked: boolean | null
+          last_active: string | null
+          location_city: string | null
+          location_country: string | null
+          location_region: string | null
+          registered_at: string | null
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string | null
+          user_type: string
+        }
+        Insert: {
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          created_at?: string | null
+          device_id: string
+          device_name: string
+          device_type: string
+          id?: string
+          institution_id?: string | null
+          ip_address?: unknown
+          is_blocked?: boolean | null
+          last_active?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_region?: string | null
+          registered_at?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_type: string
+        }
+        Update: {
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          created_at?: string | null
+          device_id?: string
+          device_name?: string
+          device_type?: string
+          id?: string
+          institution_id?: string | null
+          ip_address?: unknown
+          is_blocked?: boolean | null
+          last_active?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_region?: string | null
+          registered_at?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_sessions_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_sessions_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disciplinary_records: {
         Row: {
           action_taken: string | null
