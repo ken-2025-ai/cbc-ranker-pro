@@ -1,6 +1,42 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+
+// Password verification using Web Crypto API
+async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  try {
+    const { salt: saltArray, hash: storedHashArray } = JSON.parse(storedHash);
+    const encoder = new TextEncoder();
+    const salt = new Uint8Array(saltArray);
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveBits", "deriveKey"]
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      true,
+      ["encrypt", "decrypt"]
+    );
+    
+    const exportedKey = await crypto.subtle.exportKey("raw", key);
+    const hashArray = Array.from(new Uint8Array(exportedKey));
+    
+    return JSON.stringify(hashArray) === JSON.stringify(storedHashArray);
+  } catch {
+    return false;
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,7 +86,7 @@ serve(async (req) => {
       }
 
       // Verify password
-      const isValid = await bcrypt.compare(password, staff.password_hash);
+      const isValid = await verifyPassword(password, staff.password_hash);
       if (!isValid) {
         // Update failed login attempts
         await supabase
