@@ -927,6 +927,30 @@ export type Database = {
           },
         ]
       }
+      cleanup_history: {
+        Row: {
+          cleanup_timestamp: string | null
+          execution_duration_ms: number | null
+          id: string
+          tables_cleaned: Json | null
+          total_rows_deleted: number | null
+        }
+        Insert: {
+          cleanup_timestamp?: string | null
+          execution_duration_ms?: number | null
+          id?: string
+          tables_cleaned?: Json | null
+          total_rows_deleted?: number | null
+        }
+        Update: {
+          cleanup_timestamp?: string | null
+          execution_duration_ms?: number | null
+          id?: string
+          tables_cleaned?: Json | null
+          total_rows_deleted?: number | null
+        }
+        Relationships: []
+      }
       competencies: {
         Row: {
           code: string
@@ -3877,10 +3901,11 @@ export type Database = {
         Args: never
         Returns: {
           execution_time: string
-          rows_cleaned: number
+          rows_deleted: number
           table_name: string
         }[]
       }
+      run_tracked_cleanup: { Args: never; Returns: Json }
       set_default_expiry_dates: { Args: never; Returns: number }
       sync_student_metadata: { Args: never; Returns: number }
       year_end_promotion: {
