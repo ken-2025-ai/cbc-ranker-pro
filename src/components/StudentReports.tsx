@@ -502,7 +502,7 @@ const StudentReports = () => {
       });
       
       const canvas = await html2canvas(reportCardRef.current, {
-        scale: 3,
+        scale: 4,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
@@ -514,7 +514,7 @@ const StudentReports = () => {
         removeContainer: true,
         imageTimeout: 15000,
         onclone: (clonedDoc) => {
-          // Apply font styling for better text rendering
+          // Apply font styling for better text rendering with enhanced clarity
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach((element) => {
             const htmlElement = element as HTMLElement;
@@ -522,6 +522,7 @@ const StudentReports = () => {
               htmlElement.style.fontFamily = 'Arial, sans-serif';
               htmlElement.style.setProperty('-webkit-font-smoothing', 'antialiased');
               htmlElement.style.setProperty('-moz-osx-font-smoothing', 'grayscale');
+              htmlElement.style.setProperty('text-rendering', 'optimizeLegibility');
             }
           });
         }
@@ -537,7 +538,12 @@ const StudentReports = () => {
       }
       
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        compress: false // Don't compress for maximum quality
+      });
       const imgWidth = 210;
       const pageHeight = 295;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -736,7 +742,7 @@ const StudentReports = () => {
       classReportRef.current.style.visibility = 'visible';
       
       const canvas = await html2canvas(classReportRef.current, {
-        scale: 3, // Balanced scale for performance and quality
+        scale: 4, // Increased from 3 to 4 for maximum clarity
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
@@ -1083,7 +1089,7 @@ const StudentReports = () => {
       }
 
       const canvas = await html2canvas(streamReportRef.current, {
-        scale: 3,
+        scale: 4, // Increased from 3 to 4 for maximum clarity
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
