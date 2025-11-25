@@ -8,6 +8,9 @@ import SupportInstitutions from '@/components/support/SupportInstitutions';
 import SupportTickets from '@/components/support/SupportTickets';
 import SupportTools from '@/components/support/SupportTools';
 import SupportDevices from '@/components/support/SupportDevices';
+import SupportMonitoring from '@/components/support/SupportMonitoring';
+import SupportBilling from '@/components/support/SupportBilling';
+import SupportActivityLogs from '@/components/support/SupportActivityLogs';
 
 const SupportDashboard = () => {
   const navigate = useNavigate();
@@ -41,15 +44,15 @@ const SupportDashboard = () => {
       case 'tickets':
         return <SupportTickets />;
       case 'monitoring':
-        return <div>System Monitoring (Coming Soon)</div>;
+        return <SupportMonitoring />;
       case 'billing':
-        return <div>Billing & Subscriptions (Coming Soon)</div>;
+        return <SupportBilling />;
       case 'devices':
         return <SupportDevices />;
       case 'tools':
         return <SupportTools />;
       case 'logs':
-        return <div>Activity Logs (Coming Soon)</div>;
+        return <SupportActivityLogs />;
       default:
         return <SupportOverview />;
     }
