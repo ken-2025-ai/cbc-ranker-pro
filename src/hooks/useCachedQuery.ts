@@ -27,8 +27,8 @@ export function useCachedQuery<TData>(
   const query = useQuery({
     queryKey: key,
     queryFn,
-    staleTime: 1000 * 60 * 30, // 30 minutes - aggressive client caching
-    gcTime: 1000 * 60 * 120, // 2 hours - keep in memory longer
+    staleTime: Infinity, // Never consider data stale - 100% device caching
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours in memory - maximum device retention
     placeholderData: initialData as any,
     ...options,
   });
@@ -39,7 +39,7 @@ export function useCachedQuery<TData>(
       try {
         const dataStr = JSON.stringify(query.data);
         const currentSize = JSON.stringify(localStorage).length;
-        const MAX_STORAGE_SIZE = 10 * 1024 * 1024; // 10MB limit - increased for device caching
+        const MAX_STORAGE_SIZE = 50 * 1024 * 1024; // 50MB limit - maximum device caching
         
         // Only cache if under size limit
         if (currentSize + dataStr.length < MAX_STORAGE_SIZE) {

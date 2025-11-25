@@ -48,8 +48,8 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'supabase-api-cache',
               expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days - aggressive device caching
+                maxEntries: 10000,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year - 100% device caching
               },
               networkTimeoutSeconds: 10,
               cacheableResponse: {
@@ -79,8 +79,8 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'image-cache',
               expiration: {
-                maxEntries: 300,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxEntries: 5000,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year - permanent device cache
               }
             }
           },
@@ -103,8 +103,8 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'static-resources',
               expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxEntries: 5000,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year - permanent device cache
               }
             }
           }
