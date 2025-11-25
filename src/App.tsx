@@ -18,16 +18,16 @@ import SupportDashboard from "./pages/SupportDashboard";
 import SubscriptionExpired from "./pages/SubscriptionExpired";
 import NotFound from "./pages/NotFound";
 
-// Aggressive caching configuration for speed
+// Ultra-aggressive 100% device caching configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 10, // 10 minutes - data stays fresh
-      gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep in cache
-      retry: 2,
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: true,
+      staleTime: Infinity, // Never consider data stale - 100% device caching
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours in memory - maximum retention
+      retry: 1,
+      refetchOnWindowFocus: false, // Don't refetch on focus - use cache
+      refetchOnMount: false, // Don't refetch on mount - use cache
+      refetchOnReconnect: false, // Don't refetch on reconnect - use cache
     },
   },
 });
