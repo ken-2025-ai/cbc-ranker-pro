@@ -172,8 +172,10 @@ export type Database = {
       admin_institutions: {
         Row: {
           address: string | null
+          billing_contact_phone: string | null
           county: string | null
           created_at: string
+          current_student_count: number
           email: string | null
           headteacher_name: string | null
           headteacher_phone: string | null
@@ -181,6 +183,7 @@ export type Database = {
           is_active: boolean | null
           is_blocked: boolean | null
           last_login: string | null
+          max_student_capacity: number
           name: string
           password_hash: string
           payment_reference: string | null
@@ -195,8 +198,10 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          billing_contact_phone?: string | null
           county?: string | null
           created_at?: string
+          current_student_count?: number
           email?: string | null
           headteacher_name?: string | null
           headteacher_phone?: string | null
@@ -204,6 +209,7 @@ export type Database = {
           is_active?: boolean | null
           is_blocked?: boolean | null
           last_login?: string | null
+          max_student_capacity?: number
           name: string
           password_hash: string
           payment_reference?: string | null
@@ -218,8 +224,10 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          billing_contact_phone?: string | null
           county?: string | null
           created_at?: string
+          current_student_count?: number
           email?: string | null
           headteacher_name?: string | null
           headteacher_phone?: string | null
@@ -227,6 +235,7 @@ export type Database = {
           is_active?: boolean | null
           is_blocked?: boolean | null
           last_login?: string | null
+          max_student_capacity?: number
           name?: string
           password_hash?: string
           payment_reference?: string | null
@@ -715,6 +724,110 @@ export type Database = {
           },
           {
             foreignKeyName: "backup_logs_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_audit_log: {
+        Row: {
+          action_type: string
+          amount: number
+          created_at: string
+          details: Json
+          id: string
+          institution_id: string
+          ip_address: unknown
+          performed_by: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action_type: string
+          amount: number
+          created_at?: string
+          details?: Json
+          id?: string
+          institution_id: string
+          ip_address?: unknown
+          performed_by?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action_type?: string
+          amount?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          institution_id?: string
+          ip_address?: unknown
+          performed_by?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      billing_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          description: string
+          exam_count: number | null
+          id: string
+          idempotency_key: string | null
+          institution_id: string
+          metadata: Json | null
+          mpesa_phone_number: string | null
+          mpesa_receipt_number: string | null
+          payment_status: string
+          rate_per_student: number | null
+          student_count: number | null
+          transaction_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at?: string
+          description: string
+          exam_count?: number | null
+          id?: string
+          idempotency_key?: string | null
+          institution_id: string
+          metadata?: Json | null
+          mpesa_phone_number?: string | null
+          mpesa_receipt_number?: string | null
+          payment_status?: string
+          rate_per_student?: number | null
+          student_count?: number | null
+          transaction_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          description?: string
+          exam_count?: number | null
+          id?: string
+          idempotency_key?: string | null
+          institution_id?: string
+          metadata?: Json | null
+          mpesa_phone_number?: string | null
+          mpesa_receipt_number?: string | null
+          payment_status?: string
+          rate_per_student?: number | null
+          student_count?: number | null
+          transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_transactions_institution_id_fkey"
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "admin_institutions"
@@ -1383,6 +1496,61 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_payments: {
+        Row: {
+          amount_charged: number
+          billing_transaction_id: string | null
+          created_at: string
+          exam_details: Json
+          exam_id: string | null
+          id: string
+          institution_id: string
+          payment_status: string
+        }
+        Insert: {
+          amount_charged: number
+          billing_transaction_id?: string | null
+          created_at?: string
+          exam_details: Json
+          exam_id?: string | null
+          id?: string
+          institution_id: string
+          payment_status?: string
+        }
+        Update: {
+          amount_charged?: number
+          billing_transaction_id?: string | null
+          created_at?: string
+          exam_details?: Json
+          exam_id?: string | null
+          id?: string
+          institution_id?: string
+          payment_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_payments_billing_transaction_id_fkey"
+            columns: ["billing_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "billing_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_payments_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: true
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_payments_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
             referencedColumns: ["id"]
           },
         ]
@@ -2261,6 +2429,77 @@ export type Database = {
           },
         ]
       }
+      mpesa_payment_requests: {
+        Row: {
+          account_reference: string
+          amount: number
+          callback_received_at: string | null
+          checkout_request_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          institution_id: string
+          merchant_request_id: string | null
+          metadata: Json | null
+          mpesa_receipt_number: string | null
+          phone_number: string
+          result_code: string | null
+          result_desc: string | null
+          status: string
+          transaction_date: string | null
+          transaction_desc: string
+          updated_at: string
+        }
+        Insert: {
+          account_reference: string
+          amount: number
+          callback_received_at?: string | null
+          checkout_request_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          institution_id: string
+          merchant_request_id?: string | null
+          metadata?: Json | null
+          mpesa_receipt_number?: string | null
+          phone_number: string
+          result_code?: string | null
+          result_desc?: string | null
+          status?: string
+          transaction_date?: string | null
+          transaction_desc: string
+          updated_at?: string
+        }
+        Update: {
+          account_reference?: string
+          amount?: number
+          callback_received_at?: string | null
+          checkout_request_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          institution_id?: string
+          merchant_request_id?: string | null
+          metadata?: Json | null
+          mpesa_receipt_number?: string | null
+          phone_number?: string
+          result_code?: string | null
+          result_desc?: string | null
+          status?: string
+          transaction_date?: string | null
+          transaction_desc?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mpesa_payment_requests_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parents_guardians: {
         Row: {
           address: string | null
@@ -2735,6 +2974,53 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      school_credits: {
+        Row: {
+          created_at: string
+          credit_amount: number
+          credit_students: number
+          id: string
+          institution_id: string
+          last_consumed_at: string | null
+          last_credit_at: string | null
+          total_consumed: number
+          total_earned: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credit_amount?: number
+          credit_students?: number
+          id?: string
+          institution_id: string
+          last_consumed_at?: string | null
+          last_credit_at?: string | null
+          total_consumed?: number
+          total_earned?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credit_amount?: number
+          credit_students?: number
+          id?: string
+          institution_id?: string
+          last_consumed_at?: string | null
+          last_credit_at?: string | null
+          total_consumed?: number
+          total_earned?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_credits_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: true
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       school_events: {
         Row: {
@@ -3908,6 +4194,17 @@ export type Database = {
       run_tracked_cleanup: { Args: never; Returns: Json }
       set_default_expiry_dates: { Args: never; Returns: number }
       sync_student_metadata: { Args: never; Returns: number }
+      update_school_credit: {
+        Args: {
+          p_amount_change: number
+          p_institution_id: string
+          p_transaction_id: string
+        }
+        Returns: {
+          new_credit_amount: number
+          new_credit_students: number
+        }[]
+      }
       year_end_promotion: {
         Args: { apply_changes?: boolean; p_institution_id: string }
         Returns: Json
