@@ -16,6 +16,59 @@ export interface TopicConfig {
   };
 }
 
+// Exam paper configurations per subject and class
+export interface ExamPaperConfig {
+  papers: number;
+  paperDetails: {
+    [paperNumber: number]: {
+      duration: number; // in minutes
+      totalMarks: number;
+      sections?: string[];
+    };
+  };
+}
+
+export const EXAM_PAPER_CONFIGS: { [subject: string]: { [classLevel: string]: ExamPaperConfig } } = {
+  "Mathematics": {
+    "Grade 6": { papers: 2, paperDetails: { 1: { duration: 90, totalMarks: 50 }, 2: { duration: 90, totalMarks: 50 } } },
+    "Grade 9": { papers: 1, paperDetails: { 1: { duration: 120, totalMarks: 100, sections: ["Multiple Choice (20 marks)", "Structured (80 marks)"] } } }
+  },
+  "English": {
+    "Grade 6": { papers: 3, paperDetails: { 1: { duration: 90, totalMarks: 40 }, 2: { duration: 90, totalMarks: 40 }, 3: { duration: 90, totalMarks: 20 } } },
+    "Grade 9": { papers: 2, paperDetails: { 1: { duration: 100, totalMarks: 50 }, 2: { duration: 110, totalMarks: 50 } } }
+  },
+  "Kiswahili": {
+    "Grade 6": { papers: 2, paperDetails: { 1: { duration: 90, totalMarks: 50 }, 2: { duration: 90, totalMarks: 50 } } },
+    "Grade 9": { papers: 2, paperDetails: { 1: { duration: 100, totalMarks: 50 }, 2: { duration: 105, totalMarks: 50 } } }
+  },
+  "Integrated Science": {
+    "Grade 6": { papers: 2, paperDetails: { 1: { duration: 90, totalMarks: 70 }, 2: { duration: 120, totalMarks: 30 } } },
+    "Grade 9": { papers: 2, paperDetails: { 1: { duration: 100, totalMarks: 70 }, 2: { duration: 120, totalMarks: 30 } } }
+  },
+  "Social Studies": {
+    "Grade 6": { papers: 1, paperDetails: { 1: { duration: 90, totalMarks: 100 } } },
+    "Grade 9": { papers: 1, paperDetails: { 1: { duration: 90, totalMarks: 100 } } }
+  },
+  "CRE": {
+    "Grade 9": { papers: 1, paperDetails: { 1: { duration: 90, totalMarks: 100 } } }
+  },
+  "IRE": {
+    "Grade 9": { papers: 1, paperDetails: { 1: { duration: 90, totalMarks: 100 } } }
+  },
+  "HRE": {
+    "Grade 9": { papers: 1, paperDetails: { 1: { duration: 90, totalMarks: 100 } } }
+  },
+  "Agriculture and Nutrition": {
+    "Grade 9": { papers: 1, paperDetails: { 1: { duration: 100, totalMarks: 70 } } }
+  },
+  "Creative Arts and Sports": {
+    "Grade 9": { papers: 2, paperDetails: { 1: { duration: 0, totalMarks: 0 }, 2: { duration: 100, totalMarks: 100 } } }
+  },
+  "Pre-Technical Studies": {
+    "Grade 9": { papers: 2, paperDetails: { 1: { duration: 100, totalMarks: 80 }, 2: { duration: 0, totalMarks: 40 } } }
+  }
+};
+
 export const EXAM_TOPICS_CONFIG: TopicConfig = {
   Mathematics: {
     "Grade 1": {
@@ -242,24 +295,20 @@ export const EXAM_TOPICS_CONFIG: TopicConfig = {
         },
         "Financial Mathematics": {
           topics: ["Taxation", "Insurance", "Banking", "Investments", "Budgeting", "Foreign Exchange"],
-          papers: [1, 2]
+          papers: [1]
         },
         "Measurement and Mensuration": {
           topics: ["Arc Length", "Sector Area", "Volume - Pyramids and Cones", "Surface Area - Complex Shapes", "Latitude and Longitude"],
-          papers: [2]
+          papers: [1]
         },
         "Geometry and Trigonometry": {
           topics: ["Circle Theorems", "Trigonometric Ratios", "Angles of Elevation and Depression", "3D Geometry", "Vectors - Introduction"],
-          papers: [2]
+          papers: [1]
         },
         "Statistics and Probability": {
           topics: ["Measures of Dispersion", "Probability Distributions", "Sampling", "Statistical Inference - Introduction"],
-          papers: [2]
+          papers: [1]
         }
-      },
-      paperMapping: {
-        1: ["Numbers and Operations", "Algebra", "Financial Mathematics"],
-        2: ["Measurement and Mensuration", "Geometry and Trigonometry", "Statistics and Probability", "Financial Mathematics"]
       }
     }
   },
@@ -320,6 +369,111 @@ export const EXAM_TOPICS_CONFIG: TopicConfig = {
         }
       }
     },
+    "Grade 4": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Formal Speaking", "Group Discussions", "Listening for Details", "Giving Directions"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Reading Fluency", "Inference", "Summarizing", "Text Structure"],
+          papers: [1, 2]
+        },
+        "Writing": {
+          topics: ["Narrative Writing", "Letter Writing", "Note Taking", "Editing"],
+          papers: [2, 3]
+        },
+        "Grammar": {
+          topics: ["Adverbs", "Conjunctions", "Complex Sentences", "Direct/Indirect Speech", "Active/Passive Voice"],
+          papers: [2, 3]
+        }
+      }
+    },
+    "Grade 5": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Critical Listening", "Debates", "Presentations with Visual Aids", "Persuasive Speaking"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Analyzing Texts", "Comparing Texts", "Author's Purpose", "Literary Devices"],
+          papers: [1, 2]
+        },
+        "Writing": {
+          topics: ["Expository Writing", "Argumentative Writing", "Formal Letters", "Report Writing"],
+          papers: [2, 3]
+        },
+        "Grammar": {
+          topics: ["Clauses", "Phrases", "Sentence Variety", "Punctuation Rules", "Subject-Verb Agreement"],
+          papers: [2, 3]
+        }
+      }
+    },
+    "Grade 6": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Public Speaking", "Panel Discussions", "Critical Analysis", "Oral Literature"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Literary Analysis", "Poetry Interpretation", "Critical Reading", "Research Skills"],
+          papers: [1, 2]
+        },
+        "Writing": {
+          topics: ["Essay Writing", "Creative Writing", "Business Letters", "Summary Writing"],
+          papers: [2, 3]
+        },
+        "Grammar and Language Use": {
+          topics: ["Advanced Grammar", "Figurative Language", "Stylistic Devices", "Cohesion and Coherence"],
+          papers: [2, 3]
+        }
+      },
+      paperMapping: {
+        1: ["Listening and Speaking", "Reading"],
+        2: ["Reading", "Writing", "Grammar and Language Use"],
+        3: ["Writing", "Grammar and Language Use"]
+      }
+    },
+    "Grade 7": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Advanced Presentations", "Critical Listening", "Debates and Discussions", "Oral Poetry"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Literary Texts", "Non-fiction Analysis", "Poetry", "Drama"],
+          papers: [1, 2]
+        },
+        "Writing": {
+          topics: ["Creative Writing", "Formal Writing", "Report Writing", "Letter Writing"],
+          papers: [2]
+        },
+        "Grammar": {
+          topics: ["Complex Grammar", "Idiomatic Expressions", "Register and Style", "Text Analysis"],
+          papers: [1, 2]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Professional Communication", "Interview Skills", "Presentations", "Critical Response"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Critical Analysis", "Comparative Study", "Research and Reference", "Media Texts"],
+          papers: [1, 2]
+        },
+        "Writing": {
+          topics: ["Advanced Essay Writing", "Professional Writing", "Creative Pieces", "Research Papers"],
+          papers: [2]
+        },
+        "Grammar and Language": {
+          topics: ["Advanced Grammar Structures", "Stylistic Analysis", "Language and Context", "Discourse"],
+          papers: [1, 2]
+        }
+      }
+    },
     "Grade 9": {
       strands: {
         "Listening and Speaking": {
@@ -340,16 +494,226 @@ export const EXAM_TOPICS_CONFIG: TopicConfig = {
         },
         "Literature": {
           topics: ["Poetry", "Prose", "Drama", "Literary Devices", "Themes and Characterization"],
-          papers: [1]
+          papers: [1, 2]
         }
       },
       paperMapping: {
         1: ["Listening and Speaking", "Reading", "Grammar and Language Use", "Literature"],
-        2: ["Reading", "Writing", "Grammar and Language Use"]
+        2: ["Reading", "Writing", "Grammar and Language Use", "Literature"]
       }
     }
   },
-  Science: {
+  Kiswahili: {
+    "Grade 1": {
+      strands: {
+        "Kusoma na Kuandika": {
+          topics: ["Herufi za Kiswahili", "Silabi", "Maneno Mepesi", "Picha za Kusoma"],
+          papers: [1, 2]
+        },
+        "Kusikiliza na Kuzungumza": {
+          topics: ["Masimulizi", "Nyimbo", "Mazungumzo", "Vitendo"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 2": {
+      strands: {
+        "Kusoma": {
+          topics: ["Kusoma Kwa Ufasaha", "Hadithi Fupi", "Ufahamu wa Maneno", "Picha"],
+          papers: [1]
+        },
+        "Kuandika": {
+          topics: ["Kuandika Sentensi", "Herufi Kubwa", "Alama za Uandishi", "Insha Fupi"],
+          papers: [2]
+        },
+        "Sarufi": {
+          topics: ["Nomino", "Vitenzi", "Nyakati", "Umoja/Wingi"],
+          papers: [2]
+        }
+      }
+    },
+    "Grade 3": {
+      strands: {
+        "Kusoma": {
+          topics: ["Ufahamu wa Habari", "Vipengele vya Hadithi", "Maana Kuu", "Maelezo"],
+          papers: [1]
+        },
+        "Kuandika": {
+          topics: ["Kuandika Aya", "Alama za Uandishi", "Kuandika Maelezo", "Barua"],
+          papers: [2]
+        },
+        "Sarufi": {
+          topics: ["Vivumishi", "Viwakilishi", "Nyakati za Vitenzi", "Viunganishi"],
+          papers: [2]
+        }
+      }
+    },
+    "Grade 4": {
+      strands: {
+        "Kusoma": {
+          topics: ["Kusoma kwa Kina", "Kuelewa Maana", "Muhtasari", "Muundo wa Maandishi"],
+          papers: [1]
+        },
+        "Kuandika": {
+          topics: ["Insha ya Simulizi", "Barua Rasmi", "Kuchukua Vidokezo", "Kuhariri"],
+          papers: [2]
+        },
+        "Sarufi": {
+          topics: ["Vielezi", "Sentensi Changamano", "Hotuba ya Moja kwa Moja/Isiyo ya Moja kwa Moja", "Kauli Halisi/Kauli Taarifa"],
+          papers: [2]
+        }
+      }
+    },
+    "Grade 5": {
+      strands: {
+        "Kusoma": {
+          topics: ["Uchambuzi wa Maandishi", "Kulinganisha Maandishi", "Kusudi la Mwandishi", "Sitiari na Tamathali"],
+          papers: [1]
+        },
+        "Kuandika": {
+          topics: ["Insha ya Maelezo", "Insha ya Hoja", "Barua Rasmi", "Ripoti"],
+          papers: [2]
+        },
+        "Sarufi": {
+          topics: ["Vishazi", "Misemo", "Aina za Sentensi", "Sheria za Uandishi", "Patano"],
+          papers: [2]
+        }
+      }
+    },
+    "Grade 6": {
+      strands: {
+        "Kusoma": {
+          topics: ["Ufahamu wa Vifungu", "Uchambuzi wa Fasihi", "Ushairi", "Kusoma kwa Makini"],
+          papers: [1]
+        },
+        "Kuandika": {
+          topics: ["Insha", "Ubunifu wa Kuandika", "Barua za Biashara", "Muhtasari"],
+          papers: [2]
+        },
+        "Lugha": {
+          topics: ["Sarufi ya Juu", "Tamathali za Lugha", "Mbinu za Kisanaa", "Mshikamano na Utaratibu"],
+          papers: [1, 2]
+        },
+        "Fasihi": {
+          topics: ["Fasihi Simulizi", "Ushairi", "Hadithi", "Tamthilia"],
+          papers: [2]
+        }
+      },
+      paperMapping: {
+        1: ["Kusoma", "Lugha"],
+        2: ["Kuandika", "Lugha", "Fasihi"]
+      }
+    },
+    "Grade 7": {
+      strands: {
+        "Kusoma na Kusikiliza": {
+          topics: ["Maandishi ya Fasihi", "Uchambuzi Usio wa Fasihi", "Ushairi", "Riwaya"],
+          papers: [1]
+        },
+        "Kuandika na Kuzungumza": {
+          topics: ["Ubunifu wa Kuandika", "Maandishi Rasmi", "Ripoti", "Barua"],
+          papers: [2]
+        },
+        "Lugha": {
+          topics: ["Sarufi Changamano", "Misemo ya Kimila", "Mtindo", "Uchambuzi wa Maandishi"],
+          papers: [1, 2]
+        },
+        "Fasihi": {
+          topics: ["Riwaya", "Hadithi Fupi", "Ushairi", "Tamthilia"],
+          papers: [1, 2]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Kusoma": {
+          topics: ["Uchambuzi Makini", "Uchunguzi wa Kulinganisha", "Utafiti", "Maandishi ya Vyombo vya Habari"],
+          papers: [1]
+        },
+        "Kuandika": {
+          topics: ["Insha za Juu", "Maandishi ya Kitaalamu", "Vipande vya Ubunifu", "Karatasi za Utafiti"],
+          papers: [2]
+        },
+        "Lugha": {
+          topics: ["Miundo ya Sarufi ya Juu", "Uchambuzi wa Mtindo", "Lugha na Muktadha"],
+          papers: [1, 2]
+        },
+        "Fasihi": {
+          topics: ["Uchambuzi wa Fasihi", "Tanzu za Fasihi", "Mandhari na Wahusika"],
+          papers: [1, 2]
+        }
+      }
+    },
+    "Grade 9": {
+      strands: {
+        "Ufahamu": {
+          topics: ["Vifungu vya Ufahamu", "Mbinu za Kusoma", "Maswali ya Ufahamu"],
+          papers: [1]
+        },
+        "Lugha": {
+          topics: ["Sarufi", "Matumizi ya Lugha", "Methali na Misemo", "Nahau"],
+          papers: [1]
+        },
+        "Fasihi Andishi": {
+          topics: ["Riwaya", "Tamthilia", "Ushairi"],
+          papers: [2]
+        },
+        "Fasihi Simulizi": {
+          topics: ["Hadithi", "Methali", "Vitendawili", "Nyimbo"],
+          papers: [2]
+        },
+        "Insha": {
+          topics: ["Insha ya Maelezo", "Insha ya Hoja", "Insha ya Simulizi", "Barua Rasmi"],
+          papers: [2]
+        }
+      },
+      paperMapping: {
+        1: ["Ufahamu", "Lugha"],
+        2: ["Insha", "Fasihi Simulizi", "Fasihi Andishi"]
+      }
+    }
+  },
+  "Integrated Science": {
+    "Grade 4": {
+      strands: {
+        "Living Things": {
+          topics: ["Parts of Plants", "Parts of Animals", "Life Cycles", "Animal Movement", "Plant Growth"],
+          papers: [1]
+        },
+        "Materials": {
+          topics: ["Properties of Materials", "States of Matter", "Uses of Materials"],
+          papers: [1]
+        },
+        "Energy": {
+          topics: ["Light", "Sound", "Heat", "Simple Electricity"],
+          papers: [2]
+        },
+        "Forces": {
+          topics: ["Push and Pull", "Friction", "Magnetism"],
+          papers: [2]
+        }
+      }
+    },
+    "Grade 5": {
+      strands: {
+        "Living Things": {
+          topics: ["Classification", "Body Systems", "Nutrition", "Health and Hygiene"],
+          papers: [1]
+        },
+        "Materials and Matter": {
+          topics: ["Mixtures", "Solutions", "Separating Mixtures"],
+          papers: [1]
+        },
+        "Energy": {
+          topics: ["Electricity", "Energy Transfer", "Renewable Energy"],
+          papers: [2]
+        },
+        "Forces and Motion": {
+          topics: ["Motion", "Gravity", "Simple Machines"],
+          papers: [2]
+        }
+      }
+    },
     "Grade 6": {
       strands: {
         "Living Things": {
@@ -378,6 +742,38 @@ export const EXAM_TOPICS_CONFIG: TopicConfig = {
         2: ["Energy", "Forces and Motion", "Earth and Space"]
       }
     },
+    "Grade 7": {
+      strands: {
+        "Biology": {
+          topics: ["Cell Structure", "Classification of Living Things", "Nutrition in Plants and Animals", "Respiration", "Excretion"],
+          papers: [1]
+        },
+        "Chemistry": {
+          topics: ["Elements, Compounds, Mixtures", "Atomic Structure", "Chemical Reactions", "Acids, Bases, Salts"],
+          papers: [1]
+        },
+        "Physics": {
+          topics: ["Measurement", "Forces", "Energy", "Light and Optics", "Electricity"],
+          papers: [2]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Biology": {
+          topics: ["Transport in Plants and Animals", "Reproduction", "Growth and Development", "Ecosystems and Environment"],
+          papers: [1]
+        },
+        "Chemistry": {
+          topics: ["Periodic Table", "Chemical Bonding", "Rates of Reaction", "Electrochemistry"],
+          papers: [1]
+        },
+        "Physics": {
+          topics: ["Mechanics", "Heat", "Waves", "Magnetism", "Electronics"],
+          papers: [2]
+        }
+      }
+    },
     "Grade 9": {
       strands: {
         "Biology": {
@@ -396,6 +792,288 @@ export const EXAM_TOPICS_CONFIG: TopicConfig = {
       paperMapping: {
         1: ["Biology", "Chemistry"],
         2: ["Physics"]
+      }
+    }
+  },
+  "Social Studies": {
+    "Grade 4": {
+      strands: {
+        "Geography": {
+          topics: ["My County", "Physical Features", "Weather", "Map Reading"],
+          papers: [1]
+        },
+        "History": {
+          topics: ["My Community", "Historical Events", "People and Culture"],
+          papers: [1]
+        },
+        "Citizenship": {
+          topics: ["Rights and Responsibilities", "National Symbols", "Community Service"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 5": {
+      strands: {
+        "Geography": {
+          topics: ["Kenya's Physical Features", "Climate", "Vegetation", "Natural Resources"],
+          papers: [1]
+        },
+        "History": {
+          topics: ["Pre-colonial Kenya", "Colonial Period", "Road to Independence"],
+          papers: [1]
+        },
+        "Government": {
+          topics: ["Government Structure", "Democracy", "Elections"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 6": {
+      strands: {
+        "Geography": {
+          topics: ["Eastern Africa", "Physical Geography", "Economic Activities", "Population"],
+          papers: [1]
+        },
+        "History": {
+          topics: ["Early Civilizations", "Trade Routes", "Colonialism", "Independence Movements"],
+          papers: [1]
+        },
+        "Citizenship and Government": {
+          topics: ["Constitution", "Human Rights", "Democracy", "International Relations"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 7": {
+      strands: {
+        "Geography": {
+          topics: ["Africa's Geography", "Climate Zones", "Population Distribution", "Economic Development"],
+          papers: [1]
+        },
+        "History": {
+          topics: ["Ancient Civilizations", "Trans-Saharan Trade", "European Exploration", "Scramble for Africa"],
+          papers: [1]
+        },
+        "Citizenship": {
+          topics: ["African Unity", "Regional Organizations", "Governance", "Development"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Geography": {
+          topics: ["World Geography", "Climate Change", "Globalization", "Sustainable Development"],
+          papers: [1]
+        },
+        "History": {
+          topics: ["World Wars", "Cold War", "Independence Movements", "Modern History"],
+          papers: [1]
+        },
+        "Political Systems": {
+          topics: ["International Organizations", "Global Issues", "Peace and Security"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 9": {
+      strands: {
+        "Geography": {
+          topics: ["Physical Geography", "Human Geography", "Economic Geography", "Environmental Issues"],
+          papers: [1]
+        },
+        "History": {
+          topics: ["Pre-colonial Africa", "Colonialism", "Nationalism", "Post-Independence Africa"],
+          papers: [1]
+        },
+        "Government and Citizenship": {
+          topics: ["Constitution", "Democracy", "Human Rights", "International Relations"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "Agriculture and Nutrition": {
+    "Grade 7": {
+      strands: {
+        "Crop Production": {
+          topics: ["Crop Classification", "Land Preparation", "Planting", "Crop Management"],
+          papers: [1]
+        },
+        "Livestock Production": {
+          topics: ["Types of Livestock", "Housing", "Feeding", "Health"],
+          papers: [1]
+        },
+        "Nutrition": {
+          topics: ["Balanced Diet", "Food Groups", "Nutritional Disorders"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Crop Production": {
+          topics: ["Soil Management", "Crop Rotation", "Pest and Disease Control", "Harvesting"],
+          papers: [1]
+        },
+        "Livestock Management": {
+          topics: ["Breeding", "Record Keeping", "Marketing", "Value Addition"],
+          papers: [1]
+        },
+        "Food and Nutrition": {
+          topics: ["Food Preservation", "Food Safety", "Meal Planning"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 9": {
+      strands: {
+        "Agricultural Production": {
+          topics: ["Agribusiness", "Farm Management", "Agricultural Economics", "Marketing"],
+          papers: [1]
+        },
+        "Animal Husbandry": {
+          topics: ["Livestock Systems", "Breeds", "Production", "Marketing"],
+          papers: [1]
+        },
+        "Food and Nutrition": {
+          topics: ["Nutrition and Health", "Food Processing", "Food Security", "Consumer Education"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "CRE": {
+    "Grade 7": {
+      strands: {
+        "Old Testament": {
+          topics: ["Creation", "The Fall", "The Patriarchs", "Moses and the Exodus"],
+          papers: [1]
+        },
+        "New Testament": {
+          topics: ["Life of Jesus", "Teachings of Jesus", "Miracles", "Parables"],
+          papers: [1]
+        },
+        "Christian Living": {
+          topics: ["Christian Values", "Family", "Church", "Community"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Biblical Studies": {
+          topics: ["The Prophets", "Kings and Kingdoms", "Early Church", "Apostles"],
+          papers: [1]
+        },
+        "Christian Ethics": {
+          topics: ["Morality", "Social Justice", "Environmental Stewardship"],
+          papers: [1]
+        },
+        "Contemporary Issues": {
+          topics: ["Youth Challenges", "Technology", "Globalization"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 9": {
+      strands: {
+        "Old Testament": {
+          topics: ["Creation and Fall", "Covenants", "The Prophets", "Wisdom Literature"],
+          papers: [1]
+        },
+        "New Testament": {
+          topics: ["Life and Ministry of Jesus", "Early Church", "Paul's Letters", "Revelation"],
+          papers: [1]
+        },
+        "Christian Living": {
+          topics: ["Christian Ethics", "Social Responsibility", "Christian Leadership", "Contemporary Challenges"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "IRE": {
+    "Grade 9": {
+      strands: {
+        "Quran and Hadith": {
+          topics: ["Selected Surahs", "Tafsir", "Hadith Studies", "Islamic Teachings"],
+          papers: [1]
+        },
+        "Islamic History": {
+          topics: ["Life of Prophet Muhammad", "Khulafa Rashidun", "Islamic Civilization"],
+          papers: [1]
+        },
+        "Islamic Practice": {
+          topics: ["Pillars of Islam", "Islamic Ethics", "Social Life", "Contemporary Issues"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "HRE": {
+    "Grade 9": {
+      strands: {
+        "Hindu Scriptures": {
+          topics: ["Vedas", "Upanishads", "Bhagavad Gita", "Ramayana"],
+          papers: [1]
+        },
+        "Hindu Philosophy": {
+          topics: ["Dharma", "Karma", "Moksha", "Yoga"],
+          papers: [1]
+        },
+        "Hindu Practice": {
+          topics: ["Rituals", "Festivals", "Ethics", "Contemporary Issues"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "Creative Arts and Sports": {
+    "Grade 9": {
+      strands: {
+        "Visual Arts": {
+          topics: ["Drawing", "Painting", "Sculpture", "Design", "Art Appreciation"],
+          papers: [1, 2]
+        },
+        "Performing Arts": {
+          topics: ["Music", "Dance", "Drama", "Theatre Arts"],
+          papers: [1, 2]
+        },
+        "Sports": {
+          topics: ["Athletics", "Ball Games", "Indigenous Games", "Sports Science"],
+          papers: [1, 2]
+        }
+      },
+      paperMapping: {
+        1: ["Visual Arts", "Performing Arts", "Sports"],
+        2: ["Visual Arts", "Performing Arts", "Sports"]
+      }
+    }
+  },
+  "Pre-Technical Studies": {
+    "Grade 9": {
+      strands: {
+        "Technology and Design": {
+          topics: ["Design Process", "Technical Drawing", "Materials", "Tools and Equipment"],
+          papers: [1]
+        },
+        "Construction": {
+          topics: ["Building Materials", "Construction Techniques", "Safety"],
+          papers: [1]
+        },
+        "Electronics": {
+          topics: ["Basic Circuits", "Components", "Safety", "Applications"],
+          papers: [1]
+        },
+        "Practical Project": {
+          topics: ["Project Planning", "Implementation", "Testing", "Evaluation"],
+          papers: [2]
+        }
+      },
+      paperMapping: {
+        1: ["Technology and Design", "Construction", "Electronics"],
+        2: ["Practical Project"]
       }
     }
   }
@@ -548,4 +1226,9 @@ export const getStrandsForClass = (
 ): string[] => {
   const topics = getTopicsForClass(subject, classLevel, paperNumber);
   return topics ? Object.keys(topics) : [];
+};
+
+// Get paper configuration for subject and class
+export const getPaperConfig = (subject: string, classLevel: string): ExamPaperConfig | null => {
+  return EXAM_PAPER_CONFIGS[subject]?.[classLevel] || null;
 };

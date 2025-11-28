@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getTopicsForClass, getStrandsForClass } from "@/data/examTopicsConfig";
+import { getTopicsForClass, getStrandsForClass, getPaperConfig, EXAM_PAPER_CONFIGS } from "@/data/examTopicsConfig";
 
 // PP1/PP2 specific subjects
 const PP_SUBJECTS = [
