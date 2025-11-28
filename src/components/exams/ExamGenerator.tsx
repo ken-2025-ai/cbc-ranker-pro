@@ -88,10 +88,25 @@ const ExamGenerator = () => {
         formData.class_level,
         // Only filter by paper for KPSEA (Grade 6) and KJSEA (Grade 9) exams
         (formData.exam_type === "KPSEA" || formData.exam_type === "KJSEA") ? formData.paper_number : undefined
-      )
+      ) || {}
     : {};
 
-  const availableStrands = availableTopics ? Object.keys(availableTopics) : [];
+  const availableStrands = Object.keys(availableTopics);
+  
+  // Log for debugging
+  useEffect(() => {
+    if (formData.subject && formData.class_level) {
+      console.log('ExamGenerator - Topic lookup:', {
+        subject: formData.subject,
+        class_level: formData.class_level,
+        paper_number: formData.paper_number,
+        exam_type: formData.exam_type,
+        availableTopics,
+        availableStrands,
+        strandsCount: availableStrands.length
+      });
+    }
+  }, [formData.subject, formData.class_level, formData.paper_number, formData.exam_type]);
 
   const toggleStrand = (strand: string) => {
     const newExpanded = new Set(expandedStrands);
@@ -557,6 +572,23 @@ const ExamGenerator = () => {
             />
           </div>
         </div>
+
+        {formData.subject && formData.class_level && availableStrands.length === 0 && (
+          <div className="space-y-2">
+            <Label className="text-base text-destructive">No Topics Configured</Label>
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Topics are not yet configured for <strong>{formData.subject}</strong> in <strong>{formData.class_level}</strong>.
+                {(formData.exam_type === "KPSEA" || formData.exam_type === "KJSEA") && formData.paper_number && (
+                  <> (Paper {formData.paper_number})</>
+                )}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Please try a different subject, class level, or contact support to add this configuration.
+              </p>
+            </div>
+          </div>
+        )}
 
         {availableStrands.length > 0 && (
           <div className="space-y-4">
