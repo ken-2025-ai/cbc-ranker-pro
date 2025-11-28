@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getTopicsForClass, getStrandsForClass } from "@/data/examTopicsConfig";
 
 // PP1/PP2 specific subjects
 const PP_SUBJECTS = [
@@ -44,271 +45,6 @@ const CLASS_LEVELS = [
 const EXAM_TYPES = [
   "KPSEA", "KJSEA", "End Term", "Mid Term", "Mock", "Opener", "CAT"
 ];
-
-// Detailed topics by strand for each subject
-const TOPICS_BY_STRAND: Record<string, Record<string, string[]>> = {
-  Mathematics: {
-    "Numbers": ["Counting", "Addition", "Subtraction", "Multiplication", "Division", "Fractions", "Decimals", "Percentages", "Place Value", "Number Patterns"],
-    "Algebra": ["Variables", "Expressions", "Equations", "Inequalities", "Functions", "Linear Equations"],
-    "Geometry": ["Shapes", "Angles", "Lines", "Symmetry", "Transformations", "3D Shapes", "Constructions"],
-    "Measurement": ["Length", "Mass", "Capacity", "Time", "Money", "Temperature", "Area", "Perimeter", "Volume"],
-    "Data Handling": ["Data Collection", "Tables", "Graphs", "Charts", "Mean", "Median", "Mode", "Probability"],
-    "Patterns": ["Number Patterns", "Shape Patterns", "Sequences"]
-  },
-  "Mathematical Activities": {
-    "Numbers": ["Counting 1-10", "Counting 1-20", "Number Recognition", "More/Less", "Before/After"],
-    "Patterns": ["Color Patterns", "Shape Patterns", "Sound Patterns", "Movement Patterns"],
-    "Shapes": ["Circle", "Square", "Triangle", "Rectangle", "Oval"],
-    "Measurement": ["Big/Small", "Long/Short", "Heavy/Light", "Full/Empty"]
-  },
-  English: {
-    "Listening and Speaking": ["Oral Communication", "Conversations", "Storytelling", "Pronunciation", "Vocabulary"],
-    "Reading": ["Phonics", "Word Recognition", "Comprehension", "Reading Fluency", "Story Reading"],
-    "Writing": ["Letter Formation", "Sentence Writing", "Paragraph Writing", "Composition", "Creative Writing"],
-    "Grammar": ["Nouns", "Verbs", "Adjectives", "Pronouns", "Tenses", "Punctuation", "Sentence Structure"],
-    "Comprehension": ["Main Ideas", "Details", "Inference", "Summary", "Critical Reading"]
-  },
-  "Literacy Activities": {
-    "Listening": ["Listen to Stories", "Follow Instructions", "Sound Recognition"],
-    "Speaking": ["Name Objects", "Simple Sentences", "Describe Pictures", "Tell Stories"],
-    "Pre-reading": ["Letter Recognition", "Letter Sounds", "Picture Reading"],
-    "Pre-writing": ["Tracing", "Coloring", "Drawing Lines", "Holding Pencil"]
-  },
-  Kiswahili: {
-    "Kusoma": ["Sauti za Herufi", "Maneno", "Sentensi", "Hadithi", "Mashairi"],
-    "Kuandika": ["Herufi", "Maneno", "Sentensi", "Insha", "Barua"],
-    "Kusikiliza": ["Mazungumzo", "Maagizo", "Hadithi"],
-    "Kusema": ["Mazungumzo", "Hadithi", "Maelezo"],
-    "Sarufi": ["Nomino", "Vitenzi", "Vivumishi", "Wakati", "Alama za Uandishi"]
-  },
-  Science: {
-    "Living Things": ["Plants", "Animals", "Human Body", "Life Processes", "Classification", "Habitats", "Food Chains"],
-    "Materials": ["Properties", "States of Matter", "Changes", "Mixtures", "Separation"],
-    "Energy": ["Light", "Heat", "Sound", "Electricity", "Magnetism", "Energy Sources"],
-    "Forces": ["Push and Pull", "Friction", "Gravity", "Motion", "Simple Machines"],
-    "Earth and Space": ["Weather", "Seasons", "Day and Night", "Solar System", "Earth Features"]
-  },
-  "Environmental Activities": {
-    "Living Things": ["Plants Around Us", "Animals Around Us", "Caring for Plants", "Caring for Animals"],
-    "Weather": ["Sunny Days", "Rainy Days", "Windy Days", "Cloudy Days"],
-    "Safety": ["Road Safety", "Water Safety", "Fire Safety", "Stranger Danger"],
-    "Community": ["My Home", "My School", "My Neighborhood", "Helpers in Community"]
-  },
-  "Social Studies": {
-    "Geography": ["Maps", "Directions", "Continents", "Countries", "Physical Features", "Climate", "Resources"],
-    "History": ["Timeline", "Early People", "Historical Events", "National Heroes", "Traditions"],
-    "Citizenship": ["Rights", "Responsibilities", "Government", "National Symbols", "Values"],
-    "Economics": ["Needs and Wants", "Trade", "Money", "Production", "Business"]
-  },
-  "Integrated Science": {
-    "Living Things": ["Plants", "Animals", "Human Body", "Life Processes", "Classification", "Habitats"],
-    "Materials": ["Properties", "States of Matter", "Changes", "Mixtures"],
-    "Energy": ["Light", "Heat", "Sound", "Electricity", "Magnetism"],
-    "Forces": ["Push and Pull", "Friction", "Motion"],
-    "Earth and Space": ["Weather", "Seasons", "Solar System"]
-  },
-  "Pre-Technical Studies": {
-    "Technology": ["Tools", "Materials", "Processes", "Design"],
-    "Safety": ["Workshop Safety", "Tool Handling", "First Aid"],
-    "Projects": ["Planning", "Construction", "Testing", "Evaluation"]
-  },
-  Agriculture: {
-    "Crop Production": ["Land Preparation", "Planting", "Weeding", "Harvesting", "Storage"],
-    "Animal Husbandry": ["Types of Animals", "Feeding", "Housing", "Animal Health", "Products"],
-    "Tools and Equipment": ["Farm Tools", "Tool Maintenance", "Safety"],
-    "Soil and Water": ["Soil Types", "Soil Conservation", "Water Sources", "Irrigation"]
-  },
-  "Home Science": {
-    "Food and Nutrition": ["Food Groups", "Balanced Diet", "Food Preparation", "Food Storage", "Kitchen Safety"],
-    "Clothing": ["Types of Clothing", "Clothing Care", "Basic Sewing", "Fabric Types"],
-    "Home Management": ["Cleaning", "Organization", "Safety at Home", "Family Care"]
-  },
-  "Creative Arts": {
-    "Visual Arts": ["Drawing", "Painting", "Collage", "Sculpture", "Craft"],
-    "Music": ["Singing", "Rhythm", "Musical Instruments", "Composition", "Performance"],
-    "Drama": ["Acting", "Role Play", "Storytelling", "Movement", "Performance"]
-  },
-  "Physical Education": {
-    "Athletics": ["Running", "Jumping", "Throwing", "Relay"],
-    "Ball Games": ["Football", "Netball", "Volleyball", "Basketball", "Handball"],
-    "Gymnastics": ["Balance", "Flexibility", "Coordination", "Tumbling"],
-    "Health": ["Physical Fitness", "Warm-up", "Cool-down", "Safety", "First Aid"]
-  },
-  CRE: {
-    "Old Testament": ["Creation", "Abraham", "Moses", "Kings", "Prophets"],
-    "New Testament": ["Birth of Jesus", "Ministry of Jesus", "Miracles", "Teachings", "Death and Resurrection"],
-    "Christian Living": ["Prayer", "Worship", "Values", "Morals", "Community Service"]
-  },
-  IRE: {
-    "Quran": ["Surahs", "Recitation", "Meaning", "Application"],
-    "Hadith": ["Prophetic Traditions", "Interpretation", "Application"],
-    "Islamic Practices": ["Prayer", "Fasting", "Charity", "Pilgrimage"],
-    "Islamic Living": ["Values", "Morals", "Family", "Community"]
-  },
-  HRE: {
-    "Hindu Scriptures": ["Vedas", "Upanishads", "Bhagavad Gita"],
-    "Hindu Practices": ["Worship", "Festivals", "Rituals", "Meditation"],
-    "Hindu Living": ["Values", "Dharma", "Karma", "Family", "Community"]
-  },
-  ICT: {
-    "Computer Basics": ["Parts of Computer", "Input/Output Devices", "Storage", "Operating System"],
-    "Internet": ["Web Browsing", "Email", "Online Safety", "Search Engines"],
-    "Applications": ["Word Processing", "Spreadsheets", "Presentations", "Graphics"],
-    "Programming": ["Coding Basics", "Algorithms", "Debugging", "Problem Solving"]
-  },
-  Business: {
-    "Introduction to Business": ["Types of Business", "Business Environment", "Entrepreneurship"],
-    "Trade": ["Buying and Selling", "Markets", "Pricing", "Marketing"],
-    "Finance": ["Money Management", "Banking", "Saving", "Budgeting"],
-    "Records": ["Record Keeping", "Receipts", "Invoices", "Financial Statements"]
-  },
-  "Business Studies": {
-    "Introduction to Business": ["Types of Business", "Business Environment", "Entrepreneurship", "Business Opportunities"],
-    "Trade": ["Buying and Selling", "Markets", "Pricing", "Marketing", "E-commerce"],
-    "Finance": ["Money Management", "Banking", "Saving", "Budgeting", "Investment"],
-    "Records": ["Record Keeping", "Receipts", "Invoices", "Financial Statements", "Accounting Basics"]
-  },
-  "Arabic": {
-    "Reading": ["Arabic Alphabet", "Vowels", "Word Recognition", "Sentence Reading", "Comprehension"],
-    "Writing": ["Letter Formation", "Word Writing", "Sentence Writing", "Composition"],
-    "Grammar": ["Nouns", "Verbs", "Adjectives", "Sentence Structure", "Tenses"],
-    "Conversation": ["Greetings", "Introductions", "Daily Conversations", "Vocabulary"]
-  },
-  "Arabic (JS)": {
-    "Reading and Comprehension": ["Advanced Reading", "Text Analysis", "Literary Texts", "Comprehension Skills"],
-    "Writing Skills": ["Essay Writing", "Creative Writing", "Formal Writing", "Letter Writing"],
-    "Grammar": ["Advanced Grammar", "Syntax", "Morphology", "Rhetoric"],
-    "Conversation": ["Formal Communication", "Presentations", "Debates", "Cultural Topics"]
-  },
-  "Christian Religious Education": {
-    "Old Testament": ["Creation", "Abraham", "Moses", "Kings", "Prophets"],
-    "New Testament": ["Birth of Jesus", "Ministry of Jesus", "Miracles", "Teachings", "Death and Resurrection"],
-    "Christian Living": ["Prayer", "Worship", "Values", "Morals", "Community Service"]
-  },
-  "Computer Science": {
-    "Computer Basics": ["Parts of Computer", "Input/Output Devices", "Storage", "Operating System"],
-    "Internet": ["Web Browsing", "Email", "Online Safety", "Search Engines"],
-    "Applications": ["Word Processing", "Spreadsheets", "Presentations", "Graphics"],
-    "Programming": ["Coding Basics", "Algorithms", "Debugging", "Problem Solving"]
-  },
-  "Computer Science (JS)": {
-    "Computer Systems": ["Hardware Components", "Software Types", "Operating Systems", "Computer Networks"],
-    "Internet and Web": ["Web Technologies", "Online Safety", "Digital Citizenship", "Cloud Computing"],
-    "Applications": ["Advanced Word Processing", "Spreadsheets and Formulas", "Database Basics", "Multimedia"],
-    "Programming": ["Programming Concepts", "Algorithms", "Data Structures", "Problem Solving", "Scratch/Python"]
-  },
-  "English (JS)": {
-    "Listening and Speaking": ["Oral Communication", "Presentations", "Discussions", "Public Speaking", "Pronunciation"],
-    "Reading": ["Reading Strategies", "Literary Texts", "Non-fiction", "Critical Reading", "Vocabulary"],
-    "Writing": ["Essay Writing", "Creative Writing", "Report Writing", "Business Writing", "Research"],
-    "Grammar": ["Parts of Speech", "Tenses", "Sentence Structure", "Punctuation", "Language Use"],
-    "Literature": ["Poetry", "Prose", "Drama", "Literary Devices", "Text Analysis"]
-  },
-  "Agriculture (JS)": {
-    "Crop Production": ["Land Preparation", "Planting Techniques", "Crop Management", "Harvesting", "Storage", "Value Addition"],
-    "Animal Husbandry": ["Types of Livestock", "Feeding Systems", "Housing", "Animal Health", "Products", "Marketing"],
-    "Farm Management": ["Farm Planning", "Record Keeping", "Budgeting", "Marketing", "Agribusiness"],
-    "Soil and Water": ["Soil Types", "Soil Conservation", "Fertilizers", "Irrigation Systems", "Water Management"]
-  },
-  "French (JS)": {
-    "Reading and Comprehension": ["Text Reading", "Comprehension", "Vocabulary", "Literary Texts"],
-    "Writing": ["Sentence Writing", "Composition", "Letter Writing", "Essay Writing"],
-    "Grammar": ["Nouns", "Verbs", "Adjectives", "Tenses", "Sentence Structure"],
-    "Conversation": ["Greetings", "Introductions", "Daily Life", "Cultural Topics"]
-  },
-  "German (JS)": {
-    "Reading and Comprehension": ["Text Reading", "Comprehension", "Vocabulary", "Literary Texts"],
-    "Writing": ["Sentence Writing", "Composition", "Letter Writing", "Essay Writing"],
-    "Grammar": ["Nouns", "Verbs", "Adjectives", "Cases", "Sentence Structure"],
-    "Conversation": ["Greetings", "Introductions", "Daily Life", "Cultural Topics"]
-  },
-  "Home Science (JS)": {
-    "Food and Nutrition": ["Nutrition Principles", "Meal Planning", "Food Preparation", "Food Preservation", "Kitchen Management"],
-    "Clothing and Textiles": ["Fabrics", "Clothing Construction", "Clothing Care", "Fashion Design", "Sewing Techniques"],
-    "Home Management": ["Home Planning", "Resource Management", "Interior Design", "Family Dynamics", "Consumer Education"]
-  },
-  "Kiswahili (JS)": {
-    "Kusoma na Kuelewa": ["Kusoma kwa Sauti", "Uelewa wa Maandishi", "Uchambuzi wa Maandishi", "Fasihi"],
-    "Kuandika": ["Insha", "Barua", "Ripoti", "Uandishi wa Kibiashara"],
-    "Sarufi": ["Vitenzi", "Nomino", "Vivumishi", "Sentensi", "Matumizi ya Lugha"],
-    "Mazungumzo": ["Mawasiliano", "Hotuba", "Majadiliano", "Utamaduni"]
-  },
-  "Life Skills Education (JS)": {
-    "Personal Development": ["Self Awareness", "Self Esteem", "Goal Setting", "Decision Making"],
-    "Health and Wellness": ["Nutrition", "Physical Fitness", "Mental Health", "Substance Abuse Prevention"],
-    "Relationships": ["Communication", "Conflict Resolution", "Peer Pressure", "Family Relationships"],
-    "Safety and Security": ["Personal Safety", "Digital Safety", "Emergency Preparedness", "First Aid"]
-  },
-  "Mandarin (JS)": {
-    "Reading and Comprehension": ["Character Reading", "Text Comprehension", "Vocabulary", "Pinyin"],
-    "Writing": ["Character Writing", "Sentence Writing", "Composition", "Stroke Order"],
-    "Grammar": ["Sentence Structure", "Grammar Patterns", "Tenses", "Particles"],
-    "Conversation": ["Greetings", "Daily Conversations", "Cultural Topics", "Pronunciation"]
-  },
-  "Mathematics (JS)": {
-    "Numbers": ["Integers", "Rational Numbers", "Real Numbers", "Number Operations", "HCF and LCM", "Exponents"],
-    "Algebra": ["Algebraic Expressions", "Linear Equations", "Inequalities", "Simultaneous Equations", "Quadratic Equations"],
-    "Geometry": ["Angles", "Triangles", "Quadrilaterals", "Circles", "Constructions", "Transformations", "Pythagoras Theorem"],
-    "Measurement": ["Length", "Area", "Volume", "Time", "Speed", "Density"],
-    "Statistics": ["Data Collection", "Frequency Tables", "Graphs", "Mean, Median, Mode", "Probability"],
-    "Commercial Arithmetic": ["Profit and Loss", "Simple Interest", "Compound Interest", "Discount", "Commission"]
-  },
-  "Performing Arts (JS)": {
-    "Music": ["Music Theory", "Vocal Techniques", "Instrumental Skills", "Music Composition", "Music History"],
-    "Dance": ["Dance Techniques", "Choreography", "Dance Styles", "Performance", "Dance History"],
-    "Drama": ["Acting Techniques", "Script Writing", "Stage Management", "Performance", "Drama History"]
-  },
-  "Physical and Health Education (JS)": {
-    "Athletics": ["Track Events", "Field Events", "Combined Events", "Training Principles"],
-    "Ball Games": ["Football", "Basketball", "Volleyball", "Handball", "Rugby", "Game Rules"],
-    "Gymnastics": ["Floor Exercises", "Apparatus Work", "Balance", "Flexibility"],
-    "Health Education": ["Nutrition", "First Aid", "Disease Prevention", "Mental Health", "Substance Abuse"]
-  },
-  "Religious Education CRE (JS)": {
-    "Old Testament": ["Patriarchs", "Exodus", "Prophets", "Kings", "Covenant"],
-    "New Testament": ["Life of Jesus", "Early Church", "Paul's Letters", "Teachings", "Miracles"],
-    "Christian Living": ["Christian Ethics", "Prayer Life", "Church", "Sacraments", "Social Issues"]
-  },
-  "Religious Education IRE (JS)": {
-    "Quran": ["Selected Surahs", "Tafsir", "Tajweed", "Themes", "Application"],
-    "Hadith": ["Selected Hadiths", "Interpretation", "Classification", "Application"],
-    "Islamic Practices": ["Ibadah", "Fiqh", "Islamic Calendar", "Pillars of Islam"],
-    "Islamic Living": ["Akhlaq", "Social Relations", "Family", "Contemporary Issues"]
-  },
-  "Religious Education HRE (JS)": {
-    "Hindu Scriptures": ["Vedas", "Upanishads", "Bhagavad Gita", "Puranas"],
-    "Hindu Practices": ["Worship", "Festivals", "Samskaras", "Yoga", "Meditation"],
-    "Hindu Philosophy": ["Dharma", "Karma", "Moksha", "Reincarnation"],
-    "Hindu Living": ["Values", "Ethics", "Family Life", "Social Duties"]
-  },
-  "Visual Arts (JS)": {
-    "Drawing": ["Drawing Techniques", "Perspective", "Shading", "Composition", "Still Life"],
-    "Painting": ["Color Theory", "Painting Techniques", "Mixed Media", "Artistic Styles"],
-    "Sculpture": ["Modeling", "Carving", "Casting", "3D Design"],
-    "Design": ["Graphic Design", "Layout", "Typography", "Digital Art", "Portfolio Development"]
-  },
-  "Hygiene and Nutrition Activities": {
-    "Personal Hygiene": ["Hand Washing", "Teeth Brushing", "Bathing", "Clean Clothes"],
-    "Nutrition": ["Healthy Foods", "Food Groups", "Balanced Diet", "Eating Habits"],
-    "Health Habits": ["Exercise", "Sleep", "Cleanliness", "Safety"]
-  },
-  "Religious Education Activities": {
-    "Values": ["Kindness", "Honesty", "Respect", "Sharing", "Love"],
-    "Stories": ["Bible Stories", "Moral Stories", "Faith Stories"],
-    "Prayer": ["Types of Prayer", "When to Pray", "Prayer Songs"]
-  },
-  "Movement and Creative Activities": {
-    "Physical Play": ["Running", "Jumping", "Dancing", "Ball Games", "Balance"],
-    "Art": ["Drawing", "Coloring", "Cutting", "Pasting", "Painting"],
-    "Music": ["Singing", "Rhythm", "Musical Instruments", "Songs"],
-    "Drama": ["Role Play", "Acting", "Storytelling", "Puppets"]
-  }
-};
-
-const STRANDS_BY_SUBJECT: Record<string, string[]> = Object.keys(TOPICS_BY_STRAND).reduce((acc, subject) => {
-  acc[subject] = Object.keys(TOPICS_BY_STRAND[subject]);
-  return acc;
-}, {} as Record<string, string[]>);
 
 interface Subject {
   id: string;
@@ -345,8 +81,17 @@ const ExamGenerator = () => {
   const [generatedExamId, setGeneratedExamId] = useState<string | null>(null);
   const [expandedStrands, setExpandedStrands] = useState<Set<string>>(new Set());
 
-  const availableStrands = STRANDS_BY_SUBJECT[formData.subject] || [];
-  const availableTopics = TOPICS_BY_STRAND[formData.subject] || {};
+  // Get class-specific and paper-specific topics
+  const availableTopics = formData.subject && formData.class_level
+    ? getTopicsForClass(
+        formData.subject, 
+        formData.class_level,
+        // Only filter by paper for KPSEA (Grade 6) and KJSEA (Grade 9) exams
+        (formData.exam_type === "KPSEA" || formData.exam_type === "KJSEA") ? formData.paper_number : undefined
+      )
+    : {};
+
+  const availableStrands = availableTopics ? Object.keys(availableTopics) : [];
 
   const toggleStrand = (strand: string) => {
     const newExpanded = new Set(expandedStrands);
@@ -663,7 +408,13 @@ const ExamGenerator = () => {
 
           <div className="space-y-2">
             <Label htmlFor="class_level">Class Level *</Label>
-            <Select value={formData.class_level} onValueChange={(value) => setFormData({ ...formData, class_level: value })}>
+            <Select value={formData.class_level} onValueChange={(value) => setFormData({ 
+              ...formData, 
+              class_level: value,
+              // Clear topics when class changes since different classes have different topics
+              covered_topics: {},
+              strands: []
+            })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
@@ -729,7 +480,13 @@ const ExamGenerator = () => {
             <Label htmlFor="subject">Subject *</Label>
             <Select 
               value={formData.subject} 
-              onValueChange={(value) => setFormData({ ...formData, subject: value, strands: [] })}
+              onValueChange={(value) => setFormData({ 
+                ...formData, 
+                subject: value, 
+                strands: [],
+                // Clear topics when subject changes
+                covered_topics: {}
+              })}
               disabled={!formData.class_level}
             >
               <SelectTrigger>
@@ -745,14 +502,35 @@ const ExamGenerator = () => {
 
           <div className="space-y-2">
             <Label htmlFor="paper_number">Paper Number</Label>
-            <Input
-              id="paper_number"
-              type="number"
-              min="1"
-              max="3"
-              value={formData.paper_number}
-              onChange={(e) => setFormData({ ...formData, paper_number: parseInt(e.target.value) || 1 })}
-            />
+            <Select 
+              value={formData.paper_number.toString()} 
+              onValueChange={(value) => setFormData({ 
+                ...formData, 
+                paper_number: parseInt(value),
+                // Clear selected topics when paper changes for KPSEA/KJSEA
+                covered_topics: (formData.exam_type === "KPSEA" || formData.exam_type === "KJSEA") 
+                  ? {} 
+                  : formData.covered_topics,
+                strands: (formData.exam_type === "KPSEA" || formData.exam_type === "KJSEA") 
+                  ? [] 
+                  : formData.strands
+              })}
+              disabled={!formData.subject}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select paper" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Paper 1</SelectItem>
+                <SelectItem value="2">Paper 2</SelectItem>
+                <SelectItem value="3">Paper 3</SelectItem>
+              </SelectContent>
+            </Select>
+            {(formData.exam_type === "KPSEA" || formData.exam_type === "KJSEA") && formData.subject && (
+              <p className="text-xs text-muted-foreground">
+                Topics shown are specific to this paper for {formData.exam_type} exams
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -785,7 +563,10 @@ const ExamGenerator = () => {
             <div>
               <Label className="text-base">Topics Covered *</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Select the topics you have taught. The exam will only include questions from these topics.
+                {(formData.exam_type === "KPSEA" || formData.exam_type === "KJSEA") && formData.paper_number
+                  ? `Select topics for ${formData.exam_type} ${formData.subject} Paper ${formData.paper_number}. Topics are paper-specific.`
+                  : "Select the topics you have taught. The exam will only include questions from these topics."
+                }
               </p>
             </div>
             <div className="space-y-3 border rounded-lg p-4 max-h-96 overflow-y-auto">
