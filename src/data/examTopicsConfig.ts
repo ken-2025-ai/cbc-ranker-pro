@@ -1076,6 +1076,300 @@ export const EXAM_TOPICS_CONFIG: TopicConfig = {
         2: ["Practical Project"]
       }
     }
+  },
+  "German (JS)": {
+    "Grade 7": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Greetings", "Introductions", "Basic Conversations", "Pronunciation"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Simple Texts", "Vocabulary", "Basic Grammar"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Alphabet", "Simple Sentences", "Basic Vocabulary"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Conversations", "Descriptions", "Directions", "Requests"],
+          papers: [1]
+        },
+        "Reading and Comprehension": {
+          topics: ["Short Stories", "Dialogues", "Information Texts"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Letters", "Messages", "Short Compositions"],
+          papers: [1]
+        },
+        "Grammar": {
+          topics: ["Articles", "Nouns", "Verbs", "Cases", "Sentence Structure"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 9": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Presentations", "Discussions", "Expressing Opinions", "Formal Communication"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Literary Texts", "Media Texts", "Comprehension", "Analysis"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Essays", "Formal Letters", "Reports", "Creative Writing"],
+          papers: [1]
+        },
+        "Grammar and Language Use": {
+          topics: ["Advanced Grammar", "Idioms", "Complex Sentences", "Stylistic Devices"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "French (JS)": {
+    "Grade 7": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Greetings", "Self-Introduction", "Basic Conversations", "Numbers and Dates"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Simple Texts", "Vocabulary Building", "Basic Grammar"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Alphabet", "Simple Sentences", "Personal Information"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Everyday Conversations", "Describing People and Places", "Shopping", "Directions"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Short Stories", "Dialogues", "Cultural Texts"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Personal Letters", "Messages", "Descriptions"],
+          papers: [1]
+        },
+        "Grammar": {
+          topics: ["Articles", "Adjectives", "Verbs", "Tenses", "Sentence Structure"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 9": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Presentations", "Debates", "Expressing Opinions", "Formal Speech"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Literary Texts", "Articles", "Comprehension", "Critical Reading"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Essays", "Formal Letters", "Reports", "Creative Pieces"],
+          papers: [1]
+        },
+        "Grammar": {
+          topics: ["Complex Grammar", "Subjunctive", "Pronouns", "Advanced Structures"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "Arabic (JS)": {
+    "Grade 7": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Greetings", "Introductions", "Basic Phrases", "Pronunciation"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Arabic Alphabet", "Simple Words", "Short Sentences", "Vocabulary"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Letter Writing", "Word Formation", "Basic Sentences"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Conversations", "Descriptions", "Questions and Answers", "Oral Presentations"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Short Texts", "Stories", "Comprehension", "Vocabulary Development"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Letters", "Messages", "Short Compositions", "Grammar Practice"],
+          papers: [1]
+        },
+        "Grammar": {
+          topics: ["Nouns", "Verbs", "Sentence Structure", "Tenses"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 9": {
+      strands: {
+        "Listening and Speaking": {
+          topics: ["Formal Communication", "Discussions", "Presentations", "Debates"],
+          papers: [1]
+        },
+        "Reading": {
+          topics: ["Literary Texts", "Media Texts", "Analysis", "Critical Reading"],
+          papers: [1]
+        },
+        "Writing": {
+          topics: ["Essays", "Formal Letters", "Reports", "Creative Writing"],
+          papers: [1]
+        },
+        "Grammar": {
+          topics: ["Advanced Grammar", "Complex Sentences", "Rhetorical Devices", "Classical Arabic"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "Computer Science (JS)": {
+    "Grade 7": {
+      strands: {
+        "Computer Basics": {
+          topics: ["Computer Hardware", "Operating Systems", "File Management", "Input/Output Devices"],
+          papers: [1]
+        },
+        "Programming Fundamentals": {
+          topics: ["Introduction to Programming", "Algorithms", "Flowcharts", "Basic Coding"],
+          papers: [1]
+        },
+        "Digital Literacy": {
+          topics: ["Internet Safety", "Digital Citizenship", "Online Communication"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 8": {
+      strands: {
+        "Programming": {
+          topics: ["Variables", "Data Types", "Control Structures", "Functions"],
+          papers: [1]
+        },
+        "Applications": {
+          topics: ["Word Processing", "Spreadsheets", "Presentations", "Databases"],
+          papers: [1]
+        },
+        "Networks": {
+          topics: ["Network Basics", "Internet", "Email", "Web Browsing"],
+          papers: [1]
+        }
+      }
+    },
+    "Grade 9": {
+      strands: {
+        "Programming and Development": {
+          topics: ["Object-Oriented Programming", "Data Structures", "Algorithms", "Problem Solving"],
+          papers: [1]
+        },
+        "Web Development": {
+          topics: ["HTML", "CSS", "JavaScript Basics", "Web Design Principles"],
+          papers: [1]
+        },
+        "Data and Information": {
+          topics: ["Database Management", "Data Analysis", "Spreadsheet Advanced", "Information Systems"],
+          papers: [1]
+        },
+        "Emerging Technologies": {
+          topics: ["AI Basics", "Cybersecurity", "Cloud Computing", "Digital Ethics"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "Business Studies (JS)": {
+    "Grade 9": {
+      strands: {
+        "Introduction to Business": {
+          topics: ["Business Concepts", "Business Environment", "Types of Business", "Entrepreneurship"],
+          papers: [1]
+        },
+        "Production": {
+          topics: ["Factors of Production", "Production Process", "Quality Control", "Technology in Production"],
+          papers: [1]
+        },
+        "Marketing": {
+          topics: ["Marketing Concepts", "Market Research", "Marketing Mix", "Consumer Behavior"],
+          papers: [1]
+        },
+        "Finance and Accounting": {
+          topics: ["Business Finance", "Sources of Capital", "Record Keeping", "Financial Statements"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "Home Science (JS)": {
+    "Grade 9": {
+      strands: {
+        "Food and Nutrition": {
+          topics: ["Nutrition Principles", "Food Groups", "Meal Planning", "Food Preservation", "Food Safety"],
+          papers: [1]
+        },
+        "Clothing and Textiles": {
+          topics: ["Fibers and Fabrics", "Clothing Construction", "Clothing Care", "Fashion Design"],
+          papers: [1]
+        },
+        "Home Management": {
+          topics: ["Home Economics", "Resource Management", "Family Living", "Consumer Education"],
+          papers: [1]
+        }
+      }
+    }
+  },
+  "Music (JS)": {
+    "Grade 9": {
+      strands: {
+        "Music Theory": {
+          topics: ["Staff Notation", "Scales", "Intervals", "Chords", "Rhythm"],
+          papers: [1, 2]
+        },
+        "Music Performance": {
+          topics: ["Vocal Techniques", "Instrumental Skills", "Ensemble Performance"],
+          papers: [2]
+        },
+        "Music Appreciation": {
+          topics: ["Kenyan Music", "African Music", "World Music", "Music History", "Musical Analysis"],
+          papers: [1]
+        },
+        "Music Composition": {
+          topics: ["Melody Writing", "Harmony", "Arrangement", "Creative Composition"],
+          papers: [2]
+        }
+      },
+      paperMapping: {
+        1: ["Music Theory", "Music Appreciation"],
+        2: ["Music Theory", "Music Performance", "Music Composition"]
+      }
+    }
   }
 };
 
@@ -1193,10 +1487,11 @@ export const getTopicsForClass = (
 
   const result: { [strand: string]: string[] } = {};
 
-  // If paper mapping exists and paper number is specified
+  // CRITICAL: If paper mapping exists, ONLY use paper mapping (ignore paper arrays in strands)
   if (paperNumber && subjectConfig.paperMapping) {
     const strandsForPaper = subjectConfig.paperMapping[paperNumber];
     if (strandsForPaper) {
+      // Only return strands that are in the paper mapping
       strandsForPaper.forEach(strandName => {
         const strandConfig = subjectConfig.strands[strandName];
         if (strandConfig) {
@@ -1205,13 +1500,23 @@ export const getTopicsForClass = (
       });
       return result;
     }
+    // If paper number not in mapping, return empty (no topics for invalid paper)
+    return {};
   }
 
-  // Otherwise, return all strands (filtering by paper if specified)
+  // If no paper mapping but paper number specified, use paper arrays in strands
+  if (paperNumber) {
+    Object.entries(subjectConfig.strands).forEach(([strand, config]) => {
+      if (config.papers && !config.papers.includes(paperNumber)) {
+        return;
+      }
+      result[strand] = config.topics;
+    });
+    return result;
+  }
+
+  // No paper number specified, return all strands
   Object.entries(subjectConfig.strands).forEach(([strand, config]) => {
-    if (paperNumber && config.papers && !config.papers.includes(paperNumber)) {
-      return;
-    }
     result[strand] = config.topics;
   });
 
