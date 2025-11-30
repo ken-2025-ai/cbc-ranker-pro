@@ -9,11 +9,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import {
-  getSubjectsForGrade,
   checkSubjectConflict,
   assignSubjectToTeacher,
   type ConflictResult
 } from '@/utils/teacherAssignmentUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SubjectAssignmentDialogProps {
   open: boolean;
@@ -66,10 +66,10 @@ export const SubjectAssignmentDialog = ({
   }, [open]);
 
   useEffect(() => {
-    if (selectedGrade) {
+    if (open) {
       loadSubjects();
     }
-  }, [selectedGrade]);
+  }, [open]);
 
   useEffect(() => {
     if (selectedSubject && selectedGrade && selectedStream) {
@@ -89,8 +89,13 @@ export const SubjectAssignmentDialog = ({
   const loadSubjects = async () => {
     try {
       setLoading(true);
-      const data = await getSubjectsForGrade(selectedGrade);
-      setSubjects(data);
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      setSubjects(data || []);
     } catch (error) {
       console.error('Error loading subjects:', error);
       toast({
@@ -224,7 +229,7 @@ export const SubjectAssignmentDialog = ({
 
           <div className="space-y-2">
             <Label>Subject *</Label>
-            <Select value={selectedSubject} onValueChange={setSelectedSubject} disabled={!selectedGrade}>
+            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
               <SelectTrigger>
                 <SelectValue placeholder="Select subject" />
               </SelectTrigger>
@@ -235,7 +240,6 @@ export const SubjectAssignmentDialog = ({
                   subjects.map((subject) => (
                     <SelectItem key={subject.id} value={subject.id}>
                       {subject.name} ({subject.code})
-                      {subject.category && <Badge variant="outline" className="ml-2">{subject.category}</Badge>}
                     </SelectItem>
                   ))
                 )}
