@@ -35,6 +35,8 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
     { id: 'exams-kenya', label: 'Exams Kenya', icon: FileStack, roles: ['admin', 'principal', 'teacher', 'staff'] },
     { id: 'rankings', label: 'Rankings', icon: TrendingUp, roles: ['admin', 'principal', 'teacher', 'staff'] },
     { id: 'reports', label: 'Reports', icon: FileText, roles: ['admin', 'principal', 'teacher', 'staff'] },
+    { id: 'my-teachers', label: 'My Teachers', icon: GraduationCap, roles: ['admin', 'principal'] },
+    { id: 'my-class', label: 'My Class', icon: Users, roles: ['teacher'] },
     { id: 'staff', label: 'Staff', icon: Users, roles: ['admin', 'principal'] },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['admin', 'principal'] },
     { id: 'teacher-analytics', label: 'My Analytics', icon: BarChart3, roles: ['teacher'] },

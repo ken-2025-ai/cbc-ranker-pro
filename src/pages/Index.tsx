@@ -15,6 +15,8 @@ import NotificationToast from "@/components/NotificationToast";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import FloatingNotificationIndicator from "@/components/FloatingNotificationIndicator";
 import NotificationBell from "@/components/NotificationBell";
+import MyTeachers from "@/pages/MyTeachers";
+import MyClass from "@/pages/MyClass";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionCheck } from "@/hooks/useSubscriptionCheck";
 import { Loader2 } from "lucide-react";
@@ -77,6 +79,10 @@ const Index = () => {
         return <Rankings />;
       case "staff":
         return hasAccess(['admin', 'principal']) ? <StaffManagement /> : <Dashboard onViewChange={setCurrentView} />;
+      case "my-teachers":
+        return hasAccess(['admin', 'principal']) ? <MyTeachers /> : <Dashboard onViewChange={setCurrentView} />;
+      case "my-class":
+        return hasAccess(['teacher']) ? <MyClass /> : <Dashboard onViewChange={setCurrentView} />;
       case "analytics":
         return hasAccess(['admin', 'principal']) ? <SchoolAnalytics /> : <Dashboard onViewChange={setCurrentView} />;
       case "teacher-analytics":
