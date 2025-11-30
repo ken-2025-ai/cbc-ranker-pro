@@ -989,6 +989,47 @@ export type Database = {
         }
         Relationships: []
       }
+      class_teachers: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          grade: string
+          id: string
+          institution_id: string
+          is_active: boolean | null
+          stream: string
+          teacher_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          grade: string
+          id?: string
+          institution_id: string
+          is_active?: boolean | null
+          stream: string
+          teacher_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          grade?: string
+          id?: string
+          institution_id?: string
+          is_active?: boolean | null
+          stream?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_teachers_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           academic_year: number | null
@@ -3433,6 +3474,7 @@ export type Database = {
       }
       subjects: {
         Row: {
+          category: string | null
           code: string
           created_at: string
           id: string
@@ -3441,6 +3483,7 @@ export type Database = {
           name: string
         }
         Insert: {
+          category?: string | null
           code: string
           created_at?: string
           id?: string
@@ -3449,6 +3492,7 @@ export type Database = {
           name: string
         }
         Update: {
+          category?: string | null
           code?: string
           created_at?: string
           id?: string
@@ -3786,6 +3830,107 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_subjects: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          grade: string
+          id: string
+          institution_id: string
+          is_co_teaching: boolean | null
+          max_students: number | null
+          stream: string | null
+          subject_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          grade: string
+          id?: string
+          institution_id: string
+          is_co_teaching?: boolean | null
+          max_students?: number | null
+          stream?: string | null
+          subject_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          grade?: string
+          id?: string
+          institution_id?: string
+          is_co_teaching?: boolean | null
+          max_students?: number | null
+          stream?: string | null
+          subject_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_subjects_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_workload: {
+        Row: {
+          id: string
+          institution_id: string
+          is_class_teacher: boolean | null
+          last_updated: string | null
+          max_recommended_classes: number | null
+          max_recommended_subjects: number | null
+          teacher_id: string
+          total_classes: number | null
+          total_streams: number | null
+          total_subjects: number | null
+        }
+        Insert: {
+          id?: string
+          institution_id: string
+          is_class_teacher?: boolean | null
+          last_updated?: string | null
+          max_recommended_classes?: number | null
+          max_recommended_subjects?: number | null
+          teacher_id: string
+          total_classes?: number | null
+          total_streams?: number | null
+          total_subjects?: number | null
+        }
+        Update: {
+          id?: string
+          institution_id?: string
+          is_class_teacher?: boolean | null
+          last_updated?: string | null
+          max_recommended_classes?: number | null
+          max_recommended_subjects?: number | null
+          teacher_id?: string
+          total_classes?: number | null
+          total_streams?: number | null
+          total_subjects?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_workload_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "admin_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teachers: {
         Row: {
           classes: string[] | null
@@ -4108,6 +4253,16 @@ export type Database = {
       calculate_student_progress: {
         Args: { competency_uuid: string; student_uuid: string }
         Returns: undefined
+      }
+      check_subject_assignment_conflict: {
+        Args: {
+          p_grade: string
+          p_institution_id: string
+          p_stream: string
+          p_subject_id: string
+          p_teacher_id: string
+        }
+        Returns: Json
       }
       check_subscription_status: {
         Args: { p_institution_id: string }

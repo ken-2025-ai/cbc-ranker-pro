@@ -8,10 +8,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserPlus, Trash2, Edit, Check, X, Loader2 } from 'lucide-react';
+import { UserPlus, Trash2, Edit, Check, X, Loader2, BookOpen, Award, UserCog } from 'lucide-react';
+import { SubjectAssignmentDialog } from './staff/SubjectAssignmentDialog';
+import { ClassTeacherDialog } from './staff/ClassTeacherDialog';
+import { TeacherWorkloadCard } from './staff/TeacherWorkloadCard';
+import { getTeacherWorkload, getTeacherSubjects, removeSubjectAssignment } from '@/utils/teacherAssignmentUtils';
 
 interface StaffMember {
   id: string;
@@ -48,6 +53,14 @@ const StaffManagement = () => {
     role: 'teacher' as 'admin' | 'principal' | 'teacher' | 'staff',
     password: '',
   });
+  
+  // New state for enhanced features
+  const [subjectDialogOpen, setSubjectDialogOpen] = useState(false);
+  const [classTeacherDialogOpen, setClassTeacherDialogOpen] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState<{ id: string; name: string } | null>(null);
+  const [teacherSubjects, setTeacherSubjects] = useState<any[]>([]);
+  const [teacherWorkload, setTeacherWorkload] = useState<any>(null);
+  const [viewingTeacherId, setViewingTeacherId] = useState<string | null>(null);
 
   const grades = [
     { value: "1", label: "Grade 1" },
